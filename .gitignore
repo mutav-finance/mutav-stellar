@@ -1,0 +1,10 @@
+target/
+.soroban/
+.stellar/
+node_modules/
+.env
+.env.*
+.DS_Store
+*.log
+dist/
+.next/
