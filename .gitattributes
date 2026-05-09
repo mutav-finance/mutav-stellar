@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Linguist hints
+*.rs   linguist-language=Rust
+*.ts   linguist-language=TypeScript
+docs/**       linguist-documentation
+.design/**    linguist-vendored

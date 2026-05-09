@@ -22,3 +22,7 @@ git config core.hooksPath .githooks
 ```
 
 See [CONTRIBUTING.md](https://github.com/tga-protocol/sgr/blob/main/CONTRIBUTING.md) in the shared docs repo for branch workflow and PR guidelines.
+
+## License
+
+Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
