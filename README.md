@@ -1,12 +1,12 @@
-# SGR Stellar — Registered Guarantee System on Stellar
+# MUTAV Stellar — Rental Guarantee Tokenization on Stellar
 
-Soroban smart contracts for the SGR rental guarantee protocol — part of the NearX acceleration program.
+Soroban smart contracts for the MUTAV Finance rental guarantee protocol — part of the NearX acceleration program.
 
 > *Contratos Soroban para o protocolo SGR de garantia locatícia — programa de aceleração NearX.*
 
 ## Docs
 
-Shared strategy, whitepaper, and brand assets live in [`tga-protocol/sgr`](https://github.com/tga-protocol/sgr).
+Shared strategy, whitepaper, and brand assets live in [`mutav-finance/mutav`](https://github.com/mutav-finance/mutav).
 
 ## Stack
 
@@ -16,12 +16,12 @@ Shared strategy, whitepaper, and brand assets live in [`tga-protocol/sgr`](https
 ## Setup
 
 ```bash
-git clone https://github.com/tga-protocol/sgr-stellar.git
-cd sgr-stellar
+git clone https://github.com/mutav-finance/mutav-stellar.git
+cd mutav-stellar
 git config core.hooksPath .githooks
 ```
 
-See [CONTRIBUTING.md](https://github.com/tga-protocol/sgr/blob/main/CONTRIBUTING.md) in the shared docs repo for branch workflow and PR guidelines.
+See [CONTRIBUTING.md](https://github.com/mutav-finance/mutav/blob/main/CONTRIBUTING.md) in the shared docs repo for branch workflow and PR guidelines.
 
 ## License
 
