@@ -1,4 +1,4 @@
-# Contributing to sgr-stellar
+# Contributing to mutav-stellar
 
 Thanks for your interest in contributing.
 
@@ -6,15 +6,15 @@ Thanks for your interest in contributing.
 
 The protocol-wide branch workflow, commit-message conventions, and PR review process live in the canonical docs repo:
 
-- **General CONTRIBUTING:** https://github.com/tga-protocol/sgr/blob/main/CONTRIBUTING.md
+- **General CONTRIBUTING:** https://github.com/mutav-finance/mutav/blob/main/CONTRIBUTING.md
 
-This file documents only `sgr-stellar`-specific notes. If anything below conflicts with the canonical doc, prefer the canonical doc and open an issue here.
+This file documents only `mutav-stellar`-specific notes. If anything below conflicts with the canonical doc, prefer the canonical doc and open an issue here.
 
 ## Setup
 
 ```bash
-git clone https://github.com/tga-protocol/sgr-stellar.git
-cd sgr-stellar
+git clone https://github.com/mutav-finance/mutav-stellar.git
+cd mutav-stellar
 git config core.hooksPath .githooks
 ```
 
@@ -22,7 +22,7 @@ The `.githooks/pre-push` hook blocks direct pushes to `main`. Use a feature bran
 
 ## Stack
 
-- **TypeScript** via [Bun](https://bun.sh/) — `@tga-protocol/sgr-stellar` API package (Phase A: Horizon provider).
+- **TypeScript** via [Bun](https://bun.sh/) — `@mutav-finance/mutav-stellar` API package (Phase A: Horizon provider).
 - **Rust + Soroban SDK** — smart contracts (Phase B, future).
 
 ## Repo conventions

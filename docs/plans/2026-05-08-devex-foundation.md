@@ -32,14 +32,14 @@
 ## Task 1: Adopt Apache-2.0
 
 **Files:**
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/LICENSE`
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/NOTICE`
-- Modify: `/Users/jubs/Projects/tga-protocol/sgr-stellar/README.md` (append at EOF)
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/LICENSE`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/NOTICE`
+- Modify: `/Users/jubs/Projects/mutav-finance/mutav-stellar/README.md` (append at EOF)
 
 - [ ] **Step 1: Verify branch and clean state**
 
 ```bash
-cd /Users/jubs/Projects/tga-protocol/sgr-stellar
+cd /Users/jubs/Projects/mutav-finance/mutav-stellar
 git branch --show-current
 git status
 ```
@@ -78,7 +78,7 @@ SGR Stellar
 Copyright 2026 TGA Protocol contributors.
 
 This product is part of SGR (Sistema de Garantia Registrada),
-an onchain rental-guarantee protocol. See https://github.com/tga-protocol/sgr.
+an onchain rental-guarantee protocol. See https://github.com/mutav-finance/mutav.
 ```
 
 - [ ] **Step 5: Append License section to `README.md`**
@@ -134,7 +134,7 @@ Expected: commit succeeds, pre-commit hooks (none currently) pass, `git log --on
 ## Task 2: Add security disclosure policy
 
 **Files:**
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/SECURITY.md`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/SECURITY.md`
 
 - [ ] **Step 1: Create `SECURITY.md`**
 
@@ -154,7 +154,7 @@ If GitHub private reporting is unavailable for any reason, contact the maintaine
 In scope:
 
 - Smart contracts (Phase B, future).
-- The TypeScript API package (Phase A, `@tga-protocol/sgr-stellar`).
+- The TypeScript API package (Phase A, `@mutav-finance/mutav-stellar`).
 
 Out of scope:
 
@@ -200,8 +200,8 @@ Expected: commit succeeds.
 ## Task 3: Add editorconfig and gitattributes
 
 **Files:**
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/.editorconfig`
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/.gitattributes`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/.editorconfig`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/.gitattributes`
 
 The current working tree contains untracked draft versions of both files. **Do not** simply `git add` them — re-author from this plan to ensure the trim of the `brand/**` line lands.
 
@@ -232,7 +232,7 @@ trim_trailing_whitespace = false
 
 - [ ] **Step 2: Author the final `.gitattributes`**
 
-Overwrite `.gitattributes` (or create if missing) with the following exact content. The line `brand/**       linguist-vendored` from the in-flight draft is **omitted** because no `brand/` directory is vendored in `sgr-stellar`:
+Overwrite `.gitattributes` (or create if missing) with the following exact content. The line `brand/**       linguist-vendored` from the in-flight draft is **omitted** because no `brand/` directory is vendored in `mutav-stellar`:
 
 ```gitattributes
 * text=auto eol=lf
@@ -299,9 +299,9 @@ Expected: commit succeeds.
 ## Task 4: Add CONTRIBUTING, CODEOWNERS, and PR template
 
 **Files:**
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/CONTRIBUTING.md`
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/.github/CODEOWNERS`
-- Create: `/Users/jubs/Projects/tga-protocol/sgr-stellar/.github/pull_request_template.md`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/CONTRIBUTING.md`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/.github/CODEOWNERS`
+- Create: `/Users/jubs/Projects/mutav-finance/mutav-stellar/.github/pull_request_template.md`
 
 The current working tree contains an untracked draft `CONTRIBUTING.md`. **Re-author** from this plan rather than editing the draft, so the final form is unambiguous.
 
@@ -318,7 +318,7 @@ Expected: directory exists. (No-op if already present.)
 Overwrite `CONTRIBUTING.md` (or create if missing) with the following exact content:
 
 ````markdown
-# Contributing to sgr-stellar
+# Contributing to mutav-stellar
 
 Thanks for your interest in contributing.
 
@@ -326,15 +326,15 @@ Thanks for your interest in contributing.
 
 The protocol-wide branch workflow, commit-message conventions, and PR review process live in the canonical docs repo:
 
-- **General CONTRIBUTING:** https://github.com/tga-protocol/sgr/blob/main/CONTRIBUTING.md
+- **General CONTRIBUTING:** https://github.com/mutav-finance/mutav/blob/main/CONTRIBUTING.md
 
-This file documents only `sgr-stellar`-specific notes. If anything below conflicts with the canonical doc, prefer the canonical doc and open an issue here.
+This file documents only `mutav-stellar`-specific notes. If anything below conflicts with the canonical doc, prefer the canonical doc and open an issue here.
 
 ## Setup
 
 ```bash
-git clone https://github.com/tga-protocol/sgr-stellar.git
-cd sgr-stellar
+git clone https://github.com/mutav-finance/mutav-stellar.git
+cd mutav-stellar
 git config core.hooksPath .githooks
 ```
 
@@ -342,7 +342,7 @@ The `.githooks/pre-push` hook blocks direct pushes to `main`. Use a feature bran
 
 ## Stack
 
-- **TypeScript** via [Bun](https://bun.sh/) — `@tga-protocol/sgr-stellar` API package (Phase A: Horizon provider).
+- **TypeScript** via [Bun](https://bun.sh/) — `@mutav-finance/mutav-stellar` API package (Phase A: Horizon provider).
 - **Rust + Soroban SDK** — smart contracts (Phase B, future).
 
 ## Repo conventions
@@ -425,7 +425,7 @@ git commit -m "$(cat <<'EOF'
 chore(github): add CONTRIBUTING, CODEOWNERS, and PR template
 
 CONTRIBUTING.md delegates protocol-wide workflow to the canonical
-sgr/CONTRIBUTING.md, documents stellar-specific notes (Bun stack,
+mutav/CONTRIBUTING.md, documents stellar-specific notes (Bun stack,
 no barrel files, code style), and points security reports at
 SECURITY.md. CODEOWNERS sets @hoffms as the sole maintainer for
 all paths. PR template prompts for What/Why/How to test.
@@ -481,7 +481,7 @@ Expected: each commit subject matches the table in the "Commit order" section. M
 Visually open in a markdown previewer (or push to a draft PR for GitHub-rendered preview):
 
 - `README.md` — License section appears at the bottom; existing content (Stack, Setup) intact.
-- `CONTRIBUTING.md` — links to `LICENSE`, `SECURITY.md`, `CLAUDE.md`, and the canonical sgr CONTRIBUTING all resolve.
+- `CONTRIBUTING.md` — links to `LICENSE`, `SECURITY.md`, `CLAUDE.md`, and the canonical mutav CONTRIBUTING all resolve.
 - `SECURITY.md` — three sections (Reporting, Scope, Response expectations).
 - `LICENSE` — first lines show "Apache License Version 2.0 January 2004"; ends with `END OF TERMS AND CONDITIONS` or the appendix.
 - `NOTICE` — single short paragraph; copyright line correct.
@@ -493,15 +493,15 @@ git push -u origin chore/devex-foundation
 gh pr create --draft --title "chore: devex foundation (Apache-2.0, security policy, contributing)" --body "$(cat <<'EOF'
 ## Summary
 
-Lands the devex foundation for `sgr-stellar`:
+Lands the devex foundation for `mutav-stellar`:
 
 - Adopts **Apache-2.0** (`LICENSE`, `NOTICE`, README License section).
 - Adds **`SECURITY.md`** routing reports through GitHub private advisories.
-- Adds final **`CONTRIBUTING.md`** delegating to canonical `sgr/CONTRIBUTING.md`.
+- Adds final **`CONTRIBUTING.md`** delegating to canonical `mutav/CONTRIBUTING.md`.
 - Adds **`.editorconfig`** and **`.gitattributes`** (LF, binary marks, Linguist hints).
 - Adds **`.github/CODEOWNERS`** (`* @hoffms`) and a **PR template** (What / Why / How to test).
 
-CI is intentionally **not** added in this PR — `sgr-stellar` has no `package.json` or contracts code yet. CI lands with the first Phase A PR.
+CI is intentionally **not** added in this PR — `mutav-stellar` has no `package.json` or contracts code yet. CI lands with the first Phase A PR.
 
 Audience: future auditors and B2B integrators (see spec).
 
@@ -520,8 +520,8 @@ Audience: future auditors and B2B integrators (see spec).
 
 ## Follow-ups (separate issues)
 
-- Adopt Apache-2.0 across `sgr`, `sgr-solana`, `sgr-app`.
-- Convert `sgr-solana/CONTRIBUTING.md` to delegate-to-canonical pattern.
+- Adopt Apache-2.0 across mutav, `mutav-solana`, `mutav-app`.
+- Convert `mutav-solana/CONTRIBUTING.md` to delegate-to-canonical pattern.
 - Wire CI on first Phase A PR (TS/Bun typecheck + test).
 - Add per-file SPDX headers when Soroban contracts land (Phase B).
 EOF
