@@ -2,7 +2,7 @@
 
 Soroban smart contracts for the MUTAV Finance rental guarantee protocol — part of the NearX acceleration program.
 
-> *Contratos Soroban para o protocolo SGR de garantia locatícia — programa de aceleração NearX.*
+> *Contratos Soroban para o protocolo MUTAV de garantia locatícia — programa de aceleração NearX.*
 
 ## Docs
 
