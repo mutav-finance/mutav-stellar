@@ -1,14 +1,14 @@
 # SGR Stellar API — Phase A: Horizon Provider
 
 **Date:** 2026-05-08
-**Repo:** `tga-protocol/sgr-stellar`
+**Repo:** `mutav-finance/mutav-stellar`
 **Status:** Approved (Phase A only — Soroban provider is a future spec)
 
 ## Context
 
-`sgr-stellar` is the Stellar-side implementation of the SGR (Sistema de Garantia Registrada) rental-guarantee protocol. The repo is currently empty (CLAUDE.md, README.md, brand vendor, githook, design assets).
+`mutav-stellar` is the Stellar-side implementation of the SGR (Sistema de Garantia Registrada) rental-guarantee protocol. The repo is currently empty (CLAUDE.md, README.md, brand vendor, githook, design assets).
 
-Within Stellar there are two distinct stacks: **Horizon** (classic accounts, payments, friendbot, ledger queries) and **Soroban** (smart contracts, RPC, contract invocation). This spec organizes `sgr-stellar` to expose both as **two providers** behind one TypeScript API package, `@tga-protocol/sgr-stellar`. `sgr-app` (the dashboard) will eventually consume this package.
+Within Stellar there are two distinct stacks: **Horizon** (classic accounts, payments, friendbot, ledger queries) and **Soroban** (smart contracts, RPC, contract invocation). This spec organizes `mutav-stellar` to expose both as **two providers** behind one TypeScript API package, `@mutav-finance/mutav-stellar`. `mutav-app` (the dashboard) will eventually consume this package.
 
 This spec covers **Phase A: the Horizon provider**, plus the shared core (network config, keypair management) that the Soroban provider will reuse later. Phase B (Soroban provider + Rust contracts) is a separate spec.
 
@@ -27,16 +27,16 @@ Phase A delivers:
 - No Rust contracts in this spec (the `contracts/` directory is reserved for Phase B).
 - No multi-keypair management — `.env.local` holds one keypair.
 - No asset issuance, trustlines, path payments, or multisig.
-- No `sgr-app` wiring — sgr-stellar stays standalone for Phase A; sgr-app picks it up later.
+- No `mutav-app` wiring — mutav-stellar stays standalone for Phase A; mutav-app picks it up later.
 - No automated tests — manual testnet runs are the verification method for Phase A.
 
 ## Stack
 
 | Concern    | Choice                                                                  | Reason |
 | ---------- | ----------------------------------------------------------------------- | ------ |
-| Runtime    | bun                                                                     | Matches sibling `sgr-app`'s `packageManager: bun@1.3.1`. Native TS execution, native `.env.local` loading. |
+| Runtime    | bun                                                                     | Matches sibling `mutav-app`'s `packageManager: bun@1.3.1`. Native TS execution, native `.env.local` loading. |
 | SDK        | `@stellar/stellar-sdk`                                                  | Official JS SDK; exposes both `Horizon.Server` and `rpc.Server`, so the same dep covers both providers. |
-| Language   | TypeScript, run via `bun run` (no compile step in dev)                  | Lowest friction. Build step (if needed for publish) deferred until sgr-app actually consumes the package. |
+| Language   | TypeScript, run via `bun run` (no compile step in dev)                  | Lowest friction. Build step (if needed for publish) deferred until mutav-app actually consumes the package. |
 | Networks   | Stellar **testnet** (default) and **mainnet** (opt-in via env)          | Testnet on dev, mainnet on prod. `fund` errors on mainnet (friendbot is testnet-only). |
 
 ### Network endpoints
@@ -50,10 +50,10 @@ Phase A delivers:
 
 Two providers behind one package. Phase A implements only Horizon; Soroban arrives in Phase B.
 
-**No barrel files.** Per `CONTRIBUTING.md`, `index.ts` re-export barrels are forbidden. Public API entry points are declared via the `package.json` `exports` map, and consumers import from specific subpaths (e.g. `import { fund } from '@tga-protocol/sgr-stellar/horizon/account'`). Internal modules import from sibling files directly, never via an aggregator.
+**No barrel files.** Per `CONTRIBUTING.md`, `index.ts` re-export barrels are forbidden. Public API entry points are declared via the `package.json` `exports` map, and consumers import from specific subpaths (e.g. `import { fund } from '@mutav-finance/mutav-stellar/horizon/account'`). Internal modules import from sibling files directly, never via an aggregator.
 
 ```
-@tga-protocol/sgr-stellar (package)
+@mutav-finance/mutav-stellar (package)
 ├── core/                    shared primitives
 │   ├── network.ts           NetworkName ('testnet'|'mainnet'), config lookup, env resolver
 │   └── wallet.ts            Keypair load/save/validate (.env.local-backed, ed25519)
@@ -74,8 +74,8 @@ Two providers behind one package. Phase A implements only Horizon; Soroban arriv
 ## File layout
 
 ```
-sgr-stellar/
-├── package.json              # name: @tga-protocol/sgr-stellar, type: module, exports map (no main barrel)
+mutav-stellar/
+├── package.json              # name: @mutav-finance/mutav-stellar, type: module, exports map (no main barrel)
 ├── tsconfig.json             # strict, module: ESNext, moduleResolution: bundler, types: bun
 ├── .env.example              # committed: STELLAR_NETWORK=, STELLAR_SECRET=, STELLAR_PUBLIC=
 ├── .env.local                # gitignored (already covered by .gitignore)
@@ -104,7 +104,7 @@ The package exposes named subpaths for each module. Each `exports` entry points 
 
 ```jsonc
 {
-  "name": "@tga-protocol/sgr-stellar",
+  "name": "@mutav-finance/mutav-stellar",
   "type": "module",
   "exports": {
     "./core/network":      "./src/core/network.ts",
@@ -116,11 +116,11 @@ The package exposes named subpaths for each module. Each `exports` entry points 
 }
 ```
 
-Consumers (sgr-app, future code) import from these subpaths:
+Consumers (mutav-app, future code) import from these subpaths:
 
 ```ts
-import { resolveNetwork }    from '@tga-protocol/sgr-stellar/core/network';
-import { sendPayment }       from '@tga-protocol/sgr-stellar/horizon/payment';
+import { resolveNetwork }    from '@mutav-finance/mutav-stellar/core/network';
+import { sendPayment }       from '@mutav-finance/mutav-stellar/horizon/payment';
 ```
 
 Phase B adds new entries (`./soroban/client`, `./soroban/contract`, etc.) — never an aggregated `./soroban` barrel.
@@ -196,7 +196,7 @@ Implementation builds a `TransactionBuilder` with `BASE_FEE`, the resolved `pass
 
 ### Public API surface (no barrel)
 
-There is no `src/index.ts`. The package's public surface is the `exports` map above. Each module file is its own entry point; consumers import from `@tga-protocol/sgr-stellar/<subpath>`. Internal cross-module imports inside `src/` reference sibling files directly (e.g. `import { horizonClient } from '../horizon/client'` from `account.ts`), never an aggregator.
+There is no `src/index.ts`. The package's public surface is the `exports` map above. Each module file is its own entry point; consumers import from `@mutav-finance/mutav-stellar/<subpath>`. Internal cross-module imports inside `src/` reference sibling files directly (e.g. `import { horizonClient } from '../horizon/client'` from `account.ts`), never an aggregator.
 
 Phase B adds new entries to the `exports` map; it does **not** introduce any aggregator files.
 
@@ -248,7 +248,7 @@ Exposed via `package.json` scripts. Each script reads `STELLAR_NETWORK` from env
 
 - Every CLI command checks env up front and exits with one-line, action-oriented messages ("run `bun run wallet:new`").
 - Horizon errors are surfaced via `extras.result_codes`, not raw stack traces.
-- `fund` rejects mainnet at the API layer, not the CLI layer — so any future caller (sgr-app) gets the same protection.
+- `fund` rejects mainnet at the API layer, not the CLI layer — so any future caller (mutav-app) gets the same protection.
 - No silent fallbacks — friendbot 4xx fails loudly.
 
 ## Security
@@ -260,11 +260,11 @@ Exposed via `package.json` scripts. Each script reads `STELLAR_NETWORK` from env
 
 ## README delta
 
-Add to `sgr-stellar/README.md`:
+Add to `mutav-stellar/README.md`:
 
 > ## Stellar API
 >
-> `@tga-protocol/sgr-stellar` exposes two providers for the Stellar stacks:
+> `@mutav-finance/mutav-stellar` exposes two providers for the Stellar stacks:
 >
 > - **Horizon** (classic accounts, payments, friendbot) — Phase A, available now.
 > - **Soroban** (smart contracts) — Phase B, in development.
@@ -285,7 +285,7 @@ The existing protocol-overview content stays untouched.
 
 ## CLAUDE.md delta
 
-Phase A implementation should update `sgr-stellar/CLAUDE.md` to reflect:
+Phase A implementation should update `mutav-stellar/CLAUDE.md` to reflect:
 
 - **Stack** also includes TypeScript (bun runtime, `@stellar/stellar-sdk`).
 - **Code standards** for TS: defer formatter choice until needed (no Biome/Prettier added in Phase A).

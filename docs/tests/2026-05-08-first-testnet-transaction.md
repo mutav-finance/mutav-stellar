@@ -26,7 +26,7 @@ This is a manual one-shot test — no automation, no fixtures committed.
 Two **disposable, testnet-only** keypairs were generated on the local machine
 via the Stellar CLI's HD-seed generator. Public keys only are recorded here.
 Secrets and the corresponding 24-word seed phrases live exclusively in
-`sgr-stellar/local.env` (gitignored).
+`mutav-stellar/local.env` (gitignored).
 
 These accounts exist solely to validate the developer toolchain. They have no
 relationship to any real user, no association with the protocol's production
@@ -40,7 +40,7 @@ abandoned at any time without notice.
 
 ## Commands
 
-Run from `sgr-stellar/` after `brew install stellar-cli`.
+Run from `mutav-stellar/` after `brew install stellar-cli`.
 
 ```bash
 # 1. Configure the testnet network alias
@@ -136,6 +136,6 @@ explicitly (`--source <SECRET>`) or re-import via
 - The Soroban RPC URL (`https://soroban-testnet.stellar.org`) is required for
   contract operations; for plain payments, Horizon
   (`https://horizon-testnet.stellar.org`) is sufficient.
-- When the TypeScript SDK package (`@tga-protocol/sgr-stellar`, Phase A)
+- When the TypeScript SDK package (`@mutav-finance/mutav-stellar`, Phase A)
   lands, replicate this flow as a programmatic test using
   `@stellar/stellar-sdk` so it can run in CI against testnet on demand.

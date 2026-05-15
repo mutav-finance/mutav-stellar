@@ -11,7 +11,7 @@ If GitHub private reporting is unavailable for any reason, contact the maintaine
 In scope:
 
 - Smart contracts (Phase B, future).
-- The TypeScript API package (Phase A, `@tga-protocol/sgr-stellar`).
+- The TypeScript API package (Phase A, `@mutav-finance/mutav-stellar`).
 
 Out of scope:
 
