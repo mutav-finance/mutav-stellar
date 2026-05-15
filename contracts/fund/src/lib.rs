@@ -284,15 +284,16 @@ impl Fund {
     // ── investor operations ───────────────────────────────────────────────────
 
     /// Investor deposits USDC and receives MUTAV tokens at the current NAV.
+    /// The full deposit is forwarded immediately to the Classic wallet to be
+    /// converted to TESOURO via Etherfuse eYield — the contract retains no USDC.
     pub fn deposit_investor(e: Env, investor: Address, amount_usdc: i128) {
         investor.require_auth();
         assert!(amount_usdc > 0, "amount must be positive");
 
-        token::Client::new(&e, &get_usdc_token(&e)).transfer(
-            &investor,
-            &e.current_contract_address(),
-            &amount_usdc,
-        );
+        let usdc = token::Client::new(&e, &get_usdc_token(&e));
+
+        usdc.transfer(&investor, &e.current_contract_address(), &amount_usdc);
+        usdc.transfer(&e.current_contract_address(), &get_classic_wallet(&e), &amount_usdc);
 
         let aum = get_aum(&e);
         let supply = get_supply(&e);
@@ -516,6 +517,9 @@ impl Fund {
     }
 
     /// Charge the 1%/month management fee. Enforces a 30-day minimum interval.
+    /// Purely accounting — decrements AUM and records the timestamp.
+    /// The actual payment to the protocol wallet is made off-chain by the backend
+    /// from the Classic wallet (all fund value lives as TESOURO, not USDC in this contract).
     pub fn charge_mgmt_fee(e: Env) {
         require_admin(&e);
 
@@ -527,32 +531,22 @@ impl Fund {
         let fee = aum / 100; // 1%
         assert!(fee > 0, "AUM too small to charge fee");
 
-        token::Client::new(&e, &get_usdc_token(&e)).transfer(
-            &e.current_contract_address(),
-            &get_protocol_addr(&e),
-            &fee,
-        );
-
         set_aum(&e, aum - fee);
         set_last_fee_ts(&e, now);
 
         e.events().publish((symbol_short!("mgmt_fee"),), (fee,));
     }
 
-    /// Cover a default when USDC is available in the contract (e.g. from investor deposits).
-    /// For defaults covered via TESOURO off-ramp, use record_offchain_payout instead.
+    /// Record a default payout. Purely accounting — decrements AUM and logs the
+    /// destination address for on-chain audit trail.
+    /// The actual payment to the landlord goes via TESOURO off-ramp from the
+    /// Classic wallet (Stellar Classic tx with MEMO → Etherfuse → PIX).
     pub fn cover_default(e: Env, amount_usdc: i128, destination: Address) {
         require_admin(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         let aum = get_aum(&e);
         assert!(aum >= amount_usdc, "insufficient AUM");
-
-        token::Client::new(&e, &get_usdc_token(&e)).transfer(
-            &e.current_contract_address(),
-            &destination,
-            &amount_usdc,
-        );
 
         set_aum(&e, aum - amount_usdc);
 
@@ -796,6 +790,7 @@ mod tests {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
         let investor = Address::generate(&s.env);
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
 
         usdc_mint(&s, &investor, 100_000_000);
         fund.deposit_investor(&investor, &100_000_000);
@@ -804,6 +799,9 @@ mod tests {
         assert_eq!(fund.aum(), 100_000_000);
         assert_eq!(fund.nav(), 10_000_000); // 1.0
         assert_eq!(fund.balance(&investor), 100_000_000);
+        // Deposit goes to Classic wallet — contract retains no USDC
+        assert_eq!(usdc.balance(&s.classic_wallet), 100_000_000);
+        assert_eq!(usdc.balance(&s.fund_id), 0);
     }
 
     #[test]
@@ -842,12 +840,10 @@ mod tests {
 
         fund.charge_mgmt_fee();
 
+        // 1% of 100 USDC = 1 USDC fee → AUM decreases, supply unchanged → NAV decreases
         assert_eq!(fund.aum(), 99_000_000);
         assert_eq!(fund.total_supply(), 100_000_000);
-        assert_eq!(
-            token::Client::new(&s.env, &s.usdc_id).balance(&s.protocol),
-            1_000_000
-        );
+        // Fee payment is off-chain (Classic wallet → protocol); no USDC moves through contract
     }
 
     #[test]
