@@ -37,9 +37,13 @@ enum DataKey {
     // token accounting (persistent storage — per-address)
     Balance(Address),
     Allowance(AllowanceKey),
+    // two-step admin transfer
+    PendingAdmin,
+    // fulfill window config
+    FulfillWindowSeconds,
     // redemption queue (persistent storage)
     PendingRedemption(Address), // mutav locked, awaiting process_redemptions
-    ReadyRedemption(Address),   // usdc owed after process_redemptions, awaiting fulfill
+    ReadyRedemption(Address),   // ReadyRedemptionData after process_redemptions
     RedemptionQueue,            // Vec<Address> FIFO
 }
 
@@ -55,6 +59,14 @@ struct AllowanceKey {
 struct AllowanceValue {
     amount: i128,
     expiration_ledger: u32,
+}
+
+#[contracttype]
+#[derive(Clone)]
+struct ReadyRedemptionData {
+    usdc_gross: i128,
+    mutav_burned: i128,
+    deadline: u64,
 }
 
 #[contracttype]
@@ -132,6 +144,13 @@ fn get_redemption_fee_bps(e: &Env) -> u32 {
     e.storage()
         .instance()
         .get(&DataKey::RedemptionFeeBps)
+        .expect("not initialized")
+}
+
+fn get_fulfill_window(e: &Env) -> u64 {
+    e.storage()
+        .instance()
+        .get(&DataKey::FulfillWindowSeconds)
         .expect("not initialized")
 }
 
@@ -262,6 +281,10 @@ fn calc_mint(amount_usdc: i128, aum: i128, supply: i128) -> i128 {
     if supply == 0 {
         amount_usdc // first deposit: 1 USDC = 1 MUTAV
     } else {
+        assert!(
+            aum > 0,
+            "fund is insolvent: AUM is zero with non-zero supply"
+        );
         amount_usdc * supply / aum
     }
 }
@@ -280,9 +303,10 @@ pub struct Fund;
 impl Fund {
     /// Deploy and configure the fund. Called once.
     /// - `token_name` / `token_symbol`: e.g. "MTVL", "MTVM", "MTVH"
-    /// - `exit_cap_bps`: weekly exit cap in basis points (250 = 2.5%)
-    /// - `mgmt_fee_bps`: monthly management fee in basis points (100 = 1%)
-    /// - `redemption_fee_bps`: fee charged on each redemption payout (25 = 0.25%)
+    /// - `exit_cap_bps`: weekly exit cap in basis points (250 = 2.5%; max 10_000)
+    /// - `mgmt_fee_bps`: monthly management fee in basis points (100 = 1%; max 1_000)
+    /// - `redemption_fee_bps`: fee on each payout (25 = 0.25%; max 1_000)
+    /// - `fulfill_window_seconds`: seconds the backend has to fulfill before investor can reclaim
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         e: Env,
@@ -295,7 +319,19 @@ impl Fund {
         exit_cap_bps: u32,
         mgmt_fee_bps: u32,
         redemption_fee_bps: u32,
+        fulfill_window_seconds: u64,
     ) {
+        assert!(exit_cap_bps <= 10_000, "exit_cap_bps exceeds 100%");
+        assert!(mgmt_fee_bps <= 1_000, "mgmt_fee_bps exceeds 10%");
+        assert!(
+            redemption_fee_bps <= 1_000,
+            "redemption_fee_bps exceeds 10%"
+        );
+        assert!(
+            fulfill_window_seconds > 0,
+            "fulfill_window_seconds must be positive"
+        );
+
         if e.storage().instance().has(&DataKey::Admin) {
             panic!("already initialized");
         }
@@ -316,6 +352,9 @@ impl Fund {
         e.storage()
             .instance()
             .set(&DataKey::RedemptionFeeBps, &redemption_fee_bps);
+        e.storage()
+            .instance()
+            .set(&DataKey::FulfillWindowSeconds, &fulfill_window_seconds);
         e.storage().instance().set(
             &DataKey::TokenMeta,
             &TokenMeta {
@@ -537,7 +576,15 @@ impl Fund {
                 .remove(&DataKey::PendingRedemption(investor.clone()));
 
             let ready_key = DataKey::ReadyRedemption(investor.clone());
-            e.storage().persistent().set(&ready_key, &usdc_out);
+            let deadline = e.ledger().timestamp() + get_fulfill_window(&e);
+            e.storage().persistent().set(
+                &ready_key,
+                &ReadyRedemptionData {
+                    usdc_gross: usdc_out,
+                    mutav_burned: mutav,
+                    deadline,
+                },
+            );
             e.storage()
                 .persistent()
                 .extend_ttl(&ready_key, 518_400, 518_400);
@@ -579,11 +626,12 @@ impl Fund {
         require_admin(&e);
 
         let key = DataKey::ReadyRedemption(investor.clone());
-        let gross: i128 = e
+        let data: ReadyRedemptionData = e
             .storage()
             .persistent()
             .get(&key)
             .expect("no ready redemption");
+        let gross = data.usdc_gross;
         assert!(gross > 0, "nothing to fulfill");
 
         let fee = gross * get_redemption_fee_bps(&e) as i128 / 10_000;
@@ -602,6 +650,36 @@ impl Fund {
         e.events().publish(
             (symbol_short!("fulfill"), investor.clone()),
             (investor_amount, fee),
+        );
+    }
+
+    /// If the backend fails to call fulfill_redemption before the deadline,
+    /// the investor can reclaim: their MUTAV is restored and AUM is credited back.
+    pub fn reclaim_expired_redemption(e: Env, investor: Address) {
+        investor.require_auth();
+
+        let key = DataKey::ReadyRedemption(investor.clone());
+        let data: ReadyRedemptionData = e
+            .storage()
+            .persistent()
+            .get(&key)
+            .expect("no ready redemption");
+
+        assert!(
+            e.ledger().timestamp() > data.deadline,
+            "fulfill window has not expired yet"
+        );
+
+        // Restore MUTAV to investor and credit AUM back
+        write_balance(&e, &investor, balance_of(&e, &investor) + data.mutav_burned);
+        set_supply(&e, get_supply(&e) + data.mutav_burned);
+        set_aum(&e, get_aum(&e) + data.usdc_gross);
+
+        e.storage().persistent().remove(&key);
+
+        e.events().publish(
+            (symbol_short!("reclaim"), investor.clone()),
+            (data.mutav_burned, data.usdc_gross),
         );
     }
 
@@ -705,9 +783,25 @@ impl Fund {
         e.storage().instance().set(&DataKey::ClassicWallet, &wallet);
     }
 
-    pub fn set_admin(e: Env, new_admin: Address) {
+    /// Step 1: current admin nominates a new admin address.
+    pub fn propose_admin(e: Env, new_admin: Address) {
         require_admin(&e);
-        e.storage().instance().set(&DataKey::Admin, &new_admin);
+        e.storage()
+            .instance()
+            .set(&DataKey::PendingAdmin, &new_admin);
+    }
+
+    /// Step 2: nominated address must call this to complete the transfer.
+    /// Prevents typos from locking out the contract permanently.
+    pub fn accept_admin(e: Env) {
+        let pending: Address = e
+            .storage()
+            .instance()
+            .get(&DataKey::PendingAdmin)
+            .expect("no pending admin");
+        pending.require_auth();
+        e.storage().instance().set(&DataKey::Admin, &pending);
+        e.storage().instance().remove(&DataKey::PendingAdmin);
     }
 
     // ── views ─────────────────────────────────────────────────────────────────
@@ -737,7 +831,8 @@ impl Fund {
     pub fn ready_redemption(e: Env, investor: Address) -> i128 {
         e.storage()
             .persistent()
-            .get(&DataKey::ReadyRedemption(investor))
+            .get::<_, ReadyRedemptionData>(&DataKey::ReadyRedemption(investor))
+            .map(|d| d.usdc_gross)
             .unwrap_or(0)
     }
 
@@ -758,9 +853,16 @@ impl Fund {
     }
 
     /// How much USDC can still exit this week before the exit cap is hit.
+    /// Accounts for epoch rollover so the value is always fresh.
     pub fn weekly_exit_available(e: Env) -> i128 {
+        let current_epoch = e.ledger().timestamp() / WEEK_SECONDS;
+        let exit_used = if current_epoch > get_weekly_epoch(&e) {
+            0i128 // new epoch — cap fully resets
+        } else {
+            get_weekly_exit_used(&e)
+        };
         let cap = get_aum(&e) * get_exit_cap_bps(&e) as i128 / 10_000;
-        let remaining = cap - get_weekly_exit_used(&e);
+        let remaining = cap - exit_used;
         if remaining < 0 {
             0
         } else {
@@ -927,6 +1029,7 @@ mod tests {
             &250u32,
             &100u32,
             &25u32,
+            &604_800u64, // 7 days
         );
 
         Setup {
@@ -1218,5 +1321,94 @@ mod tests {
         // alice's 10M MUTAV at current NAV should fit the new cap
         assert!(total_week2 > 0);
         assert_eq!(fund.pending_redemption(&alice), 0);
+    }
+
+    #[test]
+    fn reclaim_restores_position_after_deadline() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+        fund.process_redemptions();
+
+        assert_eq!(fund.ready_redemption(&investor), 1_000_000);
+        assert_eq!(fund.balance(&investor), 99_000_000);
+        assert_eq!(fund.aum(), 99_000_000); // 1M USDC removed from AUM
+
+        // Backend never fulfills — advance past the 7-day window
+        s.env.ledger().with_mut(|l| l.timestamp = 604_801);
+        fund.reclaim_expired_redemption(&investor);
+
+        // MUTAV and AUM fully restored
+        assert_eq!(fund.balance(&investor), 100_000_000);
+        assert_eq!(fund.aum(), 100_000_000);
+        assert_eq!(fund.total_supply(), 100_000_000);
+        assert_eq!(fund.ready_redemption(&investor), 0);
+    }
+
+    #[test]
+    fn propose_and_accept_admin() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let new_admin = Address::generate(&s.env);
+
+        fund.propose_admin(&new_admin);
+        fund.accept_admin();
+
+        // New admin can call admin-only function
+        usdc_mint(&s, &new_admin, 10_000_000);
+        fund.add_yield(&10_000_000); // would panic if auth not accepted
+    }
+
+    #[test]
+    #[should_panic(expected = "mgmt_fee_bps exceeds 10%")]
+    fn initialize_rejects_mgmt_fee_above_max() {
+        let e = Env::default();
+        e.mock_all_auths();
+        let admin = Address::generate(&e);
+        let protocol = Address::generate(&e);
+        let usdc_id = e
+            .register_stellar_asset_contract_v2(admin.clone())
+            .address();
+        let fund_id = e.register(Fund, ());
+        FundClient::new(&e, &fund_id).initialize(
+            &admin,
+            &protocol,
+            &usdc_id,
+            &Address::generate(&e),
+            &String::from_str(&e, "MUTAV"),
+            &String::from_str(&e, "MUTAV"),
+            &250u32,
+            &2_000u32, // > 1_000 — must panic
+            &25u32,
+            &604_800u64,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "exit_cap_bps exceeds 100%")]
+    fn initialize_rejects_exit_cap_above_max() {
+        let e = Env::default();
+        e.mock_all_auths();
+        let admin = Address::generate(&e);
+        let usdc_id = e
+            .register_stellar_asset_contract_v2(admin.clone())
+            .address();
+        let fund_id = e.register(Fund, ());
+        FundClient::new(&e, &fund_id).initialize(
+            &admin,
+            &Address::generate(&e),
+            &usdc_id,
+            &Address::generate(&e),
+            &String::from_str(&e, "MUTAV"),
+            &String::from_str(&e, "MUTAV"),
+            &10_001u32, // > 10_000 — must panic
+            &100u32,
+            &25u32,
+            &604_800u64,
+        );
     }
 }
