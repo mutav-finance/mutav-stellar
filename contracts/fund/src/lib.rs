@@ -1,5 +1,6 @@
 #![no_std]
 #![allow(deprecated)] // events().publish() is deprecated in favour of #[contractevent]; migrate later
+#![allow(clippy::too_many_arguments)] // initialize takes many config params; acceptable for Soroban contracts
 
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short,
@@ -9,10 +10,7 @@ use soroban_sdk::{
 
 // 30 days in seconds — minimum interval between management fee charges
 const MIN_FEE_INTERVAL: u64 = 30 * 24 * 60 * 60;
-// Weekly exit cap: 2.5% of AUM per week
 const WEEK_SECONDS: u64 = 7 * 24 * 60 * 60;
-const EXIT_CAP_NUM: i128 = 25;
-const EXIT_CAP_DEN: i128 = 1000;
 
 // ── storage keys ──────────────────────────────────────────────────────────────
 
@@ -27,6 +25,10 @@ enum DataKey {
     Aum,
     TotalSupply,
     LastFeeTimestamp,
+    // fund config (instance storage — set at initialize, read-only after)
+    ExitCapBps,
+    MgmtFeeBps,
+    RedemptionFeeBps,
     // weekly exit cap (instance storage)
     WeeklyEpoch,
     WeeklyExitUsed,
@@ -109,6 +111,27 @@ fn get_classic_wallet(e: &Env) -> Address {
     e.storage()
         .instance()
         .get(&DataKey::ClassicWallet)
+        .expect("not initialized")
+}
+
+fn get_exit_cap_bps(e: &Env) -> u32 {
+    e.storage()
+        .instance()
+        .get(&DataKey::ExitCapBps)
+        .expect("not initialized")
+}
+
+fn get_mgmt_fee_bps(e: &Env) -> u32 {
+    e.storage()
+        .instance()
+        .get(&DataKey::MgmtFeeBps)
+        .expect("not initialized")
+}
+
+fn get_redemption_fee_bps(e: &Env) -> u32 {
+    e.storage()
+        .instance()
+        .get(&DataKey::RedemptionFeeBps)
         .expect("not initialized")
 }
 
@@ -253,14 +276,25 @@ fn calc_redeem(mutav_amount: i128, aum: i128, supply: i128) -> i128 {
 pub struct Fund;
 
 #[contractimpl]
+#[allow(clippy::too_many_arguments)]
 impl Fund {
     /// Deploy and configure the fund. Called once.
+    /// - `token_name` / `token_symbol`: e.g. "MTVL", "MTVM", "MTVH"
+    /// - `exit_cap_bps`: weekly exit cap in basis points (250 = 2.5%)
+    /// - `mgmt_fee_bps`: monthly management fee in basis points (100 = 1%)
+    /// - `redemption_fee_bps`: fee charged on each redemption payout (25 = 0.25%)
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         e: Env,
         admin: Address,
         protocol_addr: Address,
         usdc_token: Address,
         classic_wallet: Address,
+        token_name: String,
+        token_symbol: String,
+        exit_cap_bps: u32,
+        mgmt_fee_bps: u32,
+        redemption_fee_bps: u32,
     ) {
         if e.storage().instance().has(&DataKey::Admin) {
             panic!("already initialized");
@@ -273,12 +307,21 @@ impl Fund {
         e.storage()
             .instance()
             .set(&DataKey::ClassicWallet, &classic_wallet);
+        e.storage()
+            .instance()
+            .set(&DataKey::ExitCapBps, &exit_cap_bps);
+        e.storage()
+            .instance()
+            .set(&DataKey::MgmtFeeBps, &mgmt_fee_bps);
+        e.storage()
+            .instance()
+            .set(&DataKey::RedemptionFeeBps, &redemption_fee_bps);
         e.storage().instance().set(
             &DataKey::TokenMeta,
             &TokenMeta {
                 decimal: 7,
-                name: String::from_str(&e, "MUTAV"),
-                symbol: String::from_str(&e, "MUTAV"),
+                name: token_name,
+                symbol: token_symbol,
             },
         );
     }
@@ -453,7 +496,7 @@ impl Fund {
             return 0;
         }
 
-        let cap = aum * EXIT_CAP_NUM / EXIT_CAP_DEN;
+        let cap = aum * get_exit_cap_bps(&e) as i128 / 10_000;
         let already_used = get_weekly_exit_used(&e);
         let mut available = cap - already_used;
 
@@ -530,27 +573,36 @@ impl Fund {
 
     /// Pay out a processed investor. The backend must have deposited the USDC
     /// returned by process_redemptions into the contract before calling this.
+    /// Deducts the redemption fee (redemption_fee_bps) and forwards it to the
+    /// protocol wallet; the remainder goes to the investor.
     pub fn fulfill_redemption(e: Env, investor: Address) {
         require_admin(&e);
 
         let key = DataKey::ReadyRedemption(investor.clone());
-        let usdc_out: i128 = e
+        let gross: i128 = e
             .storage()
             .persistent()
             .get(&key)
             .expect("no ready redemption");
-        assert!(usdc_out > 0, "nothing to fulfill");
+        assert!(gross > 0, "nothing to fulfill");
 
-        token::Client::new(&e, &get_usdc_token(&e)).transfer(
-            &e.current_contract_address(),
-            &investor,
-            &usdc_out,
-        );
+        let fee = gross * get_redemption_fee_bps(&e) as i128 / 10_000;
+        let investor_amount = gross - fee;
+
+        let usdc = token::Client::new(&e, &get_usdc_token(&e));
+
+        usdc.transfer(&e.current_contract_address(), &investor, &investor_amount);
+
+        if fee > 0 {
+            usdc.transfer(&e.current_contract_address(), get_protocol_addr(&e), &fee);
+        }
 
         e.storage().persistent().remove(&key);
 
-        e.events()
-            .publish((symbol_short!("fulfill"), investor.clone()), (usdc_out,));
+        e.events().publish(
+            (symbol_short!("fulfill"), investor.clone()),
+            (investor_amount, fee),
+        );
     }
 
     // ── admin fund operations ─────────────────────────────────────────────────
@@ -589,7 +641,7 @@ impl Fund {
         );
 
         let aum = get_aum(&e);
-        let fee = aum / 100; // 1%
+        let fee = aum * get_mgmt_fee_bps(&e) as i128 / 10_000;
         assert!(fee > 0, "AUM too small to charge fee");
 
         set_aum(&e, aum - fee);
@@ -693,9 +745,21 @@ impl Fund {
         get_redemption_queue(&e).len()
     }
 
-    /// How much USDC can still exit this week before the 2.5% cap is hit.
+    pub fn exit_cap_bps(e: Env) -> u32 {
+        get_exit_cap_bps(&e)
+    }
+
+    pub fn mgmt_fee_bps(e: Env) -> u32 {
+        get_mgmt_fee_bps(&e)
+    }
+
+    pub fn redemption_fee_bps(e: Env) -> u32 {
+        get_redemption_fee_bps(&e)
+    }
+
+    /// How much USDC can still exit this week before the exit cap is hit.
     pub fn weekly_exit_available(e: Env) -> i128 {
-        let cap = get_aum(&e) * EXIT_CAP_NUM / EXIT_CAP_DEN;
+        let cap = get_aum(&e) * get_exit_cap_bps(&e) as i128 / 10_000;
         let remaining = cap - get_weekly_exit_used(&e);
         if remaining < 0 {
             0
@@ -853,7 +917,17 @@ mod tests {
             .address();
         let fund_id = e.register(Fund, ());
 
-        FundClient::new(&e, &fund_id).initialize(&admin, &protocol, &usdc_id, &classic_wallet);
+        FundClient::new(&e, &fund_id).initialize(
+            &admin,
+            &protocol,
+            &usdc_id,
+            &classic_wallet,
+            &String::from_str(&e, "MUTAV"),
+            &String::from_str(&e, "MUTAV"),
+            &250u32,
+            &100u32,
+            &25u32,
+        );
 
         Setup {
             env: e,
@@ -1015,14 +1089,14 @@ mod tests {
         assert_eq!(fund.ready_redemption(&investor), 2_000_000);
         assert_eq!(fund.queue_len(), 0);
 
-        // Backend deposits 2M USDC from off-ramp and fulfills
+        // Backend deposits 2M USDC from off-ramp and fulfills.
+        // 0.25% fee on 2M = 5_000 → investor gets 1_995_000, protocol gets 5_000.
         usdc_mint(&s, &s.fund_id, 2_000_000);
         fund.fulfill_redemption(&investor);
 
-        assert_eq!(
-            token::Client::new(&s.env, &s.usdc_id).balance(&investor),
-            2_000_000
-        );
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
+        assert_eq!(usdc.balance(&investor), 1_995_000);
+        assert_eq!(usdc.balance(&s.protocol), 5_000);
         assert_eq!(fund.ready_redemption(&investor), 0);
     }
 
@@ -1070,6 +1144,31 @@ mod tests {
         assert_eq!(fund.balance(&investor), 100_000_000);
         assert_eq!(fund.pending_redemption(&investor), 0);
         assert_eq!(fund.queue_len(), 0);
+    }
+
+    #[test]
+    fn redemption_fee_goes_to_protocol() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
+
+        // Deposit 100 USDC → 100M MUTAV at NAV=1.0
+        // Cap = 2.5% of 100M = 2_500_000 USDC/week
+        // Request 1_000_000 MUTAV = 1 USDC → fits cap
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+
+        let gross = fund.process_redemptions();
+        assert_eq!(gross, 1_000_000);
+
+        // fee = 1_000_000 * 25 / 10_000 = 2_500 (0.25%)
+        usdc_mint(&s, &s.fund_id, gross);
+        fund.fulfill_redemption(&investor);
+
+        assert_eq!(usdc.balance(&investor), 997_500); // gross - fee
+        assert_eq!(usdc.balance(&s.protocol), 2_500); // fee
     }
 
     #[test]
