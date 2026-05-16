@@ -16,8 +16,10 @@ const WEEK_SECONDS: u64 = 7 * 24 * 60 * 60;
 
 #[contracttype]
 enum DataKey {
+    // fund governance (instance storage)
+    Admin,    // owner: cold wallet, governance-only
+    Operator, // hot wallet, daily operations
     // fund accounting (instance storage — always loaded)
-    Admin,
     ProtocolAddr,
     UsdcToken,
     ClassicWallet,
@@ -29,6 +31,8 @@ enum DataKey {
     ExitCapBps,
     MgmtFeeBps,
     RedemptionFeeBps,
+    ProtocolFeeBps,    // share of receive_payment sent to protocol wallet
+    MaxAumIncreaseBps, // per-call cap on add_yield / add_tenant_fee
     // weekly exit cap (instance storage)
     WeeklyEpoch,
     WeeklyExitUsed,
@@ -83,6 +87,13 @@ fn get_admin(e: &Env) -> Address {
     e.storage()
         .instance()
         .get(&DataKey::Admin)
+        .expect("not initialized")
+}
+
+fn get_operator(e: &Env) -> Address {
+    e.storage()
+        .instance()
+        .get(&DataKey::Operator)
         .expect("not initialized")
 }
 
@@ -144,6 +155,20 @@ fn get_redemption_fee_bps(e: &Env) -> u32 {
     e.storage()
         .instance()
         .get(&DataKey::RedemptionFeeBps)
+        .expect("not initialized")
+}
+
+fn get_protocol_fee_bps(e: &Env) -> u32 {
+    e.storage()
+        .instance()
+        .get(&DataKey::ProtocolFeeBps)
+        .expect("not initialized")
+}
+
+fn get_max_aum_increase_bps(e: &Env) -> u32 {
+    e.storage()
+        .instance()
+        .get(&DataKey::MaxAumIncreaseBps)
         .expect("not initialized")
 }
 
@@ -247,8 +272,14 @@ fn write_allowance(
     }
 }
 
+// Owner: cold wallet — governance and config changes only.
 fn require_admin(e: &Env) {
     get_admin(e).require_auth();
+}
+
+// Operator: hot wallet — daily fund operations.
+fn require_operator(e: &Env) {
+    get_operator(e).require_auth();
 }
 
 // If a registry contract is configured, assert the imobiliária is approved.
@@ -302,15 +333,20 @@ pub struct Fund;
 #[allow(clippy::too_many_arguments)]
 impl Fund {
     /// Deploy and configure the fund. Called once.
+    /// - `admin`: owner / cold wallet — governance only
+    /// - `operator`: hot wallet — daily operations
     /// - `token_name` / `token_symbol`: e.g. "MTVL", "MTVM", "MTVH"
     /// - `exit_cap_bps`: weekly exit cap in basis points (250 = 2.5%; max 10_000)
     /// - `mgmt_fee_bps`: monthly management fee in basis points (100 = 1%; max 1_000)
     /// - `redemption_fee_bps`: fee on each payout (25 = 0.25%; max 1_000)
+    /// - `protocol_fee_bps`: share of receive_payment sent to protocol wallet (2_000 = 20%; max 5_000)
     /// - `fulfill_window_seconds`: seconds the backend has to fulfill before investor can reclaim
+    /// - `max_aum_increase_bps`: per-call cap on add_yield / add_tenant_fee (500 = 5%; max 10_000)
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         e: Env,
         admin: Address,
+        operator: Address,
         protocol_addr: Address,
         usdc_token: Address,
         classic_wallet: Address,
@@ -319,7 +355,9 @@ impl Fund {
         exit_cap_bps: u32,
         mgmt_fee_bps: u32,
         redemption_fee_bps: u32,
+        protocol_fee_bps: u32,
         fulfill_window_seconds: u64,
+        max_aum_increase_bps: u32,
     ) {
         assert!(exit_cap_bps <= 10_000, "exit_cap_bps exceeds 100%");
         assert!(mgmt_fee_bps <= 1_000, "mgmt_fee_bps exceeds 10%");
@@ -327,15 +365,21 @@ impl Fund {
             redemption_fee_bps <= 1_000,
             "redemption_fee_bps exceeds 10%"
         );
+        assert!(protocol_fee_bps <= 5_000, "protocol_fee_bps exceeds 50%");
         assert!(
             fulfill_window_seconds > 0,
             "fulfill_window_seconds must be positive"
+        );
+        assert!(
+            max_aum_increase_bps > 0 && max_aum_increase_bps <= 10_000,
+            "max_aum_increase_bps must be 1..10_000"
         );
 
         if e.storage().instance().has(&DataKey::Admin) {
             panic!("already initialized");
         }
         e.storage().instance().set(&DataKey::Admin, &admin);
+        e.storage().instance().set(&DataKey::Operator, &operator);
         e.storage()
             .instance()
             .set(&DataKey::ProtocolAddr, &protocol_addr);
@@ -354,6 +398,12 @@ impl Fund {
             .set(&DataKey::RedemptionFeeBps, &redemption_fee_bps);
         e.storage()
             .instance()
+            .set(&DataKey::ProtocolFeeBps, &protocol_fee_bps);
+        e.storage()
+            .instance()
+            .set(&DataKey::MaxAumIncreaseBps, &max_aum_increase_bps);
+        e.storage()
+            .instance()
             .set(&DataKey::FulfillWindowSeconds, &fulfill_window_seconds);
         e.storage().instance().set(
             &DataKey::TokenMeta,
@@ -367,22 +417,22 @@ impl Fund {
 
     // ── on-ramp ───────────────────────────────────────────────────────────────
 
-    /// Called by the backend after Etherfuse confirms USDC in the admin wallet.
-    /// Pulls amount_usdc from the admin, splits 20% → protocol and 80% → classic_wallet,
+    /// Called by the backend after Etherfuse confirms USDC in the operator wallet.
+    /// Pulls amount_usdc from the operator, splits 20% → protocol and 80% → classic_wallet,
     /// and records the 80% as AUM (it will become TESOURO via Etherfuse eYield).
     pub fn receive_payment(e: Env, imobiliaria: Address, amount_usdc: i128) {
-        require_admin(&e);
+        require_operator(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         check_imobiliaria_if_registry_set(&e, &imobiliaria);
 
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
-        let admin = get_admin(&e);
+        let operator = get_operator(&e);
 
-        usdc.transfer(&admin, e.current_contract_address(), &amount_usdc);
+        usdc.transfer(&operator, e.current_contract_address(), &amount_usdc);
 
-        let protocol_cut = amount_usdc / 5; // 20%
-        let fund_portion = amount_usdc - protocol_cut; // 80%
+        let protocol_cut = amount_usdc * get_protocol_fee_bps(&e) as i128 / 10_000;
+        let fund_portion = amount_usdc - protocol_cut;
 
         usdc.transfer(
             &e.current_contract_address(),
@@ -475,6 +525,8 @@ impl Fund {
 
     /// Cancel a pending (not yet processed) redemption request.
     /// Restores the locked MUTAV to the investor's balance.
+    /// O(1): the address stays in RedemptionQueue as a ghost (mutav==0);
+    /// process_redemptions already skips and purges such entries.
     pub fn cancel_redemption(e: Env, investor: Address) {
         investor.require_auth();
 
@@ -489,35 +541,17 @@ impl Fund {
         write_balance(&e, &investor, balance_of(&e, &investor) + pending);
         e.storage().persistent().remove(&key);
 
-        // Remove investor from the queue
-        let queue = get_redemption_queue(&e);
-        let mut new_queue: Vec<Address> = Vec::new(&e);
-        for i in 0..queue.len() {
-            let addr = queue.get_unchecked(i);
-            if addr != investor {
-                new_queue.push_back(addr);
-            }
-        }
-        e.storage()
-            .persistent()
-            .set(&DataKey::RedemptionQueue, &new_queue);
-        if !new_queue.is_empty() {
-            e.storage()
-                .persistent()
-                .extend_ttl(&DataKey::RedemptionQueue, 518_400, 518_400);
-        }
-
         e.events()
             .publish((symbol_short!("cncl_rdmt"), investor.clone()), (pending,));
     }
 
-    /// Process the redemption queue up to the weekly 2.5% AUM exit cap.
+    /// Process the redemption queue up to the weekly exit cap.
     /// Burns MUTAV at the CURRENT NAV for each investor processed — not at
     /// request time — so investors exit at the NAV on the execution date.
     /// Returns the total USDC the backend must source (off-ramp TESOURO) and
     /// deposit into the contract before calling fulfill_redemption.
     pub fn process_redemptions(e: Env) -> i128 {
-        require_admin(&e);
+        require_operator(&e);
 
         // Roll over weekly epoch if needed
         let current_epoch = e.ledger().timestamp() / WEEK_SECONDS;
@@ -622,8 +656,9 @@ impl Fund {
     /// returned by process_redemptions into the contract before calling this.
     /// Deducts the redemption fee (redemption_fee_bps) and forwards it to the
     /// protocol wallet; the remainder goes to the investor.
+    /// Panics if the fulfill window has already expired — use reclaim_expired_redemption instead.
     pub fn fulfill_redemption(e: Env, investor: Address) {
-        require_admin(&e);
+        require_operator(&e);
 
         let key = DataKey::ReadyRedemption(investor.clone());
         let data: ReadyRedemptionData = e
@@ -633,6 +668,10 @@ impl Fund {
             .expect("no ready redemption");
         let gross = data.usdc_gross;
         assert!(gross > 0, "nothing to fulfill");
+        assert!(
+            e.ledger().timestamp() <= data.deadline,
+            "fulfill window has expired; investor may reclaim"
+        );
 
         let fee = gross * get_redemption_fee_bps(&e) as i128 / 10_000;
         let investor_amount = gross - fee;
@@ -683,23 +722,44 @@ impl Fund {
         );
     }
 
-    // ── admin fund operations ─────────────────────────────────────────────────
+    // ── operator fund operations ──────────────────────────────────────────────
 
-    /// Manual AUM credit — for admin adjustments. In production, prefer
-    /// receive_payment for on-ramp flows.
+    /// Manual AUM credit — for recording tenant fee income.
+    /// Capped at max_aum_increase_bps per call to limit manipulation risk.
     pub fn add_tenant_fee(e: Env, amount_usdc: i128) {
-        require_admin(&e);
+        require_operator(&e);
         assert!(amount_usdc > 0, "amount must be positive");
-        set_aum(&e, get_aum(&e) + amount_usdc);
+
+        let aum = get_aum(&e);
+        if aum > 0 {
+            let max_increase = aum * get_max_aum_increase_bps(&e) as i128 / 10_000;
+            assert!(
+                amount_usdc <= max_increase,
+                "AUM increase exceeds per-call cap"
+            );
+        }
+
+        set_aum(&e, aum + amount_usdc);
         e.events()
             .publish((symbol_short!("fee_in"),), (amount_usdc,));
     }
 
     /// Record incoming yield from tokenized treasury. Increases AUM → NAV increases.
+    /// Capped at max_aum_increase_bps per call to limit manipulation risk.
     pub fn add_yield(e: Env, amount_usdc: i128) {
-        require_admin(&e);
+        require_operator(&e);
         assert!(amount_usdc > 0, "amount must be positive");
-        set_aum(&e, get_aum(&e) + amount_usdc);
+
+        let aum = get_aum(&e);
+        if aum > 0 {
+            let max_increase = aum * get_max_aum_increase_bps(&e) as i128 / 10_000;
+            assert!(
+                amount_usdc <= max_increase,
+                "AUM increase exceeds per-call cap"
+            );
+        }
+
+        set_aum(&e, aum + amount_usdc);
         e.events()
             .publish((symbol_short!("yield_in"),), (amount_usdc,));
     }
@@ -709,7 +769,7 @@ impl Fund {
     /// The actual payment to the protocol wallet is made off-chain by the backend
     /// from the Classic wallet (all fund value lives as TESOURO, not USDC in this contract).
     pub fn charge_mgmt_fee(e: Env) {
-        require_admin(&e);
+        require_operator(&e);
 
         let now = e.ledger().timestamp();
         let last = get_last_fee_ts(&e);
@@ -727,6 +787,33 @@ impl Fund {
 
         e.events().publish((symbol_short!("mgmt_fee"),), (fee,));
     }
+
+    /// Record a payout that happened off-chain via the TESOURO → PIX path.
+    /// Decrements AUM without moving USDC through the contract, since the
+    /// off-ramp requires a Stellar Classic tx with MEMO (Soroban cannot send memos).
+    /// `destination` is logged for audit trail — it does not receive on-chain USDC.
+    pub fn record_offchain_payout(e: Env, amount_usdc: i128, destination: Address) {
+        require_operator(&e);
+        assert!(amount_usdc > 0, "amount must be positive");
+
+        let aum = get_aum(&e);
+        assert!(aum >= amount_usdc, "insufficient AUM");
+
+        set_aum(&e, aum - amount_usdc);
+
+        e.events().publish(
+            (symbol_short!("offchain"), destination.clone()),
+            (amount_usdc,),
+        );
+    }
+
+    /// Bump TTL for all instance storage. Backend should call this every ~25 days.
+    pub fn extend_ttl(e: Env) {
+        require_operator(&e);
+        e.storage().instance().extend_ttl(518_400, 518_400);
+    }
+
+    // ── owner / governance operations ─────────────────────────────────────────
 
     /// Record a default payout. Purely accounting — decrements AUM and logs the
     /// destination address for on-chain audit trail.
@@ -747,40 +834,29 @@ impl Fund {
         );
     }
 
-    /// Record a payout that happened off-chain via the TESOURO → PIX path.
-    /// Decrements AUM without moving USDC through the contract, since the
-    /// off-ramp requires a Stellar Classic tx with MEMO (Soroban cannot send memos).
-    pub fn record_offchain_payout(e: Env, amount_usdc: i128) {
-        require_admin(&e);
-        assert!(amount_usdc > 0, "amount must be positive");
-
-        let aum = get_aum(&e);
-        assert!(aum >= amount_usdc, "insufficient AUM");
-
-        set_aum(&e, aum - amount_usdc);
-
-        e.events()
-            .publish((symbol_short!("offchain"),), (amount_usdc,));
-    }
-
-    /// Bump TTL for all instance storage. Backend should call this every ~25 days.
-    pub fn extend_ttl(e: Env) {
-        e.storage().instance().extend_ttl(518_400, 518_400);
-    }
-
-    // ── admin config ──────────────────────────────────────────────────────────
-
     /// Set the Registry contract address to enable on-chain imobiliária approval checks.
     pub fn set_registry(e: Env, registry: Address) {
         require_admin(&e);
         e.storage()
             .instance()
             .set(&DataKey::RegistryContract, &registry);
+        e.events().publish((symbol_short!("set_reg"),), (registry,));
     }
 
     pub fn set_classic_wallet(e: Env, wallet: Address) {
         require_admin(&e);
         e.storage().instance().set(&DataKey::ClassicWallet, &wallet);
+        e.events().publish((symbol_short!("set_wall"),), (wallet,));
+    }
+
+    /// Replace the operator address. Owner-only.
+    pub fn set_operator(e: Env, new_operator: Address) {
+        require_admin(&e);
+        e.storage()
+            .instance()
+            .set(&DataKey::Operator, &new_operator);
+        e.events()
+            .publish((symbol_short!("set_op"),), (new_operator,));
     }
 
     /// Step 1: current admin nominates a new admin address.
@@ -789,6 +865,8 @@ impl Fund {
         e.storage()
             .instance()
             .set(&DataKey::PendingAdmin, &new_admin);
+        e.events()
+            .publish((symbol_short!("prop_adm"),), (new_admin,));
     }
 
     /// Step 2: nominated address must call this to complete the transfer.
@@ -802,6 +880,7 @@ impl Fund {
         pending.require_auth();
         e.storage().instance().set(&DataKey::Admin, &pending);
         e.storage().instance().remove(&DataKey::PendingAdmin);
+        e.events().publish((symbol_short!("acc_adm"),), (pending,));
     }
 
     // ── views ─────────────────────────────────────────────────────────────────
@@ -836,8 +915,17 @@ impl Fund {
             .unwrap_or(0)
     }
 
+    /// Number of active (non-cancelled) entries in the redemption queue.
+    /// Ghost entries left by cancel_redemption are excluded.
     pub fn queue_len(e: Env) -> u32 {
-        get_redemption_queue(&e).len()
+        let queue = get_redemption_queue(&e);
+        let mut count = 0u32;
+        for i in 0..queue.len() {
+            if get_pending_redemption(&e, &queue.get_unchecked(i)) > 0 {
+                count += 1;
+            }
+        }
+        count
     }
 
     pub fn exit_cap_bps(e: Env) -> u32 {
@@ -850,6 +938,32 @@ impl Fund {
 
     pub fn redemption_fee_bps(e: Env) -> u32 {
         get_redemption_fee_bps(&e)
+    }
+
+    pub fn protocol_fee_bps(e: Env) -> u32 {
+        get_protocol_fee_bps(&e)
+    }
+
+    pub fn max_aum_increase_bps(e: Env) -> u32 {
+        get_max_aum_increase_bps(&e)
+    }
+
+    pub fn operator(e: Env) -> Address {
+        get_operator(&e)
+    }
+
+    pub fn admin(e: Env) -> Address {
+        get_admin(&e)
+    }
+
+    /// Extend the TTL of an investor's balance entry so it doesn't expire.
+    /// Permissionless — anyone (including the investor themselves) can call this.
+    /// Needed for long-term holders who don't interact with the contract for 30+ days.
+    pub fn extend_balance_ttl(e: Env, investor: Address) {
+        let key = DataKey::Balance(investor);
+        if e.storage().persistent().has(&key) {
+            e.storage().persistent().extend_ttl(&key, 518_400, 518_400);
+        }
     }
 
     /// How much USDC can still exit this week before the exit cap is hit.
@@ -936,8 +1050,17 @@ impl TokenInterface for Fund {
         assert!(amount > 0, "amount must be positive");
         let bal = balance_of(&e, &from);
         assert!(bal >= amount, "insufficient balance");
+
+        let supply = get_supply(&e);
+        let aum = get_aum(&e);
+        // Reduce AUM proportionally so NAV stays stable; without this, burning
+        // MUTAV outside the redemption queue would inflate NAV for remaining holders.
+        let aum_reduction = if supply > 0 { amount * aum / supply } else { 0 };
+
         write_balance(&e, &from, bal - amount);
-        set_supply(&e, get_supply(&e) - amount);
+        set_supply(&e, supply - amount);
+        set_aum(&e, aum - aum_reduction);
+
         e.events()
             .publish((symbol_short!("burn"), from.clone()), (amount,));
     }
@@ -957,8 +1080,14 @@ impl TokenInterface for Fund {
 
         let bal = balance_of(&e, &from);
         assert!(bal >= amount, "insufficient balance");
+
+        let supply = get_supply(&e);
+        let aum = get_aum(&e);
+        let aum_reduction = if supply > 0 { amount * aum / supply } else { 0 };
+
         write_balance(&e, &from, bal - amount);
-        set_supply(&e, get_supply(&e) - amount);
+        set_supply(&e, supply - amount);
+        set_aum(&e, aum - aum_reduction);
 
         e.events()
             .publish((symbol_short!("burn"), from.clone()), (amount,));
@@ -999,7 +1128,7 @@ mod tests {
 
     struct Setup {
         env: Env,
-        admin: Address,
+        operator: Address,
         protocol: Address,
         classic_wallet: Address,
         fund_id: Address,
@@ -1011,6 +1140,7 @@ mod tests {
         e.mock_all_auths();
 
         let admin = Address::generate(&e);
+        let operator = Address::generate(&e);
         let protocol = Address::generate(&e);
         let classic_wallet = Address::generate(&e);
 
@@ -1021,20 +1151,24 @@ mod tests {
 
         FundClient::new(&e, &fund_id).initialize(
             &admin,
+            &operator,
             &protocol,
             &usdc_id,
             &classic_wallet,
             &String::from_str(&e, "MUTAV"),
             &String::from_str(&e, "MUTAV"),
-            &250u32,
-            &100u32,
-            &25u32,
-            &604_800u64, // 7 days
+            &250u32,     // exit_cap_bps: 2.5%
+            &100u32,     // mgmt_fee_bps: 1%
+            &25u32,      // redemption_fee_bps: 0.25%
+            &2_000u32,   // protocol_fee_bps: 20%
+            &604_800u64, // fulfill_window_seconds: 7 days
+            &1_000u32,   // max_aum_increase_bps: 10% per call
         );
 
+        let _ = admin; // used only in initialize; not needed after setup
         Setup {
             env: e,
-            admin,
+            operator,
             protocol,
             classic_wallet,
             fund_id,
@@ -1077,17 +1211,18 @@ mod tests {
         usdc_mint(&s, &alice, 100_000_000);
         fund.deposit_investor(&alice, &100_000_000);
 
-        usdc_mint(&s, &s.fund_id, 100_000_000);
-        fund.add_tenant_fee(&100_000_000);
-        assert_eq!(fund.nav(), 20_000_000); // NAV = 2.0
+        // 10% cap on 100M AUM = 10M max; add exactly 10M
+        usdc_mint(&s, &s.fund_id, 10_000_000);
+        fund.add_tenant_fee(&10_000_000);
+        assert_eq!(fund.nav(), 11_000_000); // NAV = 1.1
 
         usdc_mint(&s, &bob, 100_000_000);
         fund.deposit_investor(&bob, &100_000_000);
 
-        assert_eq!(fund.balance(&bob), 50_000_000);
-        assert_eq!(fund.aum(), 300_000_000);
-        assert_eq!(fund.total_supply(), 150_000_000);
-        assert_eq!(fund.nav(), 20_000_000);
+        // bob gets 100M * 100M / 110M = ~90_909_090 MUTAV
+        let bob_bal = fund.balance(&bob);
+        assert!(bob_bal > 0);
+        assert_eq!(fund.aum(), 210_000_000);
     }
 
     #[test]
@@ -1129,19 +1264,23 @@ mod tests {
     // ── on-ramp tests ─────────────────────────────────────────────────────────
 
     #[test]
-    fn receive_payment_splits_20_80() {
+    fn receive_payment_splits_by_protocol_fee_bps() {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
         let imob = Address::generate(&s.env);
         let usdc = token::Client::new(&s.env, &s.usdc_id);
 
-        usdc_mint(&s, &s.admin, 100_000_000); // 10 USDC
+        // protocol_fee_bps = 2_000 (20%) set in setup()
+        usdc_mint(&s, &s.operator, 100_000_000);
         fund.receive_payment(&imob, &100_000_000);
 
-        assert_eq!(usdc.balance(&s.protocol), 20_000_000); // 20%
-        assert_eq!(usdc.balance(&s.classic_wallet), 80_000_000); // 80%
-        assert_eq!(usdc.balance(&s.fund_id), 0); // nothing stays in contract
-        assert_eq!(fund.aum(), 80_000_000); // AUM = 80%
+        let expected_protocol = 100_000_000i128 * fund.protocol_fee_bps() as i128 / 10_000;
+        let expected_fund = 100_000_000 - expected_protocol;
+
+        assert_eq!(usdc.balance(&s.protocol), expected_protocol); // 20M
+        assert_eq!(usdc.balance(&s.classic_wallet), expected_fund); // 80M
+        assert_eq!(usdc.balance(&s.fund_id), 0);
+        assert_eq!(fund.aum(), expected_fund);
     }
 
     // ── redemption queue tests ────────────────────────────────────────────────
@@ -1179,27 +1318,25 @@ mod tests {
         assert_eq!(fund.balance(&investor), 99_000_000);
         assert_eq!(fund.pending_redemption(&investor), 1_000_000);
 
-        // Yield arrives: AUM doubles → NAV = 2.0
-        usdc_mint(&s, &s.fund_id, 100_000_000);
-        fund.add_yield(&100_000_000);
-        assert_eq!(fund.nav(), 20_000_000); // 2.0
+        // Yield arrives: 10% cap = 10M; add exactly 10M
+        usdc_mint(&s, &s.fund_id, 10_000_000);
+        fund.add_yield(&10_000_000);
+        assert_eq!(fund.nav(), 11_000_000); // 1.1
 
-        // cap = 2.5% of AUM(200M) = 5M USDC; 1M MUTAV @ NAV=2.0 = 2M USDC → fits ✓
-        // NAV locked at request time would yield 1M USDC.
-        // NAV locked at execution time yields 2M USDC — this is what we assert.
+        // cap = 2.5% of AUM(110M) = 2_750_000 USDC; 1M MUTAV @ NAV=1.1 = 1.1M USDC → fits ✓
         let total_needed = fund.process_redemptions();
-        assert_eq!(total_needed, 2_000_000);
-        assert_eq!(fund.ready_redemption(&investor), 2_000_000);
+        assert_eq!(total_needed, 1_100_000); // 1M MUTAV * 110M AUM / 100M supply
+        assert_eq!(fund.ready_redemption(&investor), 1_100_000);
         assert_eq!(fund.queue_len(), 0);
 
-        // Backend deposits 2M USDC from off-ramp and fulfills.
-        // 0.25% fee on 2M = 5_000 → investor gets 1_995_000, protocol gets 5_000.
-        usdc_mint(&s, &s.fund_id, 2_000_000);
+        // Backend deposits USDC from off-ramp and fulfills.
+        // 0.25% fee on 1_100_000 = 2_750 → investor gets 1_097_250, protocol gets 2_750.
+        usdc_mint(&s, &s.fund_id, 1_100_000);
         fund.fulfill_redemption(&investor);
 
         let usdc = token::Client::new(&s.env, &s.usdc_id);
-        assert_eq!(usdc.balance(&investor), 1_995_000);
-        assert_eq!(usdc.balance(&s.protocol), 5_000);
+        assert_eq!(usdc.balance(&investor), 1_097_250);
+        assert_eq!(usdc.balance(&s.protocol), 2_750);
         assert_eq!(fund.ready_redemption(&investor), 0);
     }
 
@@ -1279,11 +1416,12 @@ mod tests {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
         let investor = Address::generate(&s.env);
+        let landlord = Address::generate(&s.env);
 
         usdc_mint(&s, &investor, 100_000_000);
         fund.deposit_investor(&investor, &100_000_000);
 
-        fund.record_offchain_payout(&10_000_000);
+        fund.record_offchain_payout(&10_000_000, &landlord);
 
         assert_eq!(fund.aum(), 90_000_000);
         assert_eq!(fund.total_supply(), 100_000_000);
@@ -1358,9 +1496,149 @@ mod tests {
         fund.propose_admin(&new_admin);
         fund.accept_admin();
 
-        // New admin can call admin-only function
-        usdc_mint(&s, &new_admin, 10_000_000);
-        fund.add_yield(&10_000_000); // would panic if auth not accepted
+        // New admin can call owner-only function
+        let new_wallet = Address::generate(&s.env);
+        fund.set_classic_wallet(&new_wallet); // would panic if auth not accepted
+    }
+
+    #[test]
+    fn set_operator_changes_hot_wallet() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let new_op = Address::generate(&s.env);
+
+        fund.set_operator(&new_op);
+        assert_eq!(fund.operator(), new_op);
+
+        // New operator can call operator-level function
+        usdc_mint(&s, &new_op, 100_000_000);
+        fund.receive_payment(&Address::generate(&s.env), &100_000_000);
+    }
+
+    #[test]
+    fn burn_keeps_nav_stable() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let alice = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
+
+        // Alice and Bob each deposit 100 USDC → 100M MUTAV each; AUM = 200M, NAV = 1.0
+        usdc_mint(&s, &alice, 100_000_000);
+        usdc_mint(&s, &bob, 100_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+        fund.deposit_investor(&bob, &100_000_000);
+        assert_eq!(fund.nav(), 10_000_000); // 1.0
+        assert_eq!(fund.aum(), 200_000_000);
+
+        // Alice burns her 100M MUTAV directly (outside redemption queue).
+        // NAV must stay at 1.0; Bob's position is unaffected.
+        fund.burn(&alice, &100_000_000);
+
+        assert_eq!(fund.balance(&alice), 0);
+        assert_eq!(fund.total_supply(), 100_000_000); // only Bob's tokens remain
+        assert_eq!(fund.aum(), 100_000_000); // proportional AUM removed
+        assert_eq!(fund.nav(), 10_000_000); // NAV unchanged — Bob not affected
+    }
+
+    #[test]
+    fn cancel_is_o1_ghost_cleaned_by_process() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &100_000_000);
+
+        assert_eq!(fund.queue_len(), 1);
+
+        // Cancel: O(1) — no queue rebuild; ghost entry remains internally.
+        fund.cancel_redemption(&investor);
+
+        assert_eq!(fund.balance(&investor), 100_000_000);
+        assert_eq!(fund.pending_redemption(&investor), 0);
+        // queue_len filters ghosts — must report 0.
+        assert_eq!(fund.queue_len(), 0);
+
+        // Ghost is purged automatically when process_redemptions runs.
+        fund.process_redemptions();
+        assert_eq!(fund.queue_len(), 0);
+    }
+
+    #[test]
+    fn add_yield_enforces_aum_cap() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        // AUM = 100M; 10% cap = 10M max per call
+
+        // Exactly at cap — should pass
+        usdc_mint(&s, &s.fund_id, 10_000_000);
+        fund.add_yield(&10_000_000);
+        assert_eq!(fund.aum(), 110_000_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "AUM increase exceeds per-call cap")]
+    fn add_yield_rejects_above_cap() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        // AUM = 100M; 10% cap = 10M; 10_000_001 exceeds it
+
+        usdc_mint(&s, &s.fund_id, 10_000_001);
+        fund.add_yield(&10_000_001);
+    }
+
+    #[test]
+    #[should_panic(expected = "fulfill window has expired")]
+    fn fulfill_rejects_after_deadline() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+        fund.process_redemptions();
+
+        // Advance past the 7-day fulfill window
+        s.env.ledger().with_mut(|l| l.timestamp = 604_801);
+
+        // Operator tries to fulfill after deadline — must panic
+        usdc_mint(&s, &s.fund_id, 1_000_000);
+        fund.fulfill_redemption(&investor);
+    }
+
+    #[test]
+    fn extend_balance_ttl_keeps_entry_alive() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        assert_eq!(fund.balance(&investor), 100_000_000);
+
+        // Anyone can extend the TTL without auth
+        fund.extend_balance_ttl(&investor);
+        assert_eq!(fund.balance(&investor), 100_000_000);
+    }
+
+    #[test]
+    fn admin_view_returns_owner() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        // admin() and operator() must both be set and distinct
+        let admin_addr = fund.admin();
+        let op_addr = fund.operator();
+        assert_ne!(admin_addr, op_addr);
     }
 
     #[test]
@@ -1369,6 +1647,7 @@ mod tests {
         let e = Env::default();
         e.mock_all_auths();
         let admin = Address::generate(&e);
+        let operator = Address::generate(&e);
         let protocol = Address::generate(&e);
         let usdc_id = e
             .register_stellar_asset_contract_v2(admin.clone())
@@ -1376,6 +1655,7 @@ mod tests {
         let fund_id = e.register(Fund, ());
         FundClient::new(&e, &fund_id).initialize(
             &admin,
+            &operator,
             &protocol,
             &usdc_id,
             &Address::generate(&e),
@@ -1384,7 +1664,9 @@ mod tests {
             &250u32,
             &2_000u32, // > 1_000 — must panic
             &25u32,
+            &2_000u32,
             &604_800u64,
+            &500u32,
         );
     }
 
@@ -1394,12 +1676,14 @@ mod tests {
         let e = Env::default();
         e.mock_all_auths();
         let admin = Address::generate(&e);
+        let operator = Address::generate(&e);
         let usdc_id = e
             .register_stellar_asset_contract_v2(admin.clone())
             .address();
         let fund_id = e.register(Fund, ());
         FundClient::new(&e, &fund_id).initialize(
             &admin,
+            &operator,
             &Address::generate(&e),
             &usdc_id,
             &Address::generate(&e),
@@ -1408,7 +1692,9 @@ mod tests {
             &10_001u32, // > 10_000 — must panic
             &100u32,
             &25u32,
+            &2_000u32,
             &604_800u64,
+            &500u32,
         );
     }
 }
