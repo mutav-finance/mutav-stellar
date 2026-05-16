@@ -2,8 +2,7 @@
 #![allow(deprecated)] // events().publish() is deprecated in favour of #[contractevent]; migrate later
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype,
-    symbol_short,
+    contract, contractimpl, contracttype, symbol_short,
     token::{self, TokenInterface},
     Address, Env, IntoVal, MuxedAddress, String, Symbol, Val, Vec,
 };
@@ -67,7 +66,10 @@ struct TokenMeta {
 // ── storage helpers ───────────────────────────────────────────────────────────
 
 fn get_admin(e: &Env) -> Address {
-    e.storage().instance().get(&DataKey::Admin).expect("not initialized")
+    e.storage()
+        .instance()
+        .get(&DataKey::Admin)
+        .expect("not initialized")
 }
 
 fn get_aum(e: &Env) -> i128 {
@@ -79,7 +81,10 @@ fn set_aum(e: &Env, v: i128) {
 }
 
 fn get_supply(e: &Env) -> i128 {
-    e.storage().instance().get(&DataKey::TotalSupply).unwrap_or(0)
+    e.storage()
+        .instance()
+        .get(&DataKey::TotalSupply)
+        .unwrap_or(0)
 }
 
 fn set_supply(e: &Env, v: i128) {
@@ -87,19 +92,31 @@ fn set_supply(e: &Env, v: i128) {
 }
 
 fn get_protocol_addr(e: &Env) -> Address {
-    e.storage().instance().get(&DataKey::ProtocolAddr).expect("not initialized")
+    e.storage()
+        .instance()
+        .get(&DataKey::ProtocolAddr)
+        .expect("not initialized")
 }
 
 fn get_usdc_token(e: &Env) -> Address {
-    e.storage().instance().get(&DataKey::UsdcToken).expect("not initialized")
+    e.storage()
+        .instance()
+        .get(&DataKey::UsdcToken)
+        .expect("not initialized")
 }
 
 fn get_classic_wallet(e: &Env) -> Address {
-    e.storage().instance().get(&DataKey::ClassicWallet).expect("not initialized")
+    e.storage()
+        .instance()
+        .get(&DataKey::ClassicWallet)
+        .expect("not initialized")
 }
 
 fn get_last_fee_ts(e: &Env) -> u64 {
-    e.storage().instance().get(&DataKey::LastFeeTimestamp).unwrap_or(0)
+    e.storage()
+        .instance()
+        .get(&DataKey::LastFeeTimestamp)
+        .unwrap_or(0)
 }
 
 fn set_last_fee_ts(e: &Env, v: u64) {
@@ -107,11 +124,17 @@ fn set_last_fee_ts(e: &Env, v: u64) {
 }
 
 fn get_weekly_epoch(e: &Env) -> u64 {
-    e.storage().instance().get(&DataKey::WeeklyEpoch).unwrap_or(0)
+    e.storage()
+        .instance()
+        .get(&DataKey::WeeklyEpoch)
+        .unwrap_or(0)
 }
 
 fn get_weekly_exit_used(e: &Env) -> i128 {
-    e.storage().instance().get(&DataKey::WeeklyExitUsed).unwrap_or(0)
+    e.storage()
+        .instance()
+        .get(&DataKey::WeeklyExitUsed)
+        .unwrap_or(0)
 }
 
 fn get_redemption_queue(e: &Env) -> Vec<Address> {
@@ -146,10 +169,10 @@ fn get_allowance(e: &Env, from: &Address, spender: &Address) -> AllowanceValue {
         from: from.clone(),
         spender: spender.clone(),
     });
-    e.storage()
-        .temporary()
-        .get(&key)
-        .unwrap_or(AllowanceValue { amount: 0, expiration_ledger: 0 })
+    e.storage().temporary().get(&key).unwrap_or(AllowanceValue {
+        amount: 0,
+        expiration_ledger: 0,
+    })
 }
 
 fn write_allowance(
@@ -163,13 +186,20 @@ fn write_allowance(
         from: from.clone(),
         spender: spender.clone(),
     });
-    e.storage()
-        .temporary()
-        .set(&key, &AllowanceValue { amount, expiration_ledger });
+    e.storage().temporary().set(
+        &key,
+        &AllowanceValue {
+            amount,
+            expiration_ledger,
+        },
+    );
 
     if amount > 0 {
         let current = e.ledger().sequence();
-        assert!(expiration_ledger >= current, "expiration_ledger must be >= current ledger");
+        assert!(
+            expiration_ledger >= current,
+            "expiration_ledger must be >= current ledger"
+        );
         let live_for = expiration_ledger - current;
         e.storage().temporary().extend_ttl(&key, live_for, live_for);
     }
@@ -182,16 +212,14 @@ fn require_admin(e: &Env) {
 // If a registry contract is configured, assert the imobiliária is approved.
 // Skipped when registry is not set (useful during tests and initial deploy).
 fn check_imobiliaria_if_registry_set(e: &Env, imobiliaria: &Address) {
-    if let Some(registry) =
-        e.storage().instance().get::<_, Address>(&DataKey::RegistryContract)
+    if let Some(registry) = e
+        .storage()
+        .instance()
+        .get::<_, Address>(&DataKey::RegistryContract)
     {
         let mut args: Vec<Val> = Vec::new(e);
         args.push_back(imobiliaria.into_val(e));
-        let approved: bool = e.invoke_contract(
-            &registry,
-            &Symbol::new(e, "is_approved"),
-            args,
-        );
+        let approved: bool = e.invoke_contract(&registry, &Symbol::new(e, "is_approved"), args);
         assert!(approved, "imobiliaria not approved");
     }
 }
@@ -238,9 +266,13 @@ impl Fund {
             panic!("already initialized");
         }
         e.storage().instance().set(&DataKey::Admin, &admin);
-        e.storage().instance().set(&DataKey::ProtocolAddr, &protocol_addr);
+        e.storage()
+            .instance()
+            .set(&DataKey::ProtocolAddr, &protocol_addr);
         e.storage().instance().set(&DataKey::UsdcToken, &usdc_token);
-        e.storage().instance().set(&DataKey::ClassicWallet, &classic_wallet);
+        e.storage()
+            .instance()
+            .set(&DataKey::ClassicWallet, &classic_wallet);
         e.storage().instance().set(
             &DataKey::TokenMeta,
             &TokenMeta {
@@ -267,11 +299,19 @@ impl Fund {
 
         usdc.transfer(&admin, &e.current_contract_address(), &amount_usdc);
 
-        let protocol_cut = amount_usdc / 5;              // 20%
-        let fund_portion = amount_usdc - protocol_cut;   // 80%
+        let protocol_cut = amount_usdc / 5; // 20%
+        let fund_portion = amount_usdc - protocol_cut; // 80%
 
-        usdc.transfer(&e.current_contract_address(), &get_protocol_addr(&e), &protocol_cut);
-        usdc.transfer(&e.current_contract_address(), &get_classic_wallet(&e), &fund_portion);
+        usdc.transfer(
+            &e.current_contract_address(),
+            &get_protocol_addr(&e),
+            &protocol_cut,
+        );
+        usdc.transfer(
+            &e.current_contract_address(),
+            &get_classic_wallet(&e),
+            &fund_portion,
+        );
 
         set_aum(&e, get_aum(&e) + fund_portion);
 
@@ -293,7 +333,11 @@ impl Fund {
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
 
         usdc.transfer(&investor, &e.current_contract_address(), &amount_usdc);
-        usdc.transfer(&e.current_contract_address(), &get_classic_wallet(&e), &amount_usdc);
+        usdc.transfer(
+            &e.current_contract_address(),
+            &get_classic_wallet(&e),
+            &amount_usdc,
+        );
 
         let aum = get_aum(&e);
         let supply = get_supply(&e);
@@ -329,7 +373,9 @@ impl Fund {
         if existing == 0 {
             let mut queue = get_redemption_queue(&e);
             queue.push_back(investor.clone());
-            e.storage().persistent().set(&DataKey::RedemptionQueue, &queue);
+            e.storage()
+                .persistent()
+                .set(&DataKey::RedemptionQueue, &queue);
             e.storage()
                 .persistent()
                 .extend_ttl(&DataKey::RedemptionQueue, 518_400, 518_400);
@@ -351,8 +397,11 @@ impl Fund {
         investor.require_auth();
 
         let key = DataKey::PendingRedemption(investor.clone());
-        let pending: i128 =
-            e.storage().persistent().get(&key).expect("no pending redemption");
+        let pending: i128 = e
+            .storage()
+            .persistent()
+            .get(&key)
+            .expect("no pending redemption");
         assert!(pending > 0, "no pending redemption");
 
         write_balance(&e, &investor, balance_of(&e, &investor) + pending);
@@ -367,17 +416,17 @@ impl Fund {
                 new_queue.push_back(addr);
             }
         }
-        e.storage().persistent().set(&DataKey::RedemptionQueue, &new_queue);
+        e.storage()
+            .persistent()
+            .set(&DataKey::RedemptionQueue, &new_queue);
         if new_queue.len() > 0 {
             e.storage()
                 .persistent()
                 .extend_ttl(&DataKey::RedemptionQueue, 518_400, 518_400);
         }
 
-        e.events().publish(
-            (symbol_short!("cncl_rdmt"), investor.clone()),
-            (pending,),
-        );
+        e.events()
+            .publish((symbol_short!("cncl_rdmt"), investor.clone()), (pending,));
     }
 
     /// Process the redemption queue up to the weekly 2.5% AUM exit cap.
@@ -391,7 +440,9 @@ impl Fund {
         // Roll over weekly epoch if needed
         let current_epoch = e.ledger().timestamp() / WEEK_SECONDS;
         if current_epoch > get_weekly_epoch(&e) {
-            e.storage().instance().set(&DataKey::WeeklyEpoch, &current_epoch);
+            e.storage()
+                .instance()
+                .set(&DataKey::WeeklyEpoch, &current_epoch);
             e.storage().instance().set(&DataKey::WeeklyExitUsed, &0i128);
         }
 
@@ -444,7 +495,9 @@ impl Fund {
 
             let ready_key = DataKey::ReadyRedemption(investor.clone());
             e.storage().persistent().set(&ready_key, &usdc_out);
-            e.storage().persistent().extend_ttl(&ready_key, 518_400, 518_400);
+            e.storage()
+                .persistent()
+                .extend_ttl(&ready_key, 518_400, 518_400);
 
             e.events().publish(
                 (symbol_short!("rdy_rdmpt"), investor.clone()),
@@ -463,7 +516,9 @@ impl Fund {
         for i in first_unprocessed..queue.len() {
             new_queue.push_back(queue.get_unchecked(i));
         }
-        e.storage().persistent().set(&DataKey::RedemptionQueue, &new_queue);
+        e.storage()
+            .persistent()
+            .set(&DataKey::RedemptionQueue, &new_queue);
         if new_queue.len() > 0 {
             e.storage()
                 .persistent()
@@ -479,8 +534,11 @@ impl Fund {
         require_admin(&e);
 
         let key = DataKey::ReadyRedemption(investor.clone());
-        let usdc_out: i128 =
-            e.storage().persistent().get(&key).expect("no ready redemption");
+        let usdc_out: i128 = e
+            .storage()
+            .persistent()
+            .get(&key)
+            .expect("no ready redemption");
         assert!(usdc_out > 0, "nothing to fulfill");
 
         token::Client::new(&e, &get_usdc_token(&e)).transfer(
@@ -491,10 +549,8 @@ impl Fund {
 
         e.storage().persistent().remove(&key);
 
-        e.events().publish(
-            (symbol_short!("fulfill"), investor.clone()),
-            (usdc_out,),
-        );
+        e.events()
+            .publish((symbol_short!("fulfill"), investor.clone()), (usdc_out,));
     }
 
     // ── admin fund operations ─────────────────────────────────────────────────
@@ -505,7 +561,8 @@ impl Fund {
         require_admin(&e);
         assert!(amount_usdc > 0, "amount must be positive");
         set_aum(&e, get_aum(&e) + amount_usdc);
-        e.events().publish((symbol_short!("fee_in"),), (amount_usdc,));
+        e.events()
+            .publish((symbol_short!("fee_in"),), (amount_usdc,));
     }
 
     /// Record incoming yield from tokenized treasury. Increases AUM → NAV increases.
@@ -513,7 +570,8 @@ impl Fund {
         require_admin(&e);
         assert!(amount_usdc > 0, "amount must be positive");
         set_aum(&e, get_aum(&e) + amount_usdc);
-        e.events().publish((symbol_short!("yield_in"),), (amount_usdc,));
+        e.events()
+            .publish((symbol_short!("yield_in"),), (amount_usdc,));
     }
 
     /// Charge the 1%/month management fee. Enforces a 30-day minimum interval.
@@ -525,7 +583,10 @@ impl Fund {
 
         let now = e.ledger().timestamp();
         let last = get_last_fee_ts(&e);
-        assert!(now >= last + MIN_FEE_INTERVAL, "management fee already charged this period");
+        assert!(
+            now >= last + MIN_FEE_INTERVAL,
+            "management fee already charged this period"
+        );
 
         let aum = get_aum(&e);
         let fee = aum / 100; // 1%
@@ -568,7 +629,8 @@ impl Fund {
 
         set_aum(&e, aum - amount_usdc);
 
-        e.events().publish((symbol_short!("offchain"),), (amount_usdc,));
+        e.events()
+            .publish((symbol_short!("offchain"),), (amount_usdc,));
     }
 
     /// Bump TTL for all instance storage. Backend should call this every ~25 days.
@@ -581,7 +643,9 @@ impl Fund {
     /// Set the Registry contract address to enable on-chain imobiliária approval checks.
     pub fn set_registry(e: Env, registry: Address) {
         require_admin(&e);
-        e.storage().instance().set(&DataKey::RegistryContract, &registry);
+        e.storage()
+            .instance()
+            .set(&DataKey::RegistryContract, &registry);
     }
 
     pub fn set_classic_wallet(e: Env, wallet: Address) {
@@ -633,7 +697,11 @@ impl Fund {
     pub fn weekly_exit_available(e: Env) -> i128 {
         let cap = get_aum(&e) * EXIT_CAP_NUM / EXIT_CAP_DEN;
         let remaining = cap - get_weekly_exit_used(&e);
-        if remaining < 0 { 0 } else { remaining }
+        if remaining < 0 {
+            0
+        } else {
+            remaining
+        }
     }
 }
 
@@ -671,10 +739,8 @@ impl TokenInterface for Fund {
         assert!(bal >= amount, "insufficient balance");
         write_balance(&e, &from, bal - amount);
         write_balance(&e, &to_addr, balance_of(&e, &to_addr) + amount);
-        e.events().publish(
-            (symbol_short!("transfer"), from.clone()),
-            (to_addr, amount),
-        );
+        e.events()
+            .publish((symbol_short!("transfer"), from.clone()), (to_addr, amount));
     }
 
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
@@ -682,7 +748,10 @@ impl TokenInterface for Fund {
         assert!(amount > 0, "amount must be positive");
 
         let a = get_allowance(&e, &from, &spender);
-        assert!(a.expiration_ledger >= e.ledger().sequence(), "allowance expired");
+        assert!(
+            a.expiration_ledger >= e.ledger().sequence(),
+            "allowance expired"
+        );
         assert!(a.amount >= amount, "insufficient allowance");
 
         write_allowance(&e, &from, &spender, a.amount - amount, a.expiration_ledger);
@@ -692,10 +761,8 @@ impl TokenInterface for Fund {
         write_balance(&e, &from, bal - amount);
         write_balance(&e, &to, balance_of(&e, &to) + amount);
 
-        e.events().publish(
-            (symbol_short!("transfer"), from.clone()),
-            (to, amount),
-        );
+        e.events()
+            .publish((symbol_short!("transfer"), from.clone()), (to, amount));
     }
 
     fn burn(e: Env, from: Address, amount: i128) {
@@ -705,7 +772,8 @@ impl TokenInterface for Fund {
         assert!(bal >= amount, "insufficient balance");
         write_balance(&e, &from, bal - amount);
         set_supply(&e, get_supply(&e) - amount);
-        e.events().publish((symbol_short!("burn"), from.clone()), (amount,));
+        e.events()
+            .publish((symbol_short!("burn"), from.clone()), (amount,));
     }
 
     fn burn_from(e: Env, spender: Address, from: Address, amount: i128) {
@@ -713,7 +781,10 @@ impl TokenInterface for Fund {
         assert!(amount > 0, "amount must be positive");
 
         let a = get_allowance(&e, &from, &spender);
-        assert!(a.expiration_ledger >= e.ledger().sequence(), "allowance expired");
+        assert!(
+            a.expiration_ledger >= e.ledger().sequence(),
+            "allowance expired"
+        );
         assert!(a.amount >= amount, "insufficient allowance");
 
         write_allowance(&e, &from, &spender, a.amount - amount, a.expiration_ledger);
@@ -723,7 +794,8 @@ impl TokenInterface for Fund {
         write_balance(&e, &from, bal - amount);
         set_supply(&e, get_supply(&e) - amount);
 
-        e.events().publish((symbol_short!("burn"), from.clone()), (amount,));
+        e.events()
+            .publish((symbol_short!("burn"), from.clone()), (amount,));
     }
 
     fn decimals(_e: Env) -> u32 {
@@ -731,14 +803,20 @@ impl TokenInterface for Fund {
     }
 
     fn name(e: Env) -> String {
-        let meta: TokenMeta =
-            e.storage().instance().get(&DataKey::TokenMeta).expect("not initialized");
+        let meta: TokenMeta = e
+            .storage()
+            .instance()
+            .get(&DataKey::TokenMeta)
+            .expect("not initialized");
         meta.name
     }
 
     fn symbol(e: Env) -> String {
-        let meta: TokenMeta =
-            e.storage().instance().get(&DataKey::TokenMeta).expect("not initialized");
+        let meta: TokenMeta = e
+            .storage()
+            .instance()
+            .get(&DataKey::TokenMeta)
+            .expect("not initialized");
         meta.symbol
     }
 }
@@ -770,13 +848,21 @@ mod tests {
         let protocol = Address::generate(&e);
         let classic_wallet = Address::generate(&e);
 
-        let usdc_id = e.register_stellar_asset_contract_v2(admin.clone()).address();
+        let usdc_id = e
+            .register_stellar_asset_contract_v2(admin.clone())
+            .address();
         let fund_id = e.register(Fund, ());
 
-        FundClient::new(&e, &fund_id)
-            .initialize(&admin, &protocol, &usdc_id, &classic_wallet);
+        FundClient::new(&e, &fund_id).initialize(&admin, &protocol, &usdc_id, &classic_wallet);
 
-        Setup { env: e, admin, protocol, classic_wallet, fund_id, usdc_id }
+        Setup {
+            env: e,
+            admin,
+            protocol,
+            classic_wallet,
+            fund_id,
+            usdc_id,
+        }
     }
 
     fn usdc_mint(s: &Setup, to: &Address, amount: i128) {
@@ -875,10 +961,10 @@ mod tests {
         usdc_mint(&s, &s.admin, 100_000_000); // 10 USDC
         fund.receive_payment(&imob, &100_000_000);
 
-        assert_eq!(usdc.balance(&s.protocol), 20_000_000);      // 20%
+        assert_eq!(usdc.balance(&s.protocol), 20_000_000); // 20%
         assert_eq!(usdc.balance(&s.classic_wallet), 80_000_000); // 80%
-        assert_eq!(usdc.balance(&s.fund_id), 0);                 // nothing stays in contract
-        assert_eq!(fund.aum(), 80_000_000);                      // AUM = 80%
+        assert_eq!(usdc.balance(&s.fund_id), 0); // nothing stays in contract
+        assert_eq!(fund.aum(), 80_000_000); // AUM = 80%
     }
 
     // ── redemption queue tests ────────────────────────────────────────────────
@@ -954,8 +1040,8 @@ mod tests {
         fund.deposit_investor(&bob, &990_000_000);
         // AUM = 100 USDC, cap = 2.5% = 2.5 USDC
 
-        fund.request_redemption(&alice, &10_000_000);  // 1 USDC → fits cap
-        fund.request_redemption(&bob, &990_000_000);   // 99 USDC → exceeds cap
+        fund.request_redemption(&alice, &10_000_000); // 1 USDC → fits cap
+        fund.request_redemption(&bob, &990_000_000); // 99 USDC → exceeds cap
 
         let total = fund.process_redemptions();
 

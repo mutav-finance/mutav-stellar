@@ -55,11 +55,7 @@ impl Registry {
     pub fn deactivate(e: Env, imobiliaria: Address) {
         require_admin(&e);
         let key = DataKey::Imobiliaria(imobiliaria.clone());
-        let mut data: ImobiliariaData = e
-            .storage()
-            .persistent()
-            .get(&key)
-            .expect("not registered");
+        let mut data: ImobiliariaData = e.storage().persistent().get(&key).expect("not registered");
         data.approved = false;
         e.storage().persistent().set(&key, &data);
     }
@@ -69,19 +65,10 @@ impl Registry {
     /// closed (`count_delta = -1`). `score_delta` is the signed difference
     /// in the score_sum (new_score - old_score, or just new_score on creation).
     /// Called by the admin / backend after each tenant-contract lifecycle event.
-    pub fn update_score(
-        e: Env,
-        imobiliaria: Address,
-        score_delta: i128,
-        count_delta: i32,
-    ) {
+    pub fn update_score(e: Env, imobiliaria: Address, score_delta: i128, count_delta: i32) {
         require_admin(&e);
         let key = DataKey::Imobiliaria(imobiliaria);
-        let mut data: ImobiliariaData = e
-            .storage()
-            .persistent()
-            .get(&key)
-            .expect("not registered");
+        let mut data: ImobiliariaData = e.storage().persistent().get(&key).expect("not registered");
 
         data.score_sum += score_delta;
 
