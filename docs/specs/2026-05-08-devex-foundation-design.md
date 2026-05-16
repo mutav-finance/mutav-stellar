@@ -6,13 +6,13 @@
 
 ## Context
 
-`sgr-stellar` is the Soroban smart-contracts repo for the SGR protocol, developed under the NearX acceleration program. The repo has a working `pre-push` hook, a `CLAUDE.md`, a `README.md`, and three uncommitted files dropped in earlier (`.editorconfig`, `.gitattributes`, `CONTRIBUTING.md`). The `CONTRIBUTING.md` references files that do not yet exist (`SECURITY.md`, structured issue templates), and no repo in the `tga-protocol` org has a `LICENSE`.
+`mutav-stellar` is the Soroban smart-contracts repo for the SGR protocol, developed under the NearX acceleration program. The repo has a working `pre-push` hook, a `CLAUDE.md`, a `README.md`, and three uncommitted files dropped in earlier (`.editorconfig`, `.gitattributes`, `CONTRIBUTING.md`). The `CONTRIBUTING.md` references files that do not yet exist (`SECURITY.md`, structured issue templates), and no repo in the `mutav-finance` org has a `LICENSE`.
 
 Before opening the repo to external eyes (auditors, integrators), it needs a coherent baseline.
 
 ## Goal
 
-Make `sgr-stellar` legible to **future auditors and B2B integrators** (audience D) by:
+Make `mutav-stellar` legible to **future auditors and B2B integrators** (audience D) by:
 
 - Adopting an OSI-approved license that integrators' legal teams accept without escalation.
 - Providing a credible vulnerability-disclosure path.
@@ -23,9 +23,9 @@ All of this must ship in **one bounded PR** off the existing `chore/devex-founda
 
 ## Non-goals
 
-- **No CI in this branch.** `sgr-stellar` has no `package.json` or contracts code yet; CI workflows would be broken on arrival. CI is deferred to the first Phase A PR.
+- **No CI in this branch.** `mutav-stellar` has no `package.json` or contracts code yet; CI workflows would be broken on arrival. CI is deferred to the first Phase A PR.
 - **No issue templates, no code of conduct.** Audience D (auditors, integrators) does not file GitHub issues; they email or use private security advisories.
-- **No changes to sibling repos.** License mirroring across `sgr`, `sgr-solana`, `sgr-app` is tracked as separate follow-up issues; this PR does not silently drag them along.
+- **No changes to sibling repos.** License mirroring across mutav, `mutav-solana`, `mutav-app` is tracked as separate follow-up issues; this PR does not silently drag them along.
 - **No per-file SPDX license headers yet.** Top-level `LICENSE` + `NOTICE` is sufficient for Apache-2.0 compliance. Per-file headers land with Soroban contracts in Phase B.
 
 ## Decisions
@@ -55,12 +55,12 @@ No `security@` email until a real protocol address exists. GitHub's private vuln
 
 ### CONTRIBUTING pattern: delegate to canonical
 
-The in-flight `CONTRIBUTING.md` already delegates to `tga-protocol/sgr/CONTRIBUTING.md` rather than duplicating it. This is the right pattern and should propagate protocol-wide (tracked as a follow-up issue against `sgr-solana`, which currently duplicates).
+The in-flight `CONTRIBUTING.md` already delegates to `mutav-finance/mutav/CONTRIBUTING.md` rather than duplicating it. This is the right pattern and should propagate protocol-wide (tracked as a follow-up issue against `mutav-solana`, which currently duplicates).
 
 ## File layout
 
 ```
-sgr-stellar/
+mutav-stellar/
 ├── LICENSE                            NEW
 ├── NOTICE                             NEW
 ├── SECURITY.md                        NEW
@@ -89,7 +89,7 @@ SGR Stellar
 Copyright 2026 TGA Protocol contributors.
 
 This product is part of SGR (Sistema de Garantia Registrada),
-an onchain rental-guarantee protocol. See https://github.com/tga-protocol/sgr.
+an onchain rental-guarantee protocol. See https://github.com/mutav-finance/mutav.
 ```
 
 ### `SECURITY.md`
@@ -124,7 +124,7 @@ Drafted file; no changes from the version already in the working tree.
 
 ### `.gitattributes`
 
-Drafted file; remove the line `brand/**       linguist-vendored` (no brand directory is vendored in this repo — sgr-solana has it, sgr-stellar does not).
+Drafted file; remove the line `brand/**       linguist-vendored` (no brand directory is vendored in this repo — mutav-solana has it, mutav-stellar does not).
 
 ### `.github/CODEOWNERS`
 
@@ -150,7 +150,7 @@ Single maintainer; honest signal.
 <!-- Steps to verify this works. -->
 ```
 
-Adapted from `sgr-solana`'s template; `Phase` checklist (Solana-specific taxonomy) intentionally dropped.
+Adapted from `mutav-solana`'s template; `Phase` checklist (Solana-specific taxonomy) intentionally dropped.
 
 ## Commit strategy
 
@@ -167,11 +167,11 @@ Squash-merge to `main` per protocol convention. The squash commit message will s
 
 To be opened after this PR merges:
 
-- `tga-protocol/sgr` — Adopt Apache-2.0 (mirror sgr-stellar).
-- `tga-protocol/sgr-solana` — Adopt Apache-2.0; convert duplicated `CONTRIBUTING.md` to delegate-to-canonical pattern.
-- `tga-protocol/sgr-app` — Adopt Apache-2.0.
-- `tga-protocol/sgr-stellar` — Wire CI (TS/Bun typecheck + test) on first Phase A PR.
-- `tga-protocol/sgr-stellar` — Add per-file SPDX headers when Soroban contracts land (Phase B).
+- `mutav-finance/mutav` — Adopt Apache-2.0 (mirror mutav-stellar).
+- `mutav-finance/mutav-solana` — Adopt Apache-2.0; convert duplicated `CONTRIBUTING.md` to delegate-to-canonical pattern.
+- `mutav-finance/mutav-app` — Adopt Apache-2.0.
+- `mutav-finance/mutav-stellar` — Wire CI (TS/Bun typecheck + test) on first Phase A PR.
+- `mutav-finance/mutav-stellar` — Add per-file SPDX headers when Soroban contracts land (Phase B).
 
 ## Open assumptions
 
