@@ -297,19 +297,19 @@ impl Fund {
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
         let admin = get_admin(&e);
 
-        usdc.transfer(&admin, &e.current_contract_address(), &amount_usdc);
+        usdc.transfer(&admin, e.current_contract_address(), &amount_usdc);
 
         let protocol_cut = amount_usdc / 5; // 20%
         let fund_portion = amount_usdc - protocol_cut; // 80%
 
         usdc.transfer(
             &e.current_contract_address(),
-            &get_protocol_addr(&e),
+            get_protocol_addr(&e),
             &protocol_cut,
         );
         usdc.transfer(
             &e.current_contract_address(),
-            &get_classic_wallet(&e),
+            get_classic_wallet(&e),
             &fund_portion,
         );
 
@@ -332,10 +332,10 @@ impl Fund {
 
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
 
-        usdc.transfer(&investor, &e.current_contract_address(), &amount_usdc);
+        usdc.transfer(&investor, e.current_contract_address(), &amount_usdc);
         usdc.transfer(
             &e.current_contract_address(),
-            &get_classic_wallet(&e),
+            get_classic_wallet(&e),
             &amount_usdc,
         );
 
@@ -419,7 +419,7 @@ impl Fund {
         e.storage()
             .persistent()
             .set(&DataKey::RedemptionQueue, &new_queue);
-        if new_queue.len() > 0 {
+        if !new_queue.is_empty() {
             e.storage()
                 .persistent()
                 .extend_ttl(&DataKey::RedemptionQueue, 518_400, 518_400);
@@ -519,7 +519,7 @@ impl Fund {
         e.storage()
             .persistent()
             .set(&DataKey::RedemptionQueue, &new_queue);
-        if new_queue.len() > 0 {
+        if !new_queue.is_empty() {
             e.storage()
                 .persistent()
                 .extend_ttl(&DataKey::RedemptionQueue, 518_400, 518_400);
