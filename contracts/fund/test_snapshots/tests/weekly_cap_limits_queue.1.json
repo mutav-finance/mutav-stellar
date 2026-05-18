@@ -442,6 +442,14 @@
                   },
                   {
                     "key": {
+                      "symbol": "fee_bps"
+                    },
+                    "val": {
+                      "u32": 25
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "mutav_burned"
                     },
                     "val": {

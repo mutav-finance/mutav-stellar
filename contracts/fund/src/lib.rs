@@ -11,6 +11,24 @@ use soroban_sdk::{
 // 30 days in seconds — minimum interval between management fee charges
 const MIN_FEE_INTERVAL: u64 = 30 * 24 * 60 * 60;
 const WEEK_SECONDS: u64 = 7 * 24 * 60 * 60;
+// Maximum queue entries examined per process_redemptions call.
+//
+// Two independent Soroban limits constrain this value:
+//
+// 1. Read footprint (100 ledger entries): fixed overhead ~14, leaving ~86.
+//    Worst case per examined entry = 2 slots → ceiling 86/2 = 43, rounded to 40.
+//
+// 2. Write budget (50 write entries): each PROCESSED investor costs 3 writes
+//    (remove PendingRedemption + write ReadyRedemption + TTL ReadyRedemption).
+//    Each DEFERRED investor costs 1 write (TTL extend on PendingRedemption).
+//    With 40 examined: 3p + (40−p) + ~7 overhead ≤ 50 → p ≤ 1 processed per call.
+//    When fewer are examined (small queue), more can be processed: ceiling ~14 when
+//    none are deferred (3×14 + 7 = 49).
+//
+// Practical implication: with a full queue, only ~1–2 investors are processed per call
+// regardless of the exit cap. The operator may need multiple weekly calls to drain
+// large queues, or adjust the cap between calls to allow larger batches.
+const MAX_QUEUE_BATCH: u32 = 40;
 
 // ── storage keys ──────────────────────────────────────────────────────────────
 
@@ -41,6 +59,8 @@ enum DataKey {
     // token accounting (persistent storage — per-address)
     Balance(Address),
     Allowance(AllowanceKey),
+    // emergency pause
+    Paused,
     // two-step admin transfer
     PendingAdmin,
     // fulfill window config
@@ -71,6 +91,7 @@ struct ReadyRedemptionData {
     usdc_gross: i128,
     mutav_burned: i128,
     deadline: u64,
+    fee_bps: u32, // snapshot of redemption_fee_bps at process time — immune to later changes
 }
 
 #[contracttype]
@@ -282,6 +303,16 @@ fn require_operator(e: &Env) {
     get_operator(e).require_auth();
 }
 
+fn require_not_paused(e: &Env) {
+    assert!(
+        !e.storage()
+            .instance()
+            .get::<_, bool>(&DataKey::Paused)
+            .unwrap_or(false),
+        "contract is paused"
+    );
+}
+
 // If a registry contract is configured, assert the imobiliária is approved.
 // Skipped when registry is not set (useful during tests and initial deploy).
 fn check_imobiliaria_if_registry_set(e: &Env, imobiliaria: &Address) {
@@ -422,6 +453,7 @@ impl Fund {
     /// and records the 80% as AUM (it will become TESOURO via Etherfuse eYield).
     pub fn receive_payment(e: Env, imobiliaria: Address, amount_usdc: i128) {
         require_operator(&e);
+        require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         check_imobiliaria_if_registry_set(&e, &imobiliaria);
@@ -460,6 +492,7 @@ impl Fund {
     /// converted to TESOURO via Etherfuse eYield — the contract retains no USDC.
     pub fn deposit_investor(e: Env, investor: Address, amount_usdc: i128) {
         investor.require_auth();
+        require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
@@ -491,6 +524,7 @@ impl Fund {
     /// ensuring the investor exits at the NAV on the actual execution date.
     pub fn request_redemption(e: Env, investor: Address, mutav_amount: i128) {
         investor.require_auth();
+        require_not_paused(&e);
         assert!(mutav_amount > 0, "amount must be positive");
 
         let bal = balance_of(&e, &investor);
@@ -548,10 +582,13 @@ impl Fund {
     /// Process the redemption queue up to the weekly exit cap.
     /// Burns MUTAV at the CURRENT NAV for each investor processed — not at
     /// request time — so investors exit at the NAV on the execution date.
+    /// Entries that exceed the remaining weekly cap are deferred (not skipped
+    /// permanently): smaller requests behind them are still processed if they fit.
     /// Returns the total USDC the backend must source (off-ramp TESOURO) and
     /// deposit into the contract before calling fulfill_redemption.
     pub fn process_redemptions(e: Env) -> i128 {
         require_operator(&e);
+        require_not_paused(&e);
 
         // Roll over weekly epoch if needed
         let current_epoch = e.ledger().timestamp() / WEEK_SECONDS;
@@ -578,24 +615,36 @@ impl Fund {
         }
 
         let queue = get_redemption_queue(&e);
-        let mut first_unprocessed = queue.len(); // default: all processed
+        let mut new_queue: Vec<Address> = Vec::new(&e);
         let mut exit_used_delta: i128 = 0;
         let mut total_usdc: i128 = 0;
+        let mut examined: u32 = 0;
 
         for i in 0..queue.len() {
             let investor = queue.get_unchecked(i);
+
+            if examined >= MAX_QUEUE_BATCH {
+                // Batch cap reached — carry remaining entries forward unexamined
+                new_queue.push_back(investor);
+                continue;
+            }
+            examined += 1;
+
             let mutav = get_pending_redemption(&e, &investor);
 
             if mutav == 0 {
-                // Stale entry — skip and let it fall off the queue
+                // Ghost from cancel_redemption — purge from queue
                 continue;
             }
 
             let usdc_out = calc_redeem(mutav, aum, supply);
 
             if usdc_out > available {
-                first_unprocessed = i;
-                break;
+                // Exceeds remaining cap this week — defer; smaller entries behind still run
+                let pk = DataKey::PendingRedemption(investor.clone());
+                e.storage().persistent().extend_ttl(&pk, 518_400, 518_400);
+                new_queue.push_back(investor);
+                continue;
             }
 
             // Burn MUTAV at current NAV
@@ -617,6 +666,7 @@ impl Fund {
                     usdc_gross: usdc_out,
                     mutav_burned: mutav,
                     deadline,
+                    fee_bps: get_redemption_fee_bps(&e),
                 },
             );
             e.storage()
@@ -635,11 +685,6 @@ impl Fund {
             .instance()
             .set(&DataKey::WeeklyExitUsed, &(already_used + exit_used_delta));
 
-        // Rebuild queue keeping only unprocessed entries
-        let mut new_queue: Vec<Address> = Vec::new(&e);
-        for i in first_unprocessed..queue.len() {
-            new_queue.push_back(queue.get_unchecked(i));
-        }
         e.storage()
             .persistent()
             .set(&DataKey::RedemptionQueue, &new_queue);
@@ -659,6 +704,7 @@ impl Fund {
     /// Panics if the fulfill window has already expired — use reclaim_expired_redemption instead.
     pub fn fulfill_redemption(e: Env, investor: Address) {
         require_operator(&e);
+        require_not_paused(&e);
 
         let key = DataKey::ReadyRedemption(investor.clone());
         let data: ReadyRedemptionData = e
@@ -673,7 +719,7 @@ impl Fund {
             "fulfill window has expired; investor may reclaim"
         );
 
-        let fee = gross * get_redemption_fee_bps(&e) as i128 / 10_000;
+        let fee = gross * data.fee_bps as i128 / 10_000;
         let investor_amount = gross - fee;
 
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
@@ -725,19 +771,19 @@ impl Fund {
     // ── operator fund operations ──────────────────────────────────────────────
 
     /// Manual AUM credit — for recording tenant fee income.
-    /// Capped at max_aum_increase_bps per call to limit manipulation risk.
+    /// Always enforces max_aum_increase_bps; when AUM is zero the cap is zero,
+    /// so any positive amount is rejected — preventing free yield for the first depositor.
     pub fn add_tenant_fee(e: Env, amount_usdc: i128) {
         require_operator(&e);
+        require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         let aum = get_aum(&e);
-        if aum > 0 {
-            let max_increase = aum * get_max_aum_increase_bps(&e) as i128 / 10_000;
-            assert!(
-                amount_usdc <= max_increase,
-                "AUM increase exceeds per-call cap"
-            );
-        }
+        let max_increase = aum * get_max_aum_increase_bps(&e) as i128 / 10_000;
+        assert!(
+            amount_usdc <= max_increase,
+            "AUM increase exceeds per-call cap"
+        );
 
         set_aum(&e, aum + amount_usdc);
         e.events()
@@ -745,19 +791,19 @@ impl Fund {
     }
 
     /// Record incoming yield from tokenized treasury. Increases AUM → NAV increases.
-    /// Capped at max_aum_increase_bps per call to limit manipulation risk.
+    /// Always enforces max_aum_increase_bps; when AUM is zero the cap is zero,
+    /// so any positive amount is rejected — preventing free yield for the first depositor.
     pub fn add_yield(e: Env, amount_usdc: i128) {
         require_operator(&e);
+        require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         let aum = get_aum(&e);
-        if aum > 0 {
-            let max_increase = aum * get_max_aum_increase_bps(&e) as i128 / 10_000;
-            assert!(
-                amount_usdc <= max_increase,
-                "AUM increase exceeds per-call cap"
-            );
-        }
+        let max_increase = aum * get_max_aum_increase_bps(&e) as i128 / 10_000;
+        assert!(
+            amount_usdc <= max_increase,
+            "AUM increase exceeds per-call cap"
+        );
 
         set_aum(&e, aum + amount_usdc);
         e.events()
@@ -770,6 +816,7 @@ impl Fund {
     /// from the Classic wallet (all fund value lives as TESOURO, not USDC in this contract).
     pub fn charge_mgmt_fee(e: Env) {
         require_operator(&e);
+        require_not_paused(&e);
 
         let now = e.ledger().timestamp();
         let last = get_last_fee_ts(&e);
@@ -794,6 +841,7 @@ impl Fund {
     /// `destination` is logged for audit trail — it does not receive on-chain USDC.
     pub fn record_offchain_payout(e: Env, amount_usdc: i128, destination: Address) {
         require_operator(&e);
+        require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
         let aum = get_aum(&e);
@@ -811,6 +859,33 @@ impl Fund {
     pub fn extend_ttl(e: Env) {
         require_operator(&e);
         e.storage().instance().extend_ttl(518_400, 518_400);
+    }
+
+    /// Move idle USDC sitting in the contract back to the Classic wallet so it can
+    /// resume earning yield via Etherfuse eYield.
+    ///
+    /// When does USDC get stranded here?
+    /// The backend deposits USDC for a ready redemption, but the investor reclaims
+    /// before fulfill_redemption is called. reclaim_expired_redemption restores the
+    /// AUM accounting, so the USDC is already counted — only capital efficiency
+    /// suffers. AUM is intentionally NOT changed by this function.
+    ///
+    /// The operator must ensure `amount` does not exceed idle USDC:
+    ///   idle = usdc_token.balance(contract) − Σ usdc_gross of all ReadyRedemption entries
+    /// Sweeping USDC reserved for pending fulfill_redemption calls will cause those
+    /// calls to fail.
+    pub fn sweep_usdc(e: Env, amount: i128) {
+        require_operator(&e);
+        assert!(amount > 0, "amount must be positive");
+
+        let usdc = token::Client::new(&e, &get_usdc_token(&e));
+        usdc.transfer(
+            &e.current_contract_address(),
+            &get_classic_wallet(&e),
+            &amount,
+        );
+
+        e.events().publish((symbol_short!("sweep"),), (amount,));
     }
 
     // ── owner / governance operations ─────────────────────────────────────────
@@ -843,6 +918,14 @@ impl Fund {
         e.events().publish((symbol_short!("set_reg"),), (registry,));
     }
 
+    /// Remove the Registry contract, reverting to permissionless receive_payment.
+    /// Use when the registry is deprecated or unavailable.
+    pub fn remove_registry(e: Env) {
+        require_admin(&e);
+        e.storage().instance().remove(&DataKey::RegistryContract);
+        e.events().publish((symbol_short!("rm_reg"),), ());
+    }
+
     pub fn set_classic_wallet(e: Env, wallet: Address) {
         require_admin(&e);
         e.storage().instance().set(&DataKey::ClassicWallet, &wallet);
@@ -857,6 +940,72 @@ impl Fund {
             .set(&DataKey::Operator, &new_operator);
         e.events()
             .publish((symbol_short!("set_op"),), (new_operator,));
+    }
+
+    pub fn set_exit_cap_bps(e: Env, value: u32) {
+        require_admin(&e);
+        assert!(
+            value > 0 && value <= 10_000,
+            "exit_cap_bps must be 1..10_000"
+        );
+        e.storage().instance().set(&DataKey::ExitCapBps, &value);
+        e.events().publish((symbol_short!("set_exit"),), (value,));
+    }
+
+    pub fn set_mgmt_fee_bps(e: Env, value: u32) {
+        require_admin(&e);
+        assert!(value <= 1_000, "mgmt_fee_bps exceeds 10%");
+        e.storage().instance().set(&DataKey::MgmtFeeBps, &value);
+        e.events().publish((symbol_short!("set_mgmt"),), (value,));
+    }
+
+    pub fn set_redemption_fee_bps(e: Env, value: u32) {
+        require_admin(&e);
+        assert!(value <= 1_000, "redemption_fee_bps exceeds 10%");
+        e.storage()
+            .instance()
+            .set(&DataKey::RedemptionFeeBps, &value);
+        e.events().publish((symbol_short!("set_rdmf"),), (value,));
+    }
+
+    pub fn set_protocol_fee_bps(e: Env, value: u32) {
+        require_admin(&e);
+        assert!(value <= 5_000, "protocol_fee_bps exceeds 50%");
+        e.storage()
+            .instance()
+            .set(&DataKey::ProtocolFeeBps, &value);
+        e.events().publish((symbol_short!("set_prtf"),), (value,));
+    }
+
+    pub fn set_max_aum_increase_bps(e: Env, value: u32) {
+        require_admin(&e);
+        assert!(
+            value > 0 && value <= 10_000,
+            "max_aum_increase_bps must be 1..10_000"
+        );
+        e.storage()
+            .instance()
+            .set(&DataKey::MaxAumIncreaseBps, &value);
+        e.events().publish((symbol_short!("set_maum"),), (value,));
+    }
+
+    pub fn set_fulfill_window(e: Env, seconds: u64) {
+        require_admin(&e);
+        assert!(seconds > 0, "fulfill_window_seconds must be positive");
+        e.storage()
+            .instance()
+            .set(&DataKey::FulfillWindowSeconds, &seconds);
+        e.events().publish((symbol_short!("set_fwin"),), (seconds,));
+    }
+
+    /// Pause or unpause all fund operations. Admin-only.
+    /// When paused, deposits, redemptions, yield additions, and management fees are blocked.
+    /// cancel_redemption and reclaim_expired_redemption remain available so investors can
+    /// always recover their funds regardless of contract state.
+    pub fn set_paused(e: Env, paused: bool) {
+        require_admin(&e);
+        e.storage().instance().set(&DataKey::Paused, &paused);
+        e.events().publish((symbol_short!("set_paus"),), (paused,));
     }
 
     /// Step 1: current admin nominates a new admin address.
@@ -915,6 +1064,18 @@ impl Fund {
             .unwrap_or(0)
     }
 
+    /// Unix timestamp (seconds) by which the backend must call fulfill_redemption.
+    /// Returns 0 if the investor has no ready redemption.
+    /// If the current ledger timestamp is past this value, the investor can call
+    /// reclaim_expired_redemption to recover their position.
+    pub fn ready_redemption_deadline(e: Env, investor: Address) -> u64 {
+        e.storage()
+            .persistent()
+            .get::<_, ReadyRedemptionData>(&DataKey::ReadyRedemption(investor))
+            .map(|d| d.deadline)
+            .unwrap_or(0)
+    }
+
     /// Number of active (non-cancelled) entries in the redemption queue.
     /// Ghost entries left by cancel_redemption are excluded.
     pub fn queue_len(e: Env) -> u32 {
@@ -956,6 +1117,13 @@ impl Fund {
         get_admin(&e)
     }
 
+    pub fn paused(e: Env) -> bool {
+        e.storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
+    }
+
     /// Extend the TTL of an investor's balance entry so it doesn't expire.
     /// Permissionless — anyone (including the investor themselves) can call this.
     /// Needed for long-term holders who don't interact with the contract for 30+ days.
@@ -963,6 +1131,32 @@ impl Fund {
         let key = DataKey::Balance(investor);
         if e.storage().persistent().has(&key) {
             e.storage().persistent().extend_ttl(&key, 518_400, 518_400);
+        }
+    }
+
+    /// Extend the TTL of an investor's pending or ready redemption entries, and of the
+    /// queue itself. Permissionless — call this if a redemption is stuck in the queue for
+    /// an extended period and there is a risk of the persistent storage expiring (~30 days
+    /// of inactivity). Renewing the queue is essential: if it expires while the investor's
+    /// entry is still alive, the entry becomes un-processable (cancel still works, but
+    /// the investor loses their queue position).
+    pub fn extend_redemption_ttl(e: Env, investor: Address) {
+        let pending_key = DataKey::PendingRedemption(investor.clone());
+        if e.storage().persistent().has(&pending_key) {
+            e.storage()
+                .persistent()
+                .extend_ttl(&pending_key, 518_400, 518_400);
+        }
+        let ready_key = DataKey::ReadyRedemption(investor);
+        if e.storage().persistent().has(&ready_key) {
+            e.storage()
+                .persistent()
+                .extend_ttl(&ready_key, 518_400, 518_400);
+        }
+        if e.storage().persistent().has(&DataKey::RedemptionQueue) {
+            e.storage()
+                .persistent()
+                .extend_ttl(&DataKey::RedemptionQueue, 518_400, 518_400);
         }
     }
 
@@ -1488,6 +1682,42 @@ mod tests {
     }
 
     #[test]
+    fn sweep_usdc_recovers_orphaned_usdc_after_reclaim() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
+
+        // Deposit 10 USDC; request 1 USDC worth of redemption
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+        let gross = fund.process_redemptions();
+        assert_eq!(gross, 1_000_000);
+
+        // Backend deposits USDC for the ready redemption
+        usdc_mint(&s, &s.fund_id, gross);
+        assert_eq!(usdc.balance(&s.fund_id), gross);
+
+        // Deadline passes without fulfillment — investor reclaims
+        s.env.ledger().with_mut(|l| l.timestamp = 604_801);
+        fund.reclaim_expired_redemption(&investor);
+
+        // AUM is restored; USDC is orphaned in the contract
+        assert_eq!(fund.aum(), 100_000_000);
+        assert_eq!(usdc.balance(&s.fund_id), gross); // still here, not yielding
+
+        let classic_before = usdc.balance(&s.classic_wallet);
+
+        // Operator sweeps orphaned USDC back to Classic wallet — AUM unchanged
+        fund.sweep_usdc(&gross);
+
+        assert_eq!(usdc.balance(&s.fund_id), 0);
+        assert_eq!(usdc.balance(&s.classic_wallet), classic_before + gross);
+        assert_eq!(fund.aum(), 100_000_000); // accounting untouched
+    }
+
+    #[test]
     fn propose_and_accept_admin() {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
@@ -1583,6 +1813,65 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "AUM increase exceeds per-call cap")]
+    fn add_yield_rejects_when_aum_is_zero() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        // No deposits — AUM = 0, cap = 0; any yield should be rejected
+        fund.add_yield(&1i128);
+    }
+
+    #[test]
+    #[should_panic(expected = "AUM increase exceeds per-call cap")]
+    fn add_tenant_fee_rejects_when_aum_is_zero() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        fund.add_tenant_fee(&1i128);
+    }
+
+    #[test]
+    fn remove_registry_disables_approval_check() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        // Set a registry, then remove it
+        let registry = Address::generate(&s.env);
+        fund.set_registry(&registry);
+        fund.remove_registry();
+
+        // After removal, receive_payment must not invoke the registry
+        // (it would panic if it tried — registry address is gone)
+        usdc_mint(&s, &s.operator, 100_000_000);
+        let imob = Address::generate(&s.env);
+        fund.receive_payment(&imob, &100_000_000); // must not panic
+    }
+
+    #[test]
+    fn process_redemptions_respects_max_queue_batch() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        // Fill the queue with MAX_QUEUE_BATCH + 5 = 45 investors.
+        // Each deposits 1 USDC; NAV = 1.0 so each holds 10M MUTAV.
+        // AUM = 45 * 10M = 450M; cap = 2.5% = 11.25M.
+        // First investor (10M USDC) fits the cap; the rest are deferred.
+        // The 5 investors beyond the batch ceiling are carried forward unexamined.
+        let n: i128 = 45;
+        let deposit_per = 10_000_000i128;
+        for _ in 0..n {
+            let inv = Address::generate(&s.env);
+            usdc_mint(&s, &inv, deposit_per);
+            fund.deposit_investor(&inv, &deposit_per);
+            fund.request_redemption(&inv, &deposit_per);
+        }
+
+        fund.process_redemptions();
+
+        // At least 5 entries carried over from beyond the batch ceiling.
+        assert!(fund.queue_len() >= 5);
+    }
+
+    #[test]
+    #[should_panic(expected = "AUM increase exceeds per-call cap")]
     fn add_yield_rejects_above_cap() {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
@@ -1629,6 +1918,220 @@ mod tests {
         // Anyone can extend the TTL without auth
         fund.extend_balance_ttl(&investor);
         assert_eq!(fund.balance(&investor), 100_000_000);
+    }
+
+    #[test]
+    fn extend_redemption_ttl_is_permissionless_and_preserves_value() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+
+        assert_eq!(fund.pending_redemption(&investor), 1_000_000);
+
+        // Any address can extend TTL — must not panic and must preserve value
+        fund.extend_redemption_ttl(&investor);
+        assert_eq!(fund.pending_redemption(&investor), 1_000_000);
+    }
+
+    #[test]
+    fn extend_redemption_ttl_is_noop_when_no_entry() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        // No pending or ready redemption — must not panic
+        fund.extend_redemption_ttl(&investor);
+    }
+
+    #[test]
+    fn large_entry_does_not_block_smaller_entries_behind_it() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let alice = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
+
+        // AUM = 1100 USDC; cap = 2.5% = 27.5 USDC
+        // alice requests 100 USDC (exceeds cap); bob requests 1 USDC (fits)
+        usdc_mint(&s, &alice, 1_000_000_000);
+        usdc_mint(&s, &bob, 100_000_000);
+        fund.deposit_investor(&alice, &1_000_000_000);
+        fund.deposit_investor(&bob, &100_000_000);
+
+        fund.request_redemption(&alice, &1_000_000_000);
+        fund.request_redemption(&bob, &10_000_000);
+
+        // alice exceeds cap → deferred; bob fits → processed despite being behind alice
+        let total = fund.process_redemptions();
+
+        assert_eq!(total, 10_000_000);                           // bob's amount only
+        assert_eq!(fund.pending_redemption(&alice), 1_000_000_000); // alice deferred
+        assert_eq!(fund.ready_redemption(&bob), 10_000_000);    // bob unblocked
+        assert_eq!(fund.queue_len(), 1);                         // only alice remains
+    }
+
+    #[test]
+    fn config_setters_update_values() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        fund.set_exit_cap_bps(&500u32);
+        assert_eq!(fund.exit_cap_bps(), 500);
+
+        fund.set_mgmt_fee_bps(&200u32);
+        assert_eq!(fund.mgmt_fee_bps(), 200);
+
+        fund.set_redemption_fee_bps(&50u32);
+        assert_eq!(fund.redemption_fee_bps(), 50);
+
+        fund.set_protocol_fee_bps(&1_000u32);
+        assert_eq!(fund.protocol_fee_bps(), 1_000);
+
+        fund.set_max_aum_increase_bps(&300u32);
+        assert_eq!(fund.max_aum_increase_bps(), 300);
+
+        fund.set_fulfill_window(&1_209_600u64); // 14 days
+    }
+
+    #[test]
+    #[should_panic(expected = "exit_cap_bps must be 1..10_000")]
+    fn set_exit_cap_bps_rejects_above_max() {
+        let s = setup();
+        FundClient::new(&s.env, &s.fund_id).set_exit_cap_bps(&10_001u32);
+    }
+
+    #[test]
+    #[should_panic(expected = "exit_cap_bps must be 1..10_000")]
+    fn set_exit_cap_bps_rejects_zero() {
+        let s = setup();
+        FundClient::new(&s.env, &s.fund_id).set_exit_cap_bps(&0u32);
+    }
+
+    #[test]
+    fn redemption_fee_is_snapshotted_at_process_time() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
+
+        // Deposit and request; fee_bps = 25 at process time
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+        let gross = fund.process_redemptions();
+        assert_eq!(gross, 1_000_000);
+
+        // Admin raises fee to 10% after processing but before fulfillment
+        fund.set_redemption_fee_bps(&1_000u32);
+
+        // Backend deposits and fulfills — investor must still pay the original 0.25% fee
+        usdc_mint(&s, &s.fund_id, gross);
+        fund.fulfill_redemption(&investor);
+
+        let expected_fee = gross * 25 / 10_000; // 25 bps, not 1_000
+        assert_eq!(usdc.balance(&investor), gross - expected_fee);
+        assert_eq!(usdc.balance(&s.protocol), expected_fee);
+    }
+
+    #[test]
+    #[should_panic(expected = "mgmt_fee_bps exceeds 10%")]
+    fn set_mgmt_fee_bps_rejects_above_max() {
+        let s = setup();
+        FundClient::new(&s.env, &s.fund_id).set_mgmt_fee_bps(&1_001u32);
+    }
+
+    #[test]
+    #[should_panic(expected = "protocol_fee_bps exceeds 50%")]
+    fn set_protocol_fee_bps_rejects_above_max() {
+        let s = setup();
+        FundClient::new(&s.env, &s.fund_id).set_protocol_fee_bps(&5_001u32);
+    }
+
+    #[test]
+    #[should_panic(expected = "max_aum_increase_bps must be 1..10_000")]
+    fn set_max_aum_increase_bps_rejects_zero() {
+        let s = setup();
+        FundClient::new(&s.env, &s.fund_id).set_max_aum_increase_bps(&0u32);
+    }
+
+    #[test]
+    fn set_exit_cap_bps_takes_effect_on_next_process() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        // Deposit 100 USDC → 100M MUTAV; default cap = 2.5% = 2.5M micro-USDC
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+
+        // Request 10M MUTAV (= 1 USDC) — exceeds 2.5M cap → deferred
+        fund.request_redemption(&investor, &10_000_000);
+        let total = fund.process_redemptions();
+        assert_eq!(total, 0);
+
+        // Admin raises cap to 20% = 20M micro-USDC; 10M now fits
+        fund.set_exit_cap_bps(&2_000u32);
+        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 1);
+        let total = fund.process_redemptions();
+        assert!(total > 0);
+        assert_eq!(fund.pending_redemption(&investor), 0);
+    }
+
+    #[test]
+    fn ready_redemption_deadline_reflects_fulfill_window() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        // Nenhum resgate pronto ainda — deve retornar 0
+        assert_eq!(fund.ready_redemption_deadline(&investor), 0);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+
+        // Timestamp inicial = 0; process_redemptions define deadline = 0 + 604_800 (7 dias)
+        fund.process_redemptions();
+
+        let deadline = fund.ready_redemption_deadline(&investor);
+        assert_eq!(deadline, 604_800); // timestamp 0 + fulfill_window_seconds configurado no setup
+
+        // Após o prazo, o investidor pode reclamar — deadline não muda, é só uma leitura
+        s.env.ledger().with_mut(|l| l.timestamp = 604_801);
+        assert_eq!(fund.ready_redemption_deadline(&investor), 604_800);
+
+        fund.reclaim_expired_redemption(&investor);
+
+        // Depois do reclaim a entrada some — volta para 0
+        assert_eq!(fund.ready_redemption_deadline(&investor), 0);
+    }
+
+    #[test]
+    fn cancel_redemption_purges_ghost_on_next_process() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let alice = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
+
+        usdc_mint(&s, &alice, 100_000_000);
+        usdc_mint(&s, &bob, 100_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+        fund.deposit_investor(&bob, &100_000_000);
+
+        fund.request_redemption(&alice, &1_000_000);
+        fund.request_redemption(&bob, &1_000_000);
+        assert_eq!(fund.queue_len(), 2);
+
+        // Alice cancela — vira ghost interno, mas queue_len já desconta
+        fund.cancel_redemption(&alice);
+        assert_eq!(fund.queue_len(), 1);
+
+        // process_redemptions percorre a fila inteira; o ghost da alice é descartado
+        fund.process_redemptions();
+        assert_eq!(fund.queue_len(), 0);
     }
 
     #[test]
@@ -1696,5 +2199,378 @@ mod tests {
             &604_800u64,
             &500u32,
         );
+    }
+
+    // ── stress tests ──────────────────────────────────────────────────────────
+
+    /// Demonstrates that a queue drains progressively in stages when the exit cap is
+    /// adjusted between calls. Uses 12 investors and two process_redemptions calls:
+    ///   call 1 (cap = 25%): processes 3 investors — 9 deferred
+    ///   call 2 (cap = 100%, next week): processes remaining 9 — queue empty
+    ///
+    /// Soroban write-entry budget (50) limits how many investors can be processed per
+    /// call: each costs 3 writes (remove pending + write ready + TTL ready), so the
+    /// practical ceiling is ~14 per call. Entries beyond that must spill to future calls.
+    #[test]
+    fn stress_queue_drains_in_stages() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        // 12 investors × 10 USDC → AUM = 120 USDC. cap = 25% = 30 USDC/week.
+        let n = 12u32;
+        let deposit_per = 10_000_000i128;
+        for _ in 0..n {
+            let inv = Address::generate(&s.env);
+            usdc_mint(&s, &inv, deposit_per);
+            fund.deposit_investor(&inv, &deposit_per);
+            fund.request_redemption(&inv, &deposit_per);
+        }
+        assert_eq!(fund.queue_len(), n);
+
+        // Call 1: 3 investors fit the 30 USDC cap (3 × 10 = 30 ≤ 30); 4th deferred.
+        fund.set_exit_cap_bps(&2_500u32);
+        let week1 = fund.process_redemptions();
+        assert_eq!(week1, 30_000_000, "3 investors processed at 25% cap");
+        assert_eq!(fund.queue_len(), 9, "9 deferred to next call");
+
+        // Admin raises cap to 100% — remaining 9 investors can now all exit at once.
+        fund.set_exit_cap_bps(&10_000u32);
+
+        // Call 2 (week 2): cap = 100% of remaining AUM (90 USDC). All 9 fit.
+        // writes = 9 × 3 + 7 overhead = 34 ≤ 50 — within Soroban limits.
+        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 1);
+        let week2 = fund.process_redemptions();
+        assert_eq!(week2, 90_000_000, "remaining 9 investors drained");
+        assert_eq!(fund.queue_len(), 0, "queue fully empty after 2 calls");
+    }
+
+    /// At every step: sum(balance + pending_redemption for all investors) == total_supply.
+    /// ready_redemption is excluded: that MUTAV was already burned from total_supply
+    /// during process_redemptions (reclaim re-mints it back if needed).
+    #[test]
+    fn stress_mutav_conservation() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        let amounts: [i128; 10] = [
+            100_000_000, 200_000_000,  50_000_000, 300_000_000, 150_000_000,
+             80_000_000, 120_000_000, 250_000_000,  90_000_000, 170_000_000,
+        ];
+        let mut investors = soroban_sdk::Vec::<Address>::new(&s.env);
+        for &amt in amounts.iter() {
+            let inv = Address::generate(&s.env);
+            usdc_mint(&s, &inv, amt);
+            fund.deposit_investor(&inv, &amt);
+            investors.push_back(inv);
+        }
+
+        let check = || {
+            let mut total: i128 = 0;
+            for i in 0..investors.len() {
+                let inv = investors.get_unchecked(i);
+                total += fund.balance(&inv) + fund.pending_redemption(&inv);
+            }
+            assert_eq!(total, fund.total_supply());
+        };
+
+        check(); // baseline: all MUTAV is in balances
+
+        // First 4 investors request half their MUTAV → moves to pending
+        for i in 0..4u32 {
+            let inv = investors.get_unchecked(i);
+            let half = fund.balance(&inv) / 2;
+            fund.request_redemption(&inv, &half);
+        }
+        check(); // pending replaces balance, supply unchanged
+
+        // Investors 0 and 1 cancel → pending returns to balance
+        fund.cancel_redemption(&investors.get_unchecked(0));
+        fund.cancel_redemption(&investors.get_unchecked(1));
+        check(); // cancel restores balance — supply still unchanged
+
+        // Process: investors 2 and 3 have their MUTAV burned from supply
+        fund.set_exit_cap_bps(&5_000u32);
+        fund.process_redemptions();
+        check(); // pending removed AND supply decreased by same amount — still balanced
+
+        // Investor 2 reclaims after deadline → MUTAV re-minted back into supply
+        s.env.ledger().with_mut(|l| l.timestamp = 604_801);
+        fund.reclaim_expired_redemption(&investors.get_unchecked(2));
+        check(); // re-mint adds to both balance and supply — balanced again
+    }
+
+    /// Verifies that the weekly exit cap accumulates correctly across multiple
+    /// process_redemptions calls and resets cleanly at the start of a new week.
+    ///
+    /// Setup: 10 investors × 100 USDC = 1000 USDC AUM, exit_cap = 2.5% = 25 USDC/week.
+    /// Each requests 10 USDC (1% of AUM): investors 1 and 2 fit (20 ≤ 25),
+    /// investor 3 is deferred (30 > 25 cap).
+    #[test]
+    fn stress_cap_accumulates_within_week_and_resets_next_week() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        let deposit_per = 100_000_000i128;
+        let request_per =  10_000_000i128;
+        for _ in 0..10u32 {
+            let inv = Address::generate(&s.env);
+            usdc_mint(&s, &inv, deposit_per);
+            fund.deposit_investor(&inv, &deposit_per);
+            fund.request_redemption(&inv, &request_per);
+        }
+        // AUM = 1000M, cap = 2.5% = 25M/week, each request = 10M
+
+        let call1 = fund.process_redemptions();
+        assert_eq!(call1, 20_000_000, "first call: 2 investors fit the weekly cap");
+
+        // 20M already used this week; only ~4.5M remain — nobody fits the second call
+        let call2 = fund.process_redemptions();
+        assert_eq!(call2, 0, "second call in same week: cap exhausted");
+
+        // New week: cap resets, 2 more investors are processed
+        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 1);
+        let call3 = fund.process_redemptions();
+        assert_eq!(call3, 20_000_000, "new week: cap resets, 2 more processed");
+        assert_eq!(fund.queue_len(), 6, "6 investors still waiting after 2 weeks");
+    }
+
+    /// Verifica a direção correta do NAV para cada operação:
+    /// - exatamente igual: request_redemption, cancel_redemption, fulfill_redemption
+    ///   (não tocam AUM nem supply)
+    /// - não-decrescente: deposit, process_redemptions
+    ///   (truncamento inteiro pode adicionar ≤1 unidade, sempre em favor do fundo)
+    /// - estritamente maior: add_yield, add_tenant_fee
+    /// - estritamente menor: charge_mgmt_fee, cover_default
+    #[test]
+    fn stress_nav_only_changes_on_yield_and_fees() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        let alice = Address::generate(&s.env);
+        let bob   = Address::generate(&s.env);
+
+        // Primeiro depósito: NAV = 1.0 e não deve mudar
+        let nav0 = fund.nav();
+        usdc_mint(&s, &alice, 100_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+        assert_eq!(fund.nav(), nav0, "primeiro depósito não pode mudar o NAV");
+
+        // add_yield: NAV sobe
+        let nav1 = fund.nav();
+        fund.add_yield(&(fund.aum() / 10)); // exatamente no teto de 10%
+        assert!(fund.nav() > nav1, "yield deve subir o NAV");
+
+        // Segundo depósito com NAV elevado: não-decrescente
+        let nav2 = fund.nav();
+        usdc_mint(&s, &bob, 100_000_000);
+        fund.deposit_investor(&bob, &100_000_000);
+        assert!(fund.nav() >= nav2, "depósito não pode diminuir o NAV");
+
+        // request_redemption: só trava MUTAV, AUM/supply intocados — exato
+        let nav3 = fund.nav();
+        fund.request_redemption(&alice, &5_000_000);
+        assert_eq!(fund.nav(), nav3, "request_redemption não pode mudar o NAV");
+
+        // cancel_redemption: devolve MUTAV, AUM/supply intocados — exato
+        let nav4 = fund.nav();
+        fund.cancel_redemption(&alice);
+        assert_eq!(fund.nav(), nav4, "cancel não pode mudar o NAV");
+
+        // process_redemptions: burn proporcional, NAV não-decrescente
+        fund.request_redemption(&alice, &5_000_000);
+        fund.set_exit_cap_bps(&5_000u32);
+        let nav5 = fund.nav();
+        fund.process_redemptions();
+        assert!(fund.nav() >= nav5, "process_redemptions não pode diminuir o NAV");
+
+        // fulfill_redemption: só move USDC, AUM/supply já acertados — exato
+        let nav6 = fund.nav();
+        let gross = fund.ready_redemption(&alice);
+        usdc_mint(&s, &s.fund_id, gross);
+        fund.fulfill_redemption(&alice);
+        assert_eq!(fund.nav(), nav6, "fulfill não pode mudar o NAV");
+
+        // add_tenant_fee: AUM sobe, NAV sobe
+        let nav7 = fund.nav();
+        fund.add_tenant_fee(&(fund.aum() / 10));
+        assert!(fund.nav() > nav7, "receita de locatário deve subir o NAV");
+
+        // charge_mgmt_fee: AUM cai, NAV cai
+        s.env.ledger().with_mut(|l| l.timestamp = 31 * 24 * 60 * 60);
+        let nav8 = fund.nav();
+        fund.charge_mgmt_fee();
+        assert!(fund.nav() < nav8, "taxa de gestão deve diminuir o NAV");
+
+        // cover_default: AUM cai, NAV cai
+        let nav9 = fund.nav();
+        fund.cover_default(&5_000_000, &Address::generate(&s.env));
+        assert!(fund.nav() < nav9, "cobertura de default deve diminuir o NAV");
+    }
+
+    /// Simula 3 rounds completos de operação: depósito → pedido → processo → fulfill.
+    /// Entre rounds: yield adicionado (round 2) e fee cobrada (round 3).
+    /// A invariante de conservação de MUTAV é verificada após cada operação.
+    #[test]
+    fn stress_load_with_deposit_redeem_cycles() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        fund.set_exit_cap_bps(&5_000u32); // 50% — suficiente pra processar todos os resgates
+
+        let alice = Address::generate(&s.env);
+        let bob   = Address::generate(&s.env);
+        let carol = Address::generate(&s.env);
+        let dave  = Address::generate(&s.env);
+
+        // Invariante: sum(saldo + pending) de todos os investidores == total_supply
+        let check = || {
+            let accounted = fund.balance(&alice)   + fund.pending_redemption(&alice)
+                          + fund.balance(&bob)     + fund.pending_redemption(&bob)
+                          + fund.balance(&carol)   + fund.pending_redemption(&carol)
+                          + fund.balance(&dave)    + fund.pending_redemption(&dave);
+            assert_eq!(accounted, fund.total_supply());
+        };
+
+        // ── Round 1: depósitos iniciais + resgate parcial ────────────────────
+        usdc_mint(&s, &alice, 100_000_000);
+        usdc_mint(&s, &bob,   200_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+        fund.deposit_investor(&bob,   &200_000_000);
+        assert_eq!(fund.nav(), 10_000_000); // 1.0 — primeiros depósitos não movem o NAV
+        check();
+
+        fund.request_redemption(&alice, &50_000_000);
+        check();
+
+        let nav_r1 = fund.nav();
+        let usdc1 = fund.process_redemptions();
+        assert!(fund.nav() >= nav_r1);
+        usdc_mint(&s, &s.fund_id, usdc1);
+        fund.fulfill_redemption(&alice);
+        check();
+
+        // ── Round 2: yield → novos investidores → resgates ──────────────────
+        let nav_before_yield = fund.nav();
+        fund.add_yield(&(fund.aum() / 10));
+        assert!(fund.nav() > nav_before_yield);
+
+        usdc_mint(&s, &carol, 150_000_000);
+        usdc_mint(&s, &dave,   75_000_000);
+        fund.deposit_investor(&carol, &150_000_000);
+        fund.deposit_investor(&dave,   &75_000_000);
+        check();
+
+        fund.request_redemption(&bob,   &(fund.balance(&bob)   / 2));
+        fund.request_redemption(&carol, &(fund.balance(&carol) / 3));
+        check();
+
+        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 1);
+        let usdc2 = fund.process_redemptions();
+        assert!(usdc2 > 0);
+        usdc_mint(&s, &s.fund_id, usdc2);
+        fund.fulfill_redemption(&bob);
+        fund.fulfill_redemption(&carol);
+        check();
+
+        // ── Round 3: taxa de gestão → resgates finais ────────────────────────
+        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
+        let nav_before_fee = fund.nav();
+        fund.charge_mgmt_fee();
+        assert!(fund.nav() < nav_before_fee);
+        check();
+
+        fund.request_redemption(&alice, &fund.balance(&alice));
+        fund.request_redemption(&dave,  &fund.balance(&dave));
+        check();
+
+        s.env.ledger().with_mut(|l| l.timestamp = 2 * WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
+        let usdc3 = fund.process_redemptions();
+        usdc_mint(&s, &s.fund_id, usdc3);
+        fund.fulfill_redemption(&alice);
+        fund.fulfill_redemption(&dave);
+        check();
+
+        // ── Estado final: bob e carol ainda têm MUTAV ────────────────────────
+        let remaining = fund.balance(&bob) + fund.balance(&carol);
+        assert_eq!(fund.total_supply(), remaining, "conservação final");
+        assert!(fund.aum() > 0, "AUM deve continuar positivo");
+        assert!(fund.nav() > 0, "NAV deve continuar positivo");
+    }
+
+    // ── emergency pause tests ─────────────────────────────────────────────────
+
+    #[test]
+    #[should_panic(expected = "contract is paused")]
+    fn pause_blocks_deposit() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        fund.set_paused(&true);
+
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000); // must panic
+    }
+
+    #[test]
+    fn pause_does_not_block_cancel_redemption() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        // Set up a pending redemption while unpaused
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+        assert_eq!(fund.pending_redemption(&investor), 1_000_000);
+
+        // Pause the contract
+        fund.set_paused(&true);
+        assert!(fund.paused());
+
+        // Investor must still be able to cancel even while paused
+        fund.cancel_redemption(&investor);
+        assert_eq!(fund.pending_redemption(&investor), 0);
+        assert_eq!(fund.balance(&investor), 100_000_000);
+    }
+
+    #[test]
+    fn pause_does_not_block_reclaim_expired_redemption() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        // Set up a ready redemption while unpaused
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        fund.request_redemption(&investor, &1_000_000);
+        fund.process_redemptions();
+        assert_eq!(fund.ready_redemption(&investor), 1_000_000);
+
+        // Pause and advance past the fulfill deadline
+        fund.set_paused(&true);
+        s.env.ledger().with_mut(|l| l.timestamp = 604_801);
+
+        // Reclaim must work even while paused — investor can always recover their position
+        fund.reclaim_expired_redemption(&investor);
+        assert_eq!(fund.balance(&investor), 100_000_000);
+        assert_eq!(fund.ready_redemption(&investor), 0);
+    }
+
+    #[test]
+    fn unpause_restores_operations() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        let investor = Address::generate(&s.env);
+
+        fund.set_paused(&true);
+        assert!(fund.paused());
+
+        fund.set_paused(&false);
+        assert!(!fund.paused());
+
+        // Deposit works normally after unpause
+        usdc_mint(&s, &investor, 100_000_000);
+        fund.deposit_investor(&investor, &100_000_000);
+        assert_eq!(fund.balance(&investor), 100_000_000);
     }
 }

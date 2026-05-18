@@ -33,11 +33,17 @@ When the contract is deployed on the blockchain, it needs to be configured once:
 - The fee charged on redemption
 - The protocol's share of each incoming payment
 
-Once configured, these parameters do not change.
+These parameters can be updated after deployment by the owner (admin), within the same maximum limits enforced at initialization.
 
 ---
 
-### 2. Receiving payment from a real estate agency
+### 2. Approved partner check
+
+Before accepting a payment from a real estate agency, the contract verifies that the agency is a registered and approved partner in the SGR registry. If a registry contract is configured, any payment from an unapproved agency is rejected. The registry can be linked or unlinked by the owner at any time — during early deployment, it may be left unconfigured while the partner network is being set up.
+
+---
+
+### 3. Receiving payment from a real estate agency
 
 When a real estate agency pays the guaranteed rent, the operator records the payment in the contract. The amount is received and automatically split:
 
@@ -60,7 +66,7 @@ The supply does not change — no new tokens are created. Only the AUM rises, so
 
 ---
 
-### 3. Investor deposits funds
+### 4. Investor deposits funds
 
 An investor sends USDC and receives MUTAV tokens in return. The amount of MUTAV received depends on the current fund value — if the fund has already appreciated, each MUTAV is worth more, so the investor receives fewer tokens for the same USDC (but each token is worth more). The deposited USDC goes directly to the fund wallet, which converts it into Treasury bonds. The contract does not hold USDC itself.
 
@@ -79,7 +85,7 @@ The investor received 92,592 MUTAV (fewer than the USDC deposited) because each 
 
 ---
 
-### 4. Requesting a redemption
+### 5. Requesting a redemption
 
 An investor who wants to exit the fund requests redemption of their MUTAV tokens. Those tokens are **locked** immediately (removed from their available balance) and placed in a queue. The exit price **is not calculated now** — it will be calculated when the operator processes the queue, ensuring everyone exits at the fair value on the day of execution.
 
@@ -102,13 +108,13 @@ The investor will receive 108,000 USDC (100,000 × 1.08). AUM and supply decreas
 
 ---
 
-### 5. Cancelling a redemption request
+### 6. Cancelling a redemption request
 
 If the investor changes their mind before the operator processes the queue, they can cancel. The locked tokens are returned to their balance instantly, without affecting the queue for other investors.
 
 ---
 
-### 6. Processing the redemption queue
+### 7. Processing the redemption queue
 
 The operator runs this function periodically (typically once a week). The contract:
 
@@ -123,19 +129,19 @@ Investors who don't fit within the week's limit remain in the queue for the next
 
 ---
 
-### 7. Paying the investor
+### 8. Paying the investor
 
 After the operator retrieves USDC from Etherfuse and deposits it into the contract, they trigger this function for each investor in the payment queue. The contract deducts a small redemption fee and sends the remainder directly to the investor's wallet. If the deadline passes without the operator paying, the investor has an alternative protection path (see below).
 
 ---
 
-### 8. Redemption after deadline expiry (investor protection)
+### 9. Redemption after deadline expiry (investor protection)
 
 If the operator has not paid within the configured deadline, the investor can trigger this safety mechanism on their own. Their MUTAV tokens are **restored** as if the redemption had never occurred, and the fund's assets are corrected back. This protects the investor from being stranded without payment or their tokens in case the backend fails.
 
 ---
 
-### 9. Recording Treasury yield
+### 10. Recording Treasury yield
 
 The operator periodically records the yield received via Etherfuse (Treasury bond interest). This increases the fund's assets and consequently the NAV — meaning each MUTAV becomes worth more. There is a per-call limit (e.g., a maximum of 5% of current assets at once) to prevent manipulation.
 
@@ -152,13 +158,13 @@ The supply does not change — no new tokens are created. The yield alone increa
 
 ---
 
-### 10. Recording a rental fee received
+### 11. Recording a rental fee received
 
 Works the same as yield recording, but specifically for property administrative fees (such as property management fees paid by tenants). Also has a per-call limit.
 
 ---
 
-### 11. Charging the monthly management fee
+### 12. Charging the monthly management fee
 
 Once a month (with a minimum 30-day interval), the operator charges the fund's management fee. This reduces the assets — the AUM shrinks slightly, causing the NAV to dip. The actual payment happens off-chain via Etherfuse; the contract only records the accounting deduction.
 
@@ -177,7 +183,7 @@ The supply does not change. Only the AUM falls, so each MUTAV is worth slightly 
 
 ---
 
-### 12. Recording an off-chain payment
+### 13. Recording an off-chain payment
 
 When the fund needs to pay something directly (such as forwarding rental income to the property owner via bank transfer), this cannot be done by the Soroban contract — Classic Stellar uses a special memo field that Soroban contracts cannot send. So the operator records this payment here for audit purposes: the assets decrease, and the destination address is stored on the blockchain.
 
@@ -194,7 +200,7 @@ Identical behavior to the management fee: only the AUM falls, the supply stays t
 
 ---
 
-### 13. Covering a default
+### 14. Covering a default
 
 If a tenant has not paid and the fund needs to cover the guarantee to the property owner, the **owner** (not the operator) triggers this function. The assets are reduced by the corresponding amount, and the recipient address is recorded for traceability. The actual payment goes out from the classic wallet via Etherfuse.
 
@@ -211,7 +217,17 @@ A default is a real loss for the fund: AUM drops and every investor's NAV drops 
 
 ---
 
-### 14. Contract ownership transfer
+### 15. Emergency pause
+
+The owner can pause the contract at any time — for example, if a critical vulnerability is discovered or while an audit is in progress. When paused, all fund operations are blocked: no new deposits, no redemption requests, no yield recording, no fee charges.
+
+However, two functions remain available even while paused: cancelling a redemption request and reclaiming an expired redemption. This guarantees that investors can always recover their funds regardless of the contract's state — they are never locked out.
+
+To resume normal operations, the owner unpauses the contract with the same function.
+
+---
+
+### 16. Contract ownership transfer
 
 To prevent a typo from transferring control of the fund to a non-existent address (locking everything permanently), changing ownership works in **two steps**:
 
@@ -222,13 +238,13 @@ Only after confirmation does control transfer. If the nominated address is wrong
 
 ---
 
-### 15. Replacing the operator
+### 17. Replacing the operator
 
 The owner can replace the operator at any time (for example, if the hot wallet is compromised). The new address immediately assumes operational permissions.
 
 ---
 
-### 16. MUTAV token operations
+### 18. MUTAV token operations
 
 MUTAV follows Stellar's token standard (SEP-0041), meaning it works like any other token on the network:
 
@@ -239,7 +255,7 @@ MUTAV follows Stellar's token standard (SEP-0041), meaning it works like any oth
 
 ---
 
-### 17. Public queries
+### 19. Public queries
 
 The contract exposes various pieces of information that anyone can query at no cost:
 
@@ -251,12 +267,15 @@ The contract exposes various pieces of information that anyone can query at no c
 | Address balance | How many MUTAV a specific wallet holds |
 | Pending request | How many MUTAV an investor has awaiting processing |
 | Ready for redemption | How much USDC an investor has to receive |
+| Redemption deadline | The timestamp by which the operator must pay a processed redemption |
+| Queue length | How many investors are currently waiting in the redemption queue |
 | Available this week | How much can still be redeemed in the current cycle |
 | Parameters | Fees, limits, and payment window as configured |
+| Paused | Whether the contract is currently paused |
 
 ---
 
-### 18. On-chain data maintenance
+### 20. On-chain data maintenance
 
 On Stellar, data stored on-chain expires if not renewed periodically. The contract has functions for this:
 
