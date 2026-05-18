@@ -5,7 +5,7 @@
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short,
     token::{self, TokenInterface},
-    Address, Env, IntoVal, MuxedAddress, String, Symbol, Val, Vec,
+    Address, Env, MuxedAddress, String, Vec,
 };
 
 // 30 days in seconds — minimum interval between management fee charges
@@ -41,7 +41,6 @@ enum DataKey {
     ProtocolAddr,
     UsdcToken,
     ClassicWallet,
-    RegistryContract,
     Aum,
     TotalSupply,
     LastFeeTimestamp,
@@ -69,6 +68,8 @@ enum DataKey {
     PendingRedemption(Address), // mutav locked, awaiting process_redemptions
     ReadyRedemption(Address),   // ReadyRedemptionData after process_redemptions
     RedemptionQueue,            // Vec<Address> FIFO
+    // per-fund partner whitelist (persistent storage)
+    ApprovedPartner(Address),
 }
 
 #[contracttype]
@@ -313,21 +314,6 @@ fn require_not_paused(e: &Env) {
     );
 }
 
-// If a registry contract is configured, assert the imobiliária is approved.
-// Skipped when registry is not set (useful during tests and initial deploy).
-fn check_imobiliaria_if_registry_set(e: &Env, imobiliaria: &Address) {
-    if let Some(registry) = e
-        .storage()
-        .instance()
-        .get::<_, Address>(&DataKey::RegistryContract)
-    {
-        let mut args: Vec<Val> = Vec::new(e);
-        args.push_back(imobiliaria.into_val(e));
-        let approved: bool = e.invoke_contract(&registry, &Symbol::new(e, "is_approved"), args);
-        assert!(approved, "imobiliaria not approved");
-    }
-}
-
 // ── NAV math ──────────────────────────────────────────────────────────────────
 //
 // All USDC amounts are in micro-USDC (7 decimal places, same as Stellar stroops).
@@ -448,15 +434,23 @@ impl Fund {
 
     // ── on-ramp ───────────────────────────────────────────────────────────────
 
-    /// Called by the backend after Etherfuse confirms USDC in the operator wallet.
-    /// Pulls amount_usdc from the operator, splits 20% → protocol and 80% → classic_wallet,
-    /// and records the 80% as AUM (it will become TESOURO via Etherfuse eYield).
+    /// Records the monthly guarantee fee repasse from a partner imobiliária.
+    /// Flow: imobiliária pays boleto → MUTAV bank account → operator on-ramps USDC →
+    /// operator calls this function. Pulls amount_usdc from the operator wallet, splits
+    /// protocol_fee_bps → protocol wallet and remainder → classic_wallet (converted to
+    /// TESOURO via Etherfuse eYield). Only approved partners are accepted.
     pub fn receive_payment(e: Env, imobiliaria: Address, amount_usdc: i128) {
         require_operator(&e);
         require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
 
-        check_imobiliaria_if_registry_set(&e, &imobiliaria);
+        assert!(
+            e.storage()
+                .persistent()
+                .get::<_, bool>(&DataKey::ApprovedPartner(imobiliaria.clone()))
+                .unwrap_or(false),
+            "imobiliaria not approved"
+        );
 
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
         let operator = get_operator(&e);
@@ -890,10 +884,10 @@ impl Fund {
 
     // ── owner / governance operations ─────────────────────────────────────────
 
-    /// Record a default payout. Purely accounting — decrements AUM and logs the
-    /// destination address for on-chain audit trail.
-    /// The actual payment to the landlord goes via TESOURO off-ramp from the
-    /// Classic wallet (Stellar Classic tx with MEMO → Etherfuse → PIX).
+    /// Record an approved claim (sinistro) payout to a partner imobiliária.
+    /// Purely accounting — decrements AUM and logs the imobiliária address for audit.
+    /// Flow: claim approved in MUTAV platform → owner calls this → AUM decreases →
+    /// MUTAV transfers from the classic wallet to the imobiliária's bank account.
     pub fn cover_default(e: Env, amount_usdc: i128, destination: Address) {
         require_admin(&e);
         assert!(amount_usdc > 0, "amount must be positive");
@@ -909,21 +903,22 @@ impl Fund {
         );
     }
 
-    /// Set the Registry contract address to enable on-chain imobiliária approval checks.
-    pub fn set_registry(e: Env, registry: Address) {
+    /// Approve or revoke a partner imobiliária for this fund tier.
+    /// Only approved partners can route payments into this fund via receive_payment.
+    /// When the partner's risk score changes tier, the backend calls this to reallocate
+    /// them to the correct fund (remove here, approve on the other fund).
+    pub fn set_approved_partner(e: Env, imobiliaria: Address, approved: bool) {
         require_admin(&e);
-        e.storage()
-            .instance()
-            .set(&DataKey::RegistryContract, &registry);
-        e.events().publish((symbol_short!("set_reg"),), (registry,));
-    }
-
-    /// Remove the Registry contract, reverting to permissionless receive_payment.
-    /// Use when the registry is deprecated or unavailable.
-    pub fn remove_registry(e: Env) {
-        require_admin(&e);
-        e.storage().instance().remove(&DataKey::RegistryContract);
-        e.events().publish((symbol_short!("rm_reg"),), ());
+        let key = DataKey::ApprovedPartner(imobiliaria.clone());
+        if approved {
+            e.storage().persistent().set(&key, &true);
+            // ~1 year TTL; re-approve to renew if needed
+            e.storage().persistent().extend_ttl(&key, 6_220_800, 6_220_800);
+        } else {
+            e.storage().persistent().remove(&key);
+        }
+        e.events()
+            .publish((symbol_short!("set_part"),), (imobiliaria, approved));
     }
 
     pub fn set_classic_wallet(e: Env, wallet: Address) {
@@ -1121,6 +1116,13 @@ impl Fund {
         e.storage()
             .instance()
             .get(&DataKey::Paused)
+            .unwrap_or(false)
+    }
+
+    pub fn is_approved_partner(e: Env, imobiliaria: Address) -> bool {
+        e.storage()
+            .persistent()
+            .get(&DataKey::ApprovedPartner(imobiliaria))
             .unwrap_or(false)
     }
 
@@ -1327,6 +1329,7 @@ mod tests {
         classic_wallet: Address,
         fund_id: Address,
         usdc_id: Address,
+        imob: Address, // pre-approved partner imobiliária
     }
 
     fn setup() -> Setup {
@@ -1359,7 +1362,10 @@ mod tests {
             &1_000u32,   // max_aum_increase_bps: 10% per call
         );
 
-        let _ = admin; // used only in initialize; not needed after setup
+        let imob = Address::generate(&e);
+        FundClient::new(&e, &fund_id).set_approved_partner(&imob, &true);
+
+        let _ = admin; // used only in initialize and set_approved_partner; not needed after setup
         Setup {
             env: e,
             operator,
@@ -1367,6 +1373,7 @@ mod tests {
             classic_wallet,
             fund_id,
             usdc_id,
+            imob,
         }
     }
 
@@ -1461,12 +1468,11 @@ mod tests {
     fn receive_payment_splits_by_protocol_fee_bps() {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
-        let imob = Address::generate(&s.env);
         let usdc = token::Client::new(&s.env, &s.usdc_id);
 
         // protocol_fee_bps = 2_000 (20%) set in setup()
         usdc_mint(&s, &s.operator, 100_000_000);
-        fund.receive_payment(&imob, &100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000);
 
         let expected_protocol = 100_000_000i128 * fund.protocol_fee_bps() as i128 / 10_000;
         let expected_fund = 100_000_000 - expected_protocol;
@@ -1742,7 +1748,7 @@ mod tests {
 
         // New operator can call operator-level function
         usdc_mint(&s, &new_op, 100_000_000);
-        fund.receive_payment(&Address::generate(&s.env), &100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000);
     }
 
     #[test]
@@ -1829,20 +1835,37 @@ mod tests {
     }
 
     #[test]
-    fn remove_registry_disables_approval_check() {
+    fn approved_partner_allows_receive_payment() {
         let s = setup();
         let fund = FundClient::new(&s.env, &s.fund_id);
 
-        // Set a registry, then remove it
-        let registry = Address::generate(&s.env);
-        fund.set_registry(&registry);
-        fund.remove_registry();
-
-        // After removal, receive_payment must not invoke the registry
-        // (it would panic if it tried — registry address is gone)
+        // s.imob is pre-approved in setup(); payment must succeed
         usdc_mint(&s, &s.operator, 100_000_000);
-        let imob = Address::generate(&s.env);
-        fund.receive_payment(&imob, &100_000_000); // must not panic
+        fund.receive_payment(&s.imob, &100_000_000);
+        assert_eq!(fund.aum(), 80_000_000); // 20% protocol fee
+    }
+
+    #[test]
+    #[should_panic(expected = "imobiliaria not approved")]
+    fn unapproved_partner_blocks_receive_payment() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        let unknown = Address::generate(&s.env);
+        usdc_mint(&s, &s.operator, 100_000_000);
+        fund.receive_payment(&unknown, &100_000_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "imobiliaria not approved")]
+    fn revoked_partner_blocks_receive_payment() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        fund.set_approved_partner(&s.imob, &false);
+
+        usdc_mint(&s, &s.operator, 100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000);
     }
 
     #[test]

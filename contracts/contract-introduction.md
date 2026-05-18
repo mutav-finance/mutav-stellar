@@ -39,13 +39,15 @@ These parameters can be updated after deployment by the owner (admin), within th
 
 ### 2. Approved partner check
 
-Before accepting a payment from a real estate agency, the contract verifies that the agency is a registered and approved partner in the SGR registry. If a registry contract is configured, any payment from an unapproved agency is rejected. The registry can be linked or unlinked by the owner at any time — during early deployment, it may be left unconfigured while the partner network is being set up.
+Each fund maintains its own whitelist of approved partner agencies. Before accepting a payment, the contract checks whether the agency is on this fund's whitelist — if not, the payment is rejected.
+
+The owner manages the whitelist via `set_approved_partner`. This is also how reallocation works when an agency's risk score changes tier: the owner removes the agency from the current fund and adds it to the fund that matches the new tier. Agencies already being covered by the old fund continue normally until their contracts expire.
 
 ---
 
 ### 3. Receiving payment from a real estate agency
 
-When a real estate agency pays the guaranteed rent, the operator records the payment in the contract. The amount is received and automatically split:
+Each month, real estate agencies pay MUTAV a guarantee fee — the pooled amount collected from their tenants as part of the rental guarantee service. When this payment lands in MUTAV's bank account and the team completes the on-ramp, the operator records it in the contract. The amount is automatically split:
 
 - A small portion goes to the protocol (the company maintaining the system)
 - The remainder goes to the fund wallet, which will be converted into Treasury bonds via Etherfuse
@@ -158,9 +160,9 @@ The supply does not change — no new tokens are created. The yield alone increa
 
 ---
 
-### 11. Recording a rental fee received
+### 11. Recording a tenant fee received
 
-Works the same as yield recording, but specifically for property administrative fees (such as property management fees paid by tenants). Also has a per-call limit.
+Works the same as yield recording, but specifically for income derived from the rental guarantee contracts themselves — fees earned as part of the guarantee service, distinct from Treasury bond yield. Also has a per-call limit to prevent manipulation.
 
 ---
 
@@ -185,7 +187,7 @@ The supply does not change. Only the AUM falls, so each MUTAV is worth slightly 
 
 ### 13. Recording an off-chain payment
 
-When the fund needs to pay something directly (such as forwarding rental income to the property owner via bank transfer), this cannot be done by the Soroban contract — Classic Stellar uses a special memo field that Soroban contracts cannot send. So the operator records this payment here for audit purposes: the assets decrease, and the destination address is stored on the blockchain.
+When the fund makes an operational payment off-chain (such as reimbursements or administrative expenses that are not claim payouts), the operator records it here for audit purposes: the AUM decreases, and the destination address is stored on the blockchain. This function is distinct from covering a default — that one is owner-only and specifically for approved claims. This one is for other off-chain outflows that the operator is responsible for.
 
 **How the numbers change:**
 
@@ -202,7 +204,7 @@ Identical behavior to the management fee: only the AUM falls, the supply stays t
 
 ### 14. Covering a default
 
-If a tenant has not paid and the fund needs to cover the guarantee to the property owner, the **owner** (not the operator) triggers this function. The assets are reduced by the corresponding amount, and the recipient address is recorded for traceability. The actual payment goes out from the classic wallet via Etherfuse.
+When a tenant defaults and the claim is analyzed and approved by MUTAV, the **owner** (not the operator) triggers this function to register the coverage. The assets are reduced by the approved amount, and the destination address is recorded for traceability. The fund transfers the value to MUTAV's classic wallet, which then forwards it to the real estate agency via bank transfer.
 
 **How the numbers change:**
 
@@ -272,6 +274,7 @@ The contract exposes various pieces of information that anyone can query at no c
 | Available this week | How much can still be redeemed in the current cycle |
 | Parameters | Fees, limits, and payment window as configured |
 | Paused | Whether the contract is currently paused |
+| Approved partner | Whether a specific agency is on this fund's whitelist |
 
 ---
 
@@ -281,9 +284,10 @@ On Stellar, data stored on-chain expires if not renewed periodically. The contra
 
 - The operator renews the fund's global data approximately every 25 days
 - Anyone can renew a specific investor's balance record — useful for investors who go a long time without moving their wallet
+- Anyone can renew a specific investor's pending or ready redemption entries — useful when a redemption is sitting in queue for an extended period
 
 ---
 
 ## The full flow in one sentence
 
-A real estate agency pays the rent → the fund receives and invests in Treasury bonds → MUTAV tokens appreciate → the investor requests redemption → the fund processes it that week, calculates the fair value, converts the Treasury bonds back to USDC → and pays the investor, deducting a small fee.
+A real estate agency pays the monthly guarantee fee → the fund receives and invests in Treasury bonds → MUTAV tokens appreciate → the investor requests redemption → the fund processes it that week, calculates the fair value, converts the Treasury bonds back to USDC → and pays the investor, deducting a small fee.
