@@ -2519,6 +2519,184 @@ mod tests {
         assert!(fund.nav() > 0, "NAV deve continuar positivo");
     }
 
+    /// Investidores na fila ficam expostos a sinistros ocorridos após o pedido de resgate.
+    /// O NAV só é calculado em process_redemptions — não no momento do pedido.
+    /// Esse teste confirma que o sinistro reduz o valor de saída dos investidores em fila:
+    /// comportamento correto, pois eles ainda estão no fundo no momento do evento.
+    #[test]
+    fn stress_sinistro_hits_investors_in_queue() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        fund.set_exit_cap_bps(&10_000u32); // 100% — processa todos de uma vez
+
+        let alice = Address::generate(&s.env);
+        let bob   = Address::generate(&s.env);
+
+        // Depósitos: 100M cada → AUM 200M, supply 200M, NAV 1.0
+        usdc_mint(&s, &alice, 100_000_000);
+        usdc_mint(&s, &bob,   100_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+        fund.deposit_investor(&bob,   &100_000_000);
+
+        // Yield eleva o NAV para 1.1 antes dos pedidos
+        fund.add_yield(&20_000_000); // AUM = 220M
+        let nav_at_request = fund.nav();
+        assert_eq!(nav_at_request, 11_000_000); // 1.1 USDC/MUTAV
+
+        // Ambos pedem resgate total — preço não é calculado aqui
+        fund.request_redemption(&alice, &100_000_000);
+        fund.request_redemption(&bob,   &100_000_000);
+        assert_eq!(fund.nav(), nav_at_request); // pedido não move NAV
+
+        // Sinistro aprovado: 40M → NAV cai para 0.9
+        fund.cover_default(&40_000_000, &Address::generate(&s.env)); // AUM = 180M
+        let nav_at_process = fund.nav();
+        assert_eq!(nav_at_process, 9_000_000); // 0.9 USDC/MUTAV
+        assert!(nav_at_process < nav_at_request);
+
+        // Processa: cada investidor sai a NAV 0.9, não 1.1 do pedido
+        // alice: 100M * 180M / 200M = 90M; bob: 100M * 90M / 100M = 90M
+        let total_usdc = fund.process_redemptions();
+        assert_eq!(total_usdc, 180_000_000);
+        assert_eq!(fund.total_supply(), 0);
+        assert_eq!(fund.aum(), 0);
+
+        // Pagamento — cada um recebe ~90M (menos taxa de resgate de 0.25%)
+        // Sem o sinistro teriam recebido ~110M; a perda é real e absorvida por quem estava na fila
+        usdc_mint(&s, &s.fund_id, total_usdc);
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
+
+        let alice_before = usdc.balance(&alice);
+        fund.fulfill_redemption(&alice);
+        let alice_payout = usdc.balance(&alice) - alice_before;
+
+        let bob_before = usdc.balance(&bob);
+        fund.fulfill_redemption(&bob);
+        let bob_payout = usdc.balance(&bob) - bob_before;
+
+        assert!(alice_payout < 100_000_000, "alice absorveu a perda do sinistro");
+        assert!(bob_payout   < 100_000_000, "bob absorveu a perda do sinistro");
+        assert_eq!(alice_payout, bob_payout, "saídas simétricas — mesmo MUTAV, mesmo NAV");
+    }
+
+    /// Simula o ciclo mensal de realocação de score: imobiliária aprovada → pagamentos →
+    /// revogada (score mudou de tier) → nova parceira entra → imobiliária re-aprovada → pagamentos retomados.
+    #[test]
+    fn stress_partner_reallocation_cycle() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        // AUM inicial via depósito de investidor
+        let alice = Address::generate(&s.env);
+        usdc_mint(&s, &alice, 100_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+
+        // s.imob aprovado em setup — pagamento 1 funciona
+        usdc_mint(&s, &s.operator, 50_000_000);
+        fund.receive_payment(&s.imob, &50_000_000); // 80% = 40M vai para AUM
+        let aum_after_p1 = fund.aum();
+        assert!(aum_after_p1 > 100_000_000);
+        assert!(fund.is_approved_partner(&s.imob));
+
+        // Score muda de tier → admin revoga s.imob deste fundo
+        fund.set_approved_partner(&s.imob, &false);
+        assert!(!fund.is_approved_partner(&s.imob));
+
+        // Nova parceira aprovada para o tier atual do fundo
+        let imob2 = Address::generate(&s.env);
+        fund.set_approved_partner(&imob2, &true);
+        assert!(fund.is_approved_partner(&imob2));
+
+        usdc_mint(&s, &s.operator, 30_000_000);
+        fund.receive_payment(&imob2, &30_000_000); // 24M vai para AUM
+        let aum_after_imob2 = fund.aum();
+        assert!(aum_after_imob2 > aum_after_p1);
+
+        // Score de s.imob reverte → re-aprovada no mesmo fundo
+        fund.set_approved_partner(&s.imob, &true);
+        assert!(fund.is_approved_partner(&s.imob));
+
+        // Pagamento 2 de s.imob retomado
+        usdc_mint(&s, &s.operator, 50_000_000);
+        fund.receive_payment(&s.imob, &50_000_000);
+        assert!(fund.aum() > aum_after_imob2);
+    }
+
+    /// Ciclo de vida completo do fundo: depósitos → fees mensais de parceiro → yield →
+    /// taxa de gestão → resgate total de todos os investidores → supply e AUM zerados.
+    /// Verifica que cada investidor sai com mais do que entrou (fundo rendeu).
+    #[test]
+    fn stress_full_fund_lifecycle() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+        fund.set_exit_cap_bps(&10_000u32); // 100% — drena tudo de uma vez
+
+        let alice = Address::generate(&s.env);
+        let bob   = Address::generate(&s.env);
+        let carol = Address::generate(&s.env);
+
+        let check = || {
+            let accounted = fund.balance(&alice) + fund.pending_redemption(&alice)
+                          + fund.balance(&bob)   + fund.pending_redemption(&bob)
+                          + fund.balance(&carol) + fund.pending_redemption(&carol);
+            assert_eq!(accounted, fund.total_supply());
+        };
+
+        // ── Depósitos iniciais: 100M cada → AUM 300M, NAV 1.0 ────────────────
+        usdc_mint(&s, &alice, 100_000_000);
+        usdc_mint(&s, &bob,   100_000_000);
+        usdc_mint(&s, &carol, 100_000_000);
+        fund.deposit_investor(&alice, &100_000_000);
+        fund.deposit_investor(&bob,   &100_000_000);
+        fund.deposit_investor(&carol, &100_000_000);
+        assert_eq!(fund.nav(), 10_000_000);
+        check();
+
+        // ── Fees mensais da parceira (mês 1 e mês 2) ─────────────────────────
+        usdc_mint(&s, &s.operator, 30_000_000);
+        fund.receive_payment(&s.imob, &30_000_000); // 80% = 24M → AUM
+        usdc_mint(&s, &s.operator, 30_000_000);
+        fund.receive_payment(&s.imob, &30_000_000); // +24M → AUM = 348M
+        assert!(fund.nav() > 10_000_000);
+        check();
+
+        // ── Yield do tesouro: +5% do AUM ─────────────────────────────────────
+        fund.add_yield(&(fund.aum() / 20));
+        assert!(fund.nav() > 10_000_000);
+        check();
+
+        // ── Taxa de gestão após 30 dias ───────────────────────────────────────
+        s.env.ledger().with_mut(|l| l.timestamp = 31 * 24 * 60 * 60);
+        let nav_before_fee = fund.nav();
+        fund.charge_mgmt_fee();
+        assert!(fund.nav() < nav_before_fee);
+        check();
+
+        // ── Todos pedem resgate total ─────────────────────────────────────────
+        fund.request_redemption(&alice, &fund.balance(&alice));
+        fund.request_redemption(&bob,   &fund.balance(&bob));
+        fund.request_redemption(&carol, &fund.balance(&carol));
+        check();
+
+        // ── Drena a fila ─────────────────────────────────────────────────────
+        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
+        let total_usdc = fund.process_redemptions();
+        assert_eq!(fund.total_supply(), 0);
+        assert!(fund.aum() < 10); // dust mínimo de truncamento inteiro
+
+        // ── Pagamento final ───────────────────────────────────────────────────
+        usdc_mint(&s, &s.fund_id, total_usdc);
+        fund.fulfill_redemption(&alice);
+        fund.fulfill_redemption(&bob);
+        fund.fulfill_redemption(&carol);
+
+        // Cada investidor saiu com mais do que entrou — o fundo rendeu
+        let usdc = token::Client::new(&s.env, &s.usdc_id);
+        assert!(usdc.balance(&alice) > 100_000_000, "alice saiu com lucro");
+        assert!(usdc.balance(&bob)   > 100_000_000, "bob saiu com lucro");
+        assert!(usdc.balance(&carol) > 100_000_000, "carol saiu com lucro");
+    }
+
     // ── emergency pause tests ─────────────────────────────────────────────────
 
     #[test]
