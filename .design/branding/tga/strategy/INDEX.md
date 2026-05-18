@@ -1,5 +1,5 @@
 # Strategy
-> Phase: strategy | Brand: TGA — Token de Garantia de Aluguel | Generated: 2026-04-14
+> Phase: strategy | Brand: MUTAV — Token de Garantia de Aluguel | Generated: 2026-04-14
 
 ## Decisões Confirmadas
 
@@ -54,7 +54,7 @@
 - **Nunca em nenhuma frente:** alavancagem de falha de concorrentes, absolutos sem evidência, jargão de startup
 
 ### Mensageria
-- **Core message:** "TGA cumpre. O protocolo executa. O registro prova."
+- **Core message:** "MUTAV cumpre. O protocolo executa. O registro prova."
 - **Tagline A:** "O protocolo que cumpre." (ownável — nenhum concorrente tem mecanismo para reivindicar)
 - **Tagline B:** "Registro é garantia." (duplo sentido preciso — ato técnico + produto)
 - **Tagline C:** "Não confie. Verifique." (anti-vaporware radical — adequado para Ledger/protocolo)

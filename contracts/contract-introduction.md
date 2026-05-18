@@ -1,6 +1,6 @@
-# SGR Fund Contract Introduction
+# MUTAV Fund Contract Introduction
 
-The contract is the **financial heart of SGR**. It manages an investment fund backed by rental properties and Brazilian Treasury bonds (via Etherfuse) as reserve. Think of it as a smart vault with automatic rules written in code on the Stellar blockchain.
+The contract is the **financial heart of MUTAV**. It manages an investment fund backed by rental properties and Brazilian Treasury bonds (via Etherfuse) as reserve. Think of it as a smart vault with automatic rules written in code on the Stellar blockchain.
 
 ---
 

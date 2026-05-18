@@ -1,6 +1,6 @@
 # Brand State
 
-## Brand: TGA
+## Brand: MUTAV
 **Started:** 2026-04-14
 **Mode:** new
 **Current Phase:** 1 (Research)
@@ -22,7 +22,7 @@
 <!-- pending | in-progress | complete | needs-revision | skipped -->
 
 ## Decisions
-- Marca: TGA (Token de Garantia de Aluguel) — substitui SGR como nome do projeto
+- Marca: MUTAV (Token de Garantia de Aluguel) — substitui MUTAV como nome do projeto
 - Três produtos: Dashboard Imobiliárias / Dashboard Investidor / Terminal (gestão e controle)
 - Arquétipo: Governante (primary) + Cuidador (secondary)
 - Posicionamento afirmativo — sem alavancar erros de concorrentes
@@ -34,6 +34,6 @@
 
 ## Notes
 - Brief construído a partir de pitch deck, whitepaper, benchmark Colosseum e fluxograma do sistema (Excalidraw)
-- Terminal = dashboard de gestão interna do protocolo (operadores TGA)
+- Terminal = dashboard de gestão interna do protocolo (operadores MUTAV)
 - Discover: 4 chunks completos em discover/
 - Strategy: 5 chunks completos em strategy/

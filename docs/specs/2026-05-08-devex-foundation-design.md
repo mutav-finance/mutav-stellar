@@ -6,7 +6,7 @@
 
 ## Context
 
-`mutav-stellar` is the Soroban smart-contracts repo for the SGR protocol, developed under the NearX acceleration program. The repo has a working `pre-push` hook, a `CLAUDE.md`, a `README.md`, and three uncommitted files dropped in earlier (`.editorconfig`, `.gitattributes`, `CONTRIBUTING.md`). The `CONTRIBUTING.md` references files that do not yet exist (`SECURITY.md`, structured issue templates), and no repo in the `mutav-finance` org has a `LICENSE`.
+`mutav-stellar` is the Soroban smart-contracts repo for the MUTAV protocol, developed under the NearX acceleration program. The repo has a working `pre-push` hook, a `CLAUDE.md`, a `README.md`, and three uncommitted files dropped in earlier (`.editorconfig`, `.gitattributes`, `CONTRIBUTING.md`). The `CONTRIBUTING.md` references files that do not yet exist (`SECURITY.md`, structured issue templates), and no repo in the `mutav-finance` org has a `LICENSE`.
 
 Before opening the repo to external eyes (auditors, integrators), it needs a coherent baseline.
 
@@ -37,7 +37,7 @@ Selected over MIT, BUSL-1.1, dual Apache/MIT, and "defer."
 **Rationale:**
 - Stellar ecosystem norm — Stellar SDKs and Soroban examples are Apache-2.0. Anchor on Solana also Apache-2.0. Auditor and integrator legal teams approve it routinely.
 - Explicit patent grant matters for a novel rental-guarantee primitive.
-- BUSL-1.1 was rejected: integrator legal teams treat it as a yellow flag, and SGR is positioned as public-good infrastructure — there is no extractable-fee thesis that would justify the friction.
+- BUSL-1.1 was rejected: integrator legal teams treat it as a yellow flag, and MUTAV is positioned as public-good infrastructure — there is no extractable-fee thesis that would justify the friction.
 - "Defer" was rejected: integrator legal teams will not authorize work against an unlicensed repo, regardless of stated intent.
 
 ### Audience: D (auditors + B2B integrators)
@@ -85,10 +85,10 @@ Verbatim Apache-2.0 text from <https://www.apache.org/licenses/LICENSE-2.0.txt>.
 ### `NOTICE`
 
 ```
-SGR Stellar
-Copyright 2026 TGA Protocol contributors.
+MUTAV Stellar
+Copyright 2026 MUTAV Protocol contributors.
 
-This product is part of SGR (Sistema de Garantia Registrada),
+This product is part of MUTAV,
 an onchain rental-guarantee protocol. See https://github.com/mutav-finance/mutav.
 ```
 
@@ -175,6 +175,6 @@ To be opened after this PR merges:
 
 ## Open assumptions
 
-- **Copyright holder string** is `TGA Protocol contributors` in `NOTICE`. If the protocol entity adopts a formal legal name (e.g., a foundation), `NOTICE` will need a one-line update.
+- **Copyright holder string** is `MUTAV Protocol contributors` in `NOTICE`. If the protocol entity adopts a formal legal name (e.g., a foundation), `NOTICE` will need a one-line update.
 - **Security disclosure email** is intentionally omitted; if a `security@` address is provisioned later, append it to `SECURITY.md`.
 - **CODEOWNERS** lists only `@hoffms`. If additional maintainers join before Phase B, expand.

@@ -1,5 +1,5 @@
 # Archetype
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Strategy Phase · April 2026
 
 ---
@@ -25,19 +25,19 @@ Strategy Phase · April 2026
 **Sombra:** Tirania, rigidez, arrogância, exclusão.
 **Tendências visuais:** Paletas escuras/ricas, layouts estruturados, materiais premium, tipografia com peso.
 
-### Rationale — Por Que o Governante Para a TGA
+### Rationale — Por Que o Governante Para a MUTAV
 
 O Governante é o arquétipo da **ordem sistêmica**. Não da força bruta — da arquitetura que funciona independente de quem está na sala. Isso é precisamente o que Lucas e Ana precisam de uma garantidora:
 
-**Para Lucas:** Ele já experimentou garantidoras que eram "promessas de pessoa física em escala" — e falhou quando a pessoa ou a empresa falhou. O que ele precisa não é de uma empresa que prometa. É de um sistema que execute. O Governante, em TGA, não é um CEO ou um gerente de atendimento. É o protocolo. O contrato. O mecanismo que não negocia nem atrasa.
+**Para Lucas:** Ele já experimentou garantidoras que eram "promessas de pessoa física em escala" — e falhou quando a pessoa ou a empresa falhou. O que ele precisa não é de uma empresa que prometa. É de um sistema que execute. O Governante, em MUTAV, não é um CEO ou um gerente de atendimento. É o protocolo. O contrato. O mecanismo que não negocia nem atrasa.
 
 **Para Ana:** Ela avalia protocolos pela sua arquitetura antes pela equipe. O que sinaliza o Governante para Ana é a estrutura de controles: smart contracts auditáveis, lógica de liquidação determinística, fund com NAV verificável. O Governante aqui não é autoridade por hierarquia — é autoridade por design verificável.
 
-**Diferenciação competitiva:** Creditas usa tons de azul corporativo que comunicam "instituição de crédito conservadora" — o Governante sem a inovação. CredPago tentou o Explorador (velocidade, desburocratização) mas a execução falhou. Porto Seguro e SulAmérica são Governantes desgastados — autoridade sem mecanismo. TGA pode ser o Governante com mecanismo: autoridade que se prova, não que se declara.
+**Diferenciação competitiva:** Creditas usa tons de azul corporativo que comunicam "instituição de crédito conservadora" — o Governante sem a inovação. CredPago tentou o Explorador (velocidade, desburocratização) mas a execução falhou. Porto Seguro e SulAmérica são Governantes desgastados — autoridade sem mecanismo. MUTAV pode ser o Governante com mecanismo: autoridade que se prova, não que se declara.
 
 ### Como o Governante Aparece Na Marca
 
-- Linguagem declarativa: "TGA paga." Não "TGA se compromete a pagar."
+- Linguagem declarativa: "MUTAV paga." Não "MUTAV se compromete a pagar."
 - Ausência de pedidos de desculpa ou hedging verbal: "em média," "tipicamente," "procuramos"
 - Arquitetura visual em detrimento de decoração: o layout é o argumento de autoridade
 - Métricas específicas em vez de SLAs vagos: "4h37m" não "pagamento rápido"
@@ -55,7 +55,7 @@ O Governante é o arquétipo da **ordem sistêmica**. Não da força bruta — d
 **Sombra:** Paternalismo, martyrdom, culpabilização, enabling de dependência.
 **Tendências visuais:** Tons suaves, formas arredondadas, paletas calmantes, proximidade humana.
 
-### Rationale — Por Que o Cuidador Para a TGA
+### Rationale — Por Que o Cuidador Para a MUTAV
 
 O Cuidador resolve o problema de frieza do Governante puro. Uma marca que é apenas Governante comunica competência mas não pertencimento — funciona para uma agência de rating mas não para uma relação com um proprietário de 50 anos que já foi queimado uma vez.
 
@@ -64,7 +64,7 @@ O Cuidador resolve o problema de frieza do Governante puro. Uma marca que é ape
 **Para Ana:** O Cuidador aparece sutilmente — na transparência proativa do protocolo. Um protocolo que publica seu NAV em tempo real, que documenta cada liquidação, que explica sua arquitetura em linguagem legível, está cuidando da investidora sem infantilizá-la. O Cuidador aqui não é empatia emocional — é responsabilidade institucional proativa.
 
 **Limite do Cuidador — O Que Evitar:**
-O Cuidador em TGA nunca deve soar paternalista. Nunca deve implicar que Lucas ou Ana são vulneráveis, incapazes, ou dependentes da marca para funcionar. A versão saudável do Cuidador para TGA é: "estamos aqui, o sistema está funcionando, você não precisa se preocupar" — não "nós cuidamos de você porque você precisaria."
+O Cuidador em MUTAV nunca deve soar paternalista. Nunca deve implicar que Lucas ou Ana são vulneráveis, incapazes, ou dependentes da marca para funcionar. A versão saudável do Cuidador para MUTAV é: "estamos aqui, o sistema está funcionando, você não precisa se preocupar" — não "nós cuidamos de você porque você precisaria."
 
 ### Como o Cuidador Aparece Na Marca
 
@@ -78,7 +78,7 @@ O Cuidador em TGA nunca deve soar paternalista. Nunca deve implicar que Lucas ou
 
 ## 4. Sombras Ativas — O Que Evitar Ativamente
 
-As sombras são os traços negativos que emergem quando o arquétipo é mal-executado. Para a TGA, dois conjuntos de sombra são riscos operacionais de marca:
+As sombras são os traços negativos que emergem quando o arquétipo é mal-executado. Para a MUTAV, dois conjuntos de sombra são riscos operacionais de marca:
 
 ### 4.1 Sombra do Governante: Arrogância e Exclusão
 
@@ -121,12 +121,12 @@ O Ledger é onde o protocolo fala à Ana como par. A autoridade é técnica, nã
 **Características do Ledger:**
 - Declarativo: cada afirmação tem evidência ou é verificável onchain
 - Sem hedging: "o protocolo liquida" não "o protocolo deve liquidar em condições normais"
-- Técnico sem ser inacessível: usa termos corretos (TGA, NAV, programa address) sem definir o que é uma wallet
+- Técnico sem ser inacessível: usa termos corretos (MUTAV, NAV, programa address) sem definir o que é uma wallet
 - Institucional: linguagem de prospecto mais do que linguagem de marketing
 - O 20% Cuidador: aparece na proatividade — publicar NAV antes de ser perguntado, documentar cada liquidação, manter o log público sem que Ana precise solicitar
 
 **Exemplo de copy Ledger:**
-> "TGA — Total de contratos garantidos: 2.847 | NAV: R$47.2M | Último repasse: há 23 minutos | Verifique: [program address]"
+> "MUTAV — Total de contratos garantidos: 2.847 | NAV: R$47.2M | Último repasse: há 23 minutos | Verifique: [program address]"
 
 Autoridade por dados. Cuidado por transparência proativa.
 

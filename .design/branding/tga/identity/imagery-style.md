@@ -1,12 +1,12 @@
 # Imagery Style
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Identity Phase · April 2026
 
 ---
 
 ## Governing Principle
 
-TGA uses completely different imagery vocabularies on each front. The split is total and intentional. An image that belongs on Dashboard Imobiliárias would be an aesthetic failure on Dashboard Investidor, and vice versa. The shared design system (logo, typography, grid) creates the brand coherence; the imagery creates the emotional divergence that each persona requires.
+MUTAV uses completely different imagery vocabularies on each front. The split is total and intentional. An image that belongs on Dashboard Imobiliárias would be an aesthetic failure on Dashboard Investidor, and vice versa. The shared design system (logo, typography, grid) creates the brand coherence; the imagery creates the emotional divergence that each persona requires.
 
 The Terminal has no imagery. Data is the imagery.
 
@@ -15,7 +15,7 @@ The Terminal has no imagery. Data is the imagery.
 ## Front 1: Dashboard Investidor — No Photography
 
 ### Direction
-This front does not use photography. The decision is not a budget constraint — it is a design argument. Ana evaluates protocols by their architecture, not their lifestyle. A photograph of a building on Dashboard Investidor would undermine the Precision Brutalism aesthetic and signal "consumer product," which is precisely the register TGA must not occupy for her.
+This front does not use photography. The decision is not a budget constraint — it is a design argument. Ana evaluates protocols by their architecture, not their lifestyle. A photograph of a building on Dashboard Investidor would undermine the Precision Brutalism aesthetic and signal "consumer product," which is precisely the register MUTAV must not occupy for her.
 
 ### What Appears Instead
 

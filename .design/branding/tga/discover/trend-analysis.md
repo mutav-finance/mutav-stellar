@@ -1,12 +1,12 @@
 # Trend Analysis
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Discover Phase · April 2026
 
 ---
 
 ## Overview
 
-Five macro trends shape TGA's design and positioning decisions across both fronts. Each trend is analyzed for visual language implications, adoption phase, and specific risks and opportunities relative to TGA's dual-persona architecture.
+Five macro trends shape MUTAV's design and positioning decisions across both fronts. Each trend is analyzed for visual language implications, adoption phase, and specific risks and opportunities relative to MUTAV's dual-persona architecture.
 
 ---
 
@@ -19,7 +19,7 @@ This trend emerged from two simultaneous pressures: DeFi's maturation (on-chain 
 
 **Visual language:** Data-forward UI. Transaction logs visible on landing pages. NAV displayed in real-time. Contract registry as UI element, not backend footnote. Monospace numerals. Audit reports as brand assets, not compliance documents.
 
-**Adoption phase:** Early majority (DeFi); Innovator/Early Adopter (Brazilian PropTech). The gap between fronts is TGA's opportunity to lead the imobiliária market's expectation shift.
+**Adoption phase:** Early majority (DeFi); Innovator/Early Adopter (Brazilian PropTech). The gap between fronts is MUTAV's opportunity to lead the imobiliária market's expectation shift.
 
 **Brand examples:**
 - **Ondo Finance** — NAV and portfolio composition displayed above the fold on every page; audit reports linked prominently; mechanism explanations written for institutional allocators, not retail consumers.
@@ -28,7 +28,7 @@ This trend emerged from two simultaneous pressures: DeFi's maturation (on-chain 
 
 **Risks:** Over-indexing on technical legibility for Lucas's persona. He does not need to understand Solana. He needs to see "pagamentos realizados: 847 / atrasos: 0." Show outcomes, not architecture, for the imobiliária front.
 
-**Opportunities:** TGA can be the first rental guarantee product in Brazil to publish a live contract registry. For Ana, this is table stakes. For Lucas, it is completely unprecedented and immediately differentiating.
+**Opportunities:** MUTAV can be the first rental guarantee product in Brazil to publish a live contract registry. For Ana, this is table stakes. For Lucas, it is completely unprecedented and immediately differentiating.
 
 ---
 
@@ -50,7 +50,7 @@ This aesthetic signals: this is not a speculative token project. This is infrast
 
 **Risks:** This aesthetic is cold. For Lucas's persona (imobiliária front), it will trigger the "this is too complicated" response if applied uniformly. It must be reserved for the investidor front and used as a contrast signal — "this is where the money lives" — while the imobiliária front uses a warmer derivative.
 
-**Opportunities:** In the Brazilian rental guarantee category, no competitor has used this aesthetic. Creditas uses corporate blue; CredPago used rounded fintech teal. TGA can own Precision Brutalism in the category entirely, which immediately signals "we are operating at a different level."
+**Opportunities:** In the Brazilian rental guarantee category, no competitor has used this aesthetic. Creditas uses corporate blue; CredPago used rounded fintech teal. MUTAV can own Precision Brutalism in the category entirely, which immediately signals "we are operating at a different level."
 
 ---
 
@@ -70,9 +70,9 @@ This mirrors the evolution in TradFi structured products: generic investment-gra
 - **Goldfinch Protocol** — Emerging markets credit with named borrowers and specific geographies. "Cauris Finance lends in West Africa" is more investable than "private credit pool #12."
 - **Maple Finance's sector pools** — Separate branding for different credit sectors (tech sector loans, institutional borrowers). Specificity at the pool level builds allocator confidence.
 
-**Risks:** Brazilian rental market is unfamiliar to most Solana-native investors. The educational burden is real. TGA must balance market specificity (differentiation for Ana) against market unfamiliarity (barrier for Ana). The solution: make Brazilian rental data visible and legible in real-time — onchain transparency as education.
+**Risks:** Brazilian rental market is unfamiliar to most Solana-native investors. The educational burden is real. MUTAV must balance market specificity (differentiation for Ana) against market unfamiliarity (barrier for Ana). The solution: make Brazilian rental data visible and legible in real-time — onchain transparency as education.
 
-**Opportunities:** Zero Solana-native products have a Brazil-specific thesis. TGA can own the "Brazilian rental yield on Solana" category definitively. The TGA is not competing with Ondo; it is filling a completely unoccupied niche with a specific, auditable underlying market.
+**Opportunities:** Zero Solana-native products have a Brazil-specific thesis. MUTAV can own the "Brazilian rental yield on Solana" category definitively. The MUTAV is not competing with Ondo; it is filling a completely unoccupied niche with a specific, auditable underlying market.
 
 ---
 
@@ -81,7 +81,7 @@ This mirrors the evolution in TradFi structured products: generic investment-gra
 ### Definition
 Mature fintech and DeFi products increasingly serve structurally different users with the same underlying product but deliberately distinct visual and verbal registers. Stripe Atlas serves startups and also serves CFOs; their communications are architecturally different even when the product is identical. Uniswap has "swap" for retail and "analytics" for sophisticated users — each with its own design register.
 
-For TGA, this trend is not a stylistic choice — it is a strategic necessity. Lucas and Ana cannot share a landing page, a color palette, or a verbal register without TGA losing credibility with both. The protocol is one; the faces are two.
+For MUTAV, this trend is not a stylistic choice — it is a strategic necessity. Lucas and Ana cannot share a landing page, a color palette, or a verbal register without MUTAV losing credibility with both. The protocol is one; the faces are two.
 
 **Visual language:** Split front architectures. Color system with shared base (obsidian, neutral grays) but distinct accent logic: warm amber for investidor (urgency, yield, precision), warm terracotta/green for imobiliária (reliability, clarity, human). Typography shared at the system level (Geist/Inter/JetBrains Mono) but weighted differently: heavy tabular emphasis for investidor, lighter editorial weight for imobiliária.
 
@@ -92,9 +92,9 @@ For TGA, this trend is not a stylistic choice — it is a strategic necessity. L
 - **Revolut** — Revolut Business vs Revolut Personal: same dark brand base, but Business front is more data-dense and formal; Personal front is more playful and reward-forward.
 - **Airbnb** — Hosts and guests share the same product but historically have had different primary visual language: hosts see management dashboards (more editorial, data-forward); guests see discovery (warm, photography-led).
 
-**Risks:** Inconsistent brand DNA across fronts leads to fragmentation. The shared elements (logo, color base, type system) must be strong enough to signal a single TGA entity even as the fronts diverge in tone.
+**Risks:** Inconsistent brand DNA across fronts leads to fragmentation. The shared elements (logo, color base, type system) must be strong enough to signal a single MUTAV entity even as the fronts diverge in tone.
 
-**Opportunities:** TGA can demonstrate architectural sophistication through the dual-register design itself. A protocol that serves a 45-year-old landlord in Curitiba and a Solana-native DeFi investor simultaneously — with appropriate visual language for each — signals that the team understands both markets at depth.
+**Opportunities:** MUTAV can demonstrate architectural sophistication through the dual-register design itself. A protocol that serves a 45-year-old landlord in Curitiba and a Solana-native DeFi investor simultaneously — with appropriate visual language for each — signals that the team understands both markets at depth.
 
 ---
 
@@ -103,7 +103,7 @@ For TGA, this trend is not a stylistic choice — it is a strategic necessity. L
 ### Definition
 In the wake of multiple high-profile protocol failures (2022-2025), both DeFi investors and traditional finance users have developed strong pattern recognition for vaporware signals. The market is now in a "prove it" mode where the burden of proof has inverted: instead of trust being assumed until betrayed, skepticism is assumed until overcome by verifiable evidence.
 
-This is the dominant psychological context for both of TGA's personas. Lucas experienced this with QuintoCred. Ana experienced this with any number of DeFi failures. The design implication: every brand touchpoint must function as a proof mechanism, not a promise mechanism.
+This is the dominant psychological context for both of MUTAV's personas. Lucas experienced this with QuintoCred. Ana experienced this with any number of DeFi failures. The design implication: every brand touchpoint must function as a proof mechanism, not a promise mechanism.
 
 **Visual language:** Radically specific copy ("pagou em 4h37m" not "paga rápido"). Transaction receipts as UI elements. Real contract numbers. Named founders and named advisors prominently displayed. Audit report links above the fold. Live registry numbers that update. "Verifique" as a call to action, not "inscreva-se."
 
@@ -118,4 +118,4 @@ The visual register is deliberately unpolished in specific ways: raw data displa
 
 **Risks:** Raw data displays can overwhelm Lucas's persona. The imobiliária front must translate proof into narrative ("seu apartamento está coberto — última verificação: agora") rather than displaying raw transaction hashes.
 
-**Opportunities:** TGA can brand the act of verification itself. "Não acredite em nós. Verifique." is not just copy — it is a design directive. Every page should have a path from claim to verification. This is unprecedented in the Brazilian rental guarantee category and is the most powerful trust-building move available to an early-stage protocol.
+**Opportunities:** MUTAV can brand the act of verification itself. "Não acredite em nós. Verifique." is not just copy — it is a design directive. Every page should have a path from claim to verification. This is unprecedented in the Brazilian rental guarantee category and is the most powerful trust-building move available to an early-stage protocol.

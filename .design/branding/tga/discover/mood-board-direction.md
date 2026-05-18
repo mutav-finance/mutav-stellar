@@ -1,12 +1,12 @@
 # Mood Board Direction
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Discover Phase · April 2026
 
 ---
 
 ## Foundational Principle
 
-TGA requires two distinct visual fronts anchored by a single shared design system. The shared system provides structural coherence (logo, type scale, grid logic, border treatment); the fronts diverge in color accent, imagery vocabulary, and tonal density. Neither front should be recognizable as the other's sibling at first glance — but both should be recognizable as TGA upon closer inspection.
+MUTAV requires two distinct visual fronts anchored by a single shared design system. The shared system provides structural coherence (logo, type scale, grid logic, border treatment); the fronts diverge in color accent, imagery vocabulary, and tonal density. Neither front should be recognizable as the other's sibling at first glance — but both should be recognizable as MUTAV upon closer inspection.
 
 The naming convention for the two fronts:
 - **Dashboard Investidor** — the investidor front (Ana). Dark, precise, architectural.
@@ -14,7 +14,7 @@ The naming convention for the two fronts:
 
 ---
 
-## Front 1: Dashboard Investidor (Investidor / TGA)
+## Front 1: Dashboard Investidor (Investidor / MUTAV)
 
 ### Core Aesthetic Direction
 Precision Brutalism. Bloomberg Terminal meets decentralized protocol. This front signals: serious capital infrastructure. It has no soft edges, no decorative elements, no lifestyle photography. Every pixel is either carrying data or creating space for data.
@@ -101,7 +101,7 @@ The emotional register: "Ana opens this dashboard and immediately knows where th
 ### Core Aesthetic Direction
 Structured Warmth. This front must feel like the most professionally trustworthy thing Lucas has ever seen in the Brazilian rental market — while being immediately legible, not technically intimidating. The reference: Airbnb's clarity and warmth of photography + the operational confidence of a well-designed insurance dashboard.
 
-This front is NOT the investidor front in a lighter color. It has a different photographic vocabulary, a different typographic weight, and a different emotional posture. The shared elements (logo, type system, grid) anchor it as TGA; everything else is calibrated for Lucas's trust threshold.
+This front is NOT the investidor front in a lighter color. It has a different photographic vocabulary, a different typographic weight, and a different emotional posture. The shared elements (logo, type system, grid) anchor it as MUTAV; everything else is calibrated for Lucas's trust threshold.
 
 ### Color Palette
 
@@ -186,7 +186,7 @@ The emotional register: "Lucas knows his building is covered because the dashboa
 These elements must be identical across both fronts:
 
 **Logo treatment:**
-- TGA wordmark in Geist Bold, amber (`#E8A020` on dark; `#C47E10` on light)
+- MUTAV wordmark in Geist Bold, amber (`#E8A020` on dark; `#C47E10` on light)
 - No decorative logomark beyond the wordmark in primary usage
 - "Sistema de Garantia Registrada" as descriptor in JetBrains Mono, tracked out +8%, secondary color
 
@@ -213,7 +213,7 @@ These elements must be identical across both fronts:
 
 ### Primary recommendation: `minimal-dark`
 
-For the investidor front (Dashboard Investidor), `minimal-dark` is the closest match to the Precision Brutalism direction. It provides the structural base — dark canvas, high-contrast text hierarchy, restrained accent use — that the TGA protocol interface requires. The key customization: replace any soft radius treatments with 0px (sharp), and restrict accent to amber only (purge any blue or teal presets).
+For the investidor front (Dashboard Investidor), `minimal-dark` is the closest match to the Precision Brutalism direction. It provides the structural base — dark canvas, high-contrast text hierarchy, restrained accent use — that the MUTAV protocol interface requires. The key customization: replace any soft radius treatments with 0px (sharp), and restrict accent to amber only (purge any blue or teal presets).
 
 Rationale: Ana evaluates protocols by their UI density and legibility. `minimal-dark` signals infrastructure, not a consumer app. It is the aesthetic language she associates with protocols she trusts (Ondo, Maple, Dune). It does not trigger the "hackathon project" or "anonymous DeFi" signals.
 
@@ -231,10 +231,10 @@ For Dashboard Imobiliárias (the imobiliária front), `professional` is the clos
 
 ### Why not other presets
 
-- `web3`: Immediately signals "anonymous DeFi" — exactly what TGA must not be. Eliminates both Lucas and institutional Ana.
+- `web3`: Immediately signals "anonymous DeFi" — exactly what MUTAV must not be. Eliminates both Lucas and institutional Ana.
 - `glassmorphism`: Decorative. Signals consumer lifestyle, not financial infrastructure. Incompatible with both fronts.
 - `neubrutalism`: Appropriate for challenger consumer brands; too playful for capital management. The brand brief explicitly says "not a hackathon project."
 - `cyberpunk`: Neon/gradient aesthetic. Dated in 2026 DeFi; alienating for Lucas entirely.
-- `luxury`: Aspirational for the wrong reason — TGA's authority comes from mechanism reliability, not premium exclusivity. Luxury signals would feel like vaporware for Ana and pretension for Lucas.
+- `luxury`: Aspirational for the wrong reason — MUTAV's authority comes from mechanism reliability, not premium exclusivity. Luxury signals would feel like vaporware for Ana and pretension for Lucas.
 - `swiss-minimalist`: Strong candidate for the imobiliária front but too cold for Lucas's warmth requirement. The `professional` preset offers the same grid discipline with more tolerance for warm color.
 - `bold-typography`: Interesting for campaign contexts but not suitable as a system-level preset. Copy-forward design works for marketing; it doesn't scale to dashboard UI.

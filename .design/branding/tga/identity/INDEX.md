@@ -1,13 +1,13 @@
 # Identity
-> Phase: identity | Brand: TGA — Token de Garantia de Aluguel | Generated: 2026-04-14
+> Phase: identity | Brand: MUTAV — Token de Garantia de Aluguel | Generated: 2026-04-14
 
 ## Decisões Confirmadas
 
 | Decisão | Valor |
 |---|---|
-| Logo primário | Wordmark "tga" em Geist Bold lowercase, amber — sem símbolo, sem marca decorativa |
-| Logo investidor | "TGA" ALL CAPS comprimido (-6% tracking) — usado exclusivamente no Dashboard Investidor e Terminal |
-| Logo imobiliária | "tga" lowercase, `#C47E10` amber sobre fundo claro |
+| Logo primário | Wordmark "mutav" em Geist Bold lowercase, amber — sem símbolo, sem marca decorativa |
+| Logo investidor | "MUTAV" ALL CAPS comprimido (-6% tracking) — usado exclusivamente no Dashboard Investidor e Terminal |
+| Logo imobiliária | "mutav" lowercase, `#C47E10` amber sobre fundo claro |
 | Composição de cor (Investidor) | Neutral + Single Accent — obsidian dominante, amber <5% dos pixels |
 | Composição de cor (Imobiliárias) | 60-30-10 — warm white + superfícies brancas + amber em CTAs |
 | Composição de cor (Terminal) | Terminal/ANSI com paleta warm/earthy — sem verde, copper/sienna como registros secundários |
@@ -32,9 +32,9 @@
 ## Sumário de Decisões por Chunk
 
 ### Logo Directions
-- **Direction 1 (primário):** "tga" lowercase Geist Bold, amber — sem símbolo. Protocolo como nome, nome como argumento.
+- **Direction 1 (primário):** "mutav" lowercase Geist Bold, amber — sem símbolo. Protocolo como nome, nome como argumento.
 - **Direction 2 (formal):** Wordmark + régua vertical amber (1px, altura do cap) — linguagem de planta técnica. Para materiais institucionais e documentos.
-- **Direction 3 (investidor/terminal):** "TGA" ALL CAPS comprimido (-6% tracking) — quase-glifo. Exclusivo para Dashboard Investidor e Terminal.
+- **Direction 3 (investidor/terminal):** "MUTAV" ALL CAPS comprimido (-6% tracking) — quase-glifo. Exclusivo para Dashboard Investidor e Terminal.
 - **Ícone:** Letra "t" (ou "T" nos contextos ALL CAPS) em Geist Bold, amber, quadrado obsidian 0px radius.
 - **Regra de ouro:** Amber no wordmark jamais aparece sobre fundo que contenha amber.
 
@@ -63,7 +63,7 @@
 - **Dashboard Imobiliárias — card inadimplência:** Fundo `#FFF8EE` + stripe `#B83232` + progress bar amber. Calma, não pânico.
 - **Dashboard Imobiliárias — pagamento confirmado:** "R$2.847,00" Geist Bold em verde + "4h37m" em JetBrains Mono. A promessa materializada.
 - **Terminal:** Three-pane split, tudo JetBrains Mono. Approval queue como linha única. Log cromático por tipo de evento.
-- **Status page pública:** `status.tga.finance` — terminal simplificado, sempre live, zero marketing.
+- **Status page pública:** `status.mutav.finance` — terminal simplificado, sempre live, zero marketing.
 
 ## Próximos Passos
 

@@ -1,7 +1,7 @@
-# SGR Stellar — Agent Context
+# MUTAV Stellar — Agent Context
 
 ## Project
-SGR (Sistema de Garantia Registrada) — onchain rental guarantee infrastructure.
+MUTAV — onchain rental guarantee infrastructure.
 This repo contains Stellar/Soroban smart contracts for the NearX acceleration program.
 
 ## Shared docs

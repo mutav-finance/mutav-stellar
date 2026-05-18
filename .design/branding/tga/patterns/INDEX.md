@@ -1,13 +1,13 @@
 # Guidelines
-> Phase: guidelines | Brand: TGA — Token de Garantia de Aluguel | Generated: 2026-04-14
+> Phase: guidelines | Brand: MUTAV — Token de Garantia de Aluguel | Generated: 2026-04-14
 
 ## Core
 
 | File | Description |
 |------|-------------|
-| [tga.yml](./tga.yml) | Style preset — single source of truth. Tokens, intensity, patterns, constraints, per-front overrides with documented rationale. |
+| [mutav.yml](./mutav.yml) | Style preset — single source of truth. Tokens, intensity, patterns, constraints, per-front overrides with documented rationale. |
 | [STYLE.md](./STYLE.md) | Agent contract — rendered from `.yml`. Component tables, constraint lists, bold bets, implementation snippets. |
-| [guidelines.html](./guidelines.html) | Visual brand guide — open in browser. Self-contained, no external deps. Demonstrates Precision Brutalism using TGA's own visual language. |
+| [guidelines.html](./guidelines.html) | Visual brand guide — open in browser. Self-contained, no external deps. Demonstrates Precision Brutalism using MUTAV's own visual language. |
 
 ## System Overview
 

@@ -1,5 +1,5 @@
 # Competitive Audit
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Discover Phase · April 2026
 
 ---
@@ -48,7 +48,7 @@ Discover Phase · April 2026
 - Type: Serif for display, mono for data
 - Tone: Bloomberg-adjacent; institutional gravitas
 - Iconography: Architectural, sharp, no decorative elements
-- Key insight: Closest to TGA's investidor direction — but lacks warmth for any real-estate-adjacent narrative
+- Key insight: Closest to MUTAV's investidor direction — but lacks warmth for any real-estate-adjacent narrative
 
 ### Centrifuge
 - Color: Light mode primary; blue-white-navy; clinical
@@ -60,7 +60,7 @@ Discover Phase · April 2026
 - Color: Black/deep dark base; gradient accents (teal-to-purple); Solana's own gradient signature
 - Type: Bold geometric sans; high contrast
 - Tone: High energy, fast, creator-adjacent — not financial infrastructure
-- Key insight: Solana's visual identity is builder/creator-focused, not investor-grade. TGA needs to be the first Solana protocol that reads as institutional.
+- Key insight: Solana's visual identity is builder/creator-focused, not investor-grade. MUTAV needs to be the first Solana protocol that reads as institutional.
 
 ---
 
@@ -73,7 +73,7 @@ Discover Phase · April 2026
 ```
                     MODERN INFRASTRUCTURE
                             |
-               Ondo         |         TGA (target)
+               Ondo         |         MUTAV (target)
              Centrifuge     |         (Investor front)
                             |
   CONSERVATIVE ─────────────┼───────────────── PROGRESSIVE
@@ -90,7 +90,7 @@ Discover Phase · April 2026
 - Creditas sits in center-left: traditional product with modest fintech signal. Currently winning the post-2025 vacuum on trust-by-default, not trust-by-evidence.
 - CredPago was center-right-traditional: progressive enough to attract agencies, but a service product (not infrastructure). Now disqualified by execution failure.
 - Ondo/Centrifuge are progressive-infrastructure: right architecture, wrong market.
-- TGA's target: far right and far up — the only player who is simultaneously progressive (onchain, programmatic) and infrastructural (protocol, not service). This quadrant is currently empty.
+- MUTAV's target: far right and far up — the only player who is simultaneously progressive (onchain, programmatic) and infrastructural (protocol, not service). This quadrant is currently empty.
 
 The imobiliária front (for Lucas) should position at center-right — more conservative than the investidor front, but still clearly modern infrastructure. The risk is appearing too technical; the opportunity is appearing more reliable than the traditional quadrant.
 
@@ -99,19 +99,19 @@ The imobiliária front (for Lucas) should position at center-right — more cons
 ## 4. Competitive Gaps — What Nobody Is Doing
 
 ### Gap 1: Verifiable Disbursement Record
-No competitor in the Brazilian rental guarantee market publishes a public, verifiable record of disbursements. CredPago made promises; QuintoCred made promises. TGA can publish an onchain log where every disbursement is a transaction hash. This gap is the single most powerful differentiation for Lucas's persona.
+No competitor in the Brazilian rental guarantee market publishes a public, verifiable record of disbursements. CredPago made promises; QuintoCred made promises. MUTAV can publish an onchain log where every disbursement is a transaction hash. This gap is the single most powerful differentiation for Lucas's persona.
 
 ### Gap 2: Landlord-Direct Speed Commitment
-All traditional guarantee products require the agency as intermediary in the claim process. No product gives the landlord a direct, contractually enforced speed guarantee. TGA's programmatic liquidation (smart contract-triggered) can eliminate the agency bottleneck entirely. This is a first in the category.
+All traditional guarantee products require the agency as intermediary in the claim process. No product gives the landlord a direct, contractually enforced speed guarantee. MUTAV's programmatic liquidation (smart contract-triggered) can eliminate the agency bottleneck entirely. This is a first in the category.
 
 ### Gap 3: Brazilian RWA Specificity on Solana
 Every Solana RWA product is either US-centric (Ondo, Maple) or generic (rental marketplace projects). Zero products address the specific risk profile of Brazilian rental income: BRL-denominated, boleto-railed, legally governed by Lei do Inquilinato. This is Ana's entry point — a product that actually knows the underlying asset.
 
 ### Gap 4: Dual-Front Product Architecture
-No competitor serves both Lucas (B2B/imobiliária, traditional) and Ana (B2C/investidor, DeFi) from the same protocol. The capital side and the protection side are always in separate products. TGA's TGA mechanism — where Ana's capital provides Lucas's protection — is the architectural innovation. No competitor has attempted this.
+No competitor serves both Lucas (B2B/imobiliária, traditional) and Ana (B2C/investidor, DeFi) from the same protocol. The capital side and the protection side are always in separate products. MUTAV's MUTAV mechanism — where Ana's capital provides Lucas's protection — is the architectural innovation. No competitor has attempted this.
 
 ### Gap 5: Founder Accountability in DeFi
-In the Solana RWA ecosystem, named founders with verifiable credentials are a meaningful differentiator. Anonymous or pseudonymous teams are increasingly disqualified by institutional and sophisticated retail allocators. TGA's early-team structure (named founders, strategic network) is a brand asset in a category where it is rare.
+In the Solana RWA ecosystem, named founders with verifiable credentials are a meaningful differentiator. Anonymous or pseudonymous teams are increasingly disqualified by institutional and sophisticated retail allocators. MUTAV's early-team structure (named founders, strategic network) is a brand asset in a category where it is rare.
 
 ---
 
@@ -122,5 +122,5 @@ In the Solana RWA ecosystem, named founders with verifiable credentials are a me
 | Creditas launches onchain guarantee product | Creditas has DeFi familiarity, capital, and distribution | High | Speed to market; onchain-native architecture is hard to replicate from a legacy stack |
 | Colosseum ecosystem project pivots to Brazil-specific guarantee | Low coordination cost in hackathon ecosystem | Medium | Real legal integration (boleto, Lei do Inquilinato) is the moat; generic projects cannot replicate without market knowledge |
 | Regulatory closure of RWA innovation window | BACEN / CVM respond to 2025 collapses with prescriptive regulation | Medium | Engage proactively; register protocol with existing frameworks; structured fund (FII-adjacent) may offer shelter |
-| Loft launches Garantia Investe onchain | Loft has product and capital; Solana integration is conceivable | Low-Medium | TGA's dual-front architecture and Brazilian specificity are defensible; Loft's brand is trust-damaged |
+| Loft launches Garantia Investe onchain | Loft has product and capital; Solana integration is conceivable | Low-Medium | MUTAV's dual-front architecture and Brazilian specificity are defensible; Loft's brand is trust-damaged |
 | Trust transferred entirely to incumbents (Creditas wins by default) | Lucas chooses "safe" over "new" | High | Speed of disbursement proof must come before mass marketing; first real case study is the brand |

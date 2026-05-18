@@ -1,5 +1,5 @@
 # Brand Applications
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Identity Phase · April 2026
 
 ---
@@ -17,7 +17,7 @@ The three fronts must feel coherent as siblings and distinct as siblings. A pers
 ### 1.1 Top Navigation Bar
 
 **Background:** `#0E0F11` (Obsidian) — the nav shares the page canvas.
-**Logo:** "tga" wordmark, Direction 1, `#E8A020` amber. Positioned left. Clear space respected. No tagline in the nav.
+**Logo:** "mutav" wordmark, Direction 1, `#E8A020` amber. Positioned left. Clear space respected. No tagline in the nav.
 **Nav items:** Inter Medium 14px, `#8A8F99`. Active state: `#F0F0EE` with a 1px amber underline below the item (not a background highlight — a line). The amber is the pointer.
 **Live indicator:** A 6px amber dot, pulsing at 2-second interval (opacity 100% → 40% → 100%, linear), adjacent to a JetBrains Mono 12px counter showing "NAV ao vivo · R$47.2M." This is the only animation in the nav.
 **Right side:** Wallet address in JetBrains Mono 12px, `#555B66`, truncated to first-6/last-4. Connect button in amber outline (1px border `#E8A020`, no fill, Inter Medium 13px, 0px radius).
@@ -62,7 +62,7 @@ The hero refuses marketing register. There is no lifestyle imagery, no promise t
 ### 2.1 Top Navigation Bar
 
 **Background:** `#F7F6F3` (warm canvas).
-**Logo:** "tga" wordmark, Direction 1, `#C47E10` amber. Positioned left.
+**Logo:** "mutav" wordmark, Direction 1, `#C47E10` amber. Positioned left.
 **Nav items:** Inter Medium 14px, `#6B6860`. Active: `#1A1A1A` with 2px `#C47E10` bottom border.
 **Right side:** "Olá, Carlos" (landlord name) in Inter Regular 14px, `#6B6860`. A "Sair" link in Inter Medium 13px, `#C47E10`.
 
@@ -171,17 +171,17 @@ The log is the protocol's memory. Every event is recorded, timestamped, and attr
 
 ### 4.1 Email Notifications
 
-**From name:** "TGA" — not "equipe TGA" or "noreply" — the protocol sends, not a person.
+**From name:** "MUTAV" — not "equipe MUTAV" or "noreply" — the protocol sends, not a person.
 **Subject lines follow voice rules by persona:**
 - Lucas: "Pagamento realizado — R$2.847,00" — result first, amount specific.
-- Ana: "TGA — NAV atualizado · Liquidação executada bloco #284.091.447" — data first, technical specificity.
+- Ana: "MUTAV — NAV atualizado · Liquidação executada bloco #284.091.447" — data first, technical specificity.
 - Operator: "[AÇÃO NECESSÁRIA] CTR-0028419 aguarda aprovação há 6h" — status code first, specific time.
 
-**Email body layout:** Single-column. White background on all emails (overrides dark-mode preferences — TGA emails are always light). Logo at top: "tga" wordmark in amber, centered. Geist Bold for the key declaration, Inter Regular for the explanation, JetBrains Mono for any data value.
+**Email body layout:** Single-column. White background on all emails (overrides dark-mode preferences — MUTAV emails are always light). Logo at top: "mutav" wordmark in amber, centered. Geist Bold for the key declaration, Inter Regular for the explanation, JetBrains Mono for any data value.
 
 ### 4.2 Document System (Contracts, Reports, Investor Docs)
 
-**Cover:** `#0E0F11` background (documents exist in the investidor's world, not Lucas's — contracts are institutional). "tga" Direction 2 (wordmark + rule) in amber, centered on cover. Document title in Geist Bold 28px, `#F0F0EE`. Date and version in JetBrains Mono 11px, `#8A8F99`.
+**Cover:** `#0E0F11` background (documents exist in the investidor's world, not Lucas's — contracts are institutional). "mutav" Direction 2 (wordmark + rule) in amber, centered on cover. Document title in Geist Bold 28px, `#F0F0EE`. Date and version in JetBrains Mono 11px, `#8A8F99`.
 **Interior pages:** `#FFFFFF` background. Body: Inter Regular 10.5pt. Section headers: Geist Bold 14pt, `#1A1A1A`. Data tables: JetBrains Mono 9pt, tabular numerals, `#1A1A1A`.
 **For Lucas-specific documents** (guarantee certificate, contract confirmation): Interior pages use `#F7F6F3` background. Amber rule at top of each page (1px `#C47E10`). The trust signal carries even in a printed document.
 
@@ -189,11 +189,11 @@ The log is the protocol's memory. Every event is recorded, timestamped, and attr
 
 A single-page public status endpoint — always live, always dark mode, JetBrains Mono dominant.
 
-**URL pattern:** status.tga.finance or similar.
+**URL pattern:** status.mutav.finance or similar.
 **Layout:** Exactly like a simplified terminal. Three sections:
 1. `PROTOCOLO` — ONLINE / DEGRADADO / OFFLINE in the corresponding semantic color.
 2. `NAV` — live value in Geist Bold amber.
 3. `CONTRATOS_ATIVOS` — live count in JetBrains Mono.
 4. `LOG_RECENTE` — last 10 protocol events, terminal log format.
 
-No navigation. No marketing. No explanation of what TGA is. This page is for people who already know. Its existence is the brand value "Verificabilidade Como Padrão" made public infrastructure.
+No navigation. No marketing. No explanation of what MUTAV is. This page is for people who already know. Its existence is the brand value "Verificabilidade Como Padrão" made public infrastructure.

@@ -1,4 +1,4 @@
-# SGR Stellar API — Phase A: Horizon Provider
+# MUTAV Stellar API — Phase A: Horizon Provider
 
 **Date:** 2026-05-08
 **Repo:** `mutav-finance/mutav-stellar`
@@ -6,7 +6,7 @@
 
 ## Context
 
-`mutav-stellar` is the Stellar-side implementation of the SGR (Sistema de Garantia Registrada) rental-guarantee protocol. The repo is currently empty (CLAUDE.md, README.md, brand vendor, githook, design assets).
+`mutav-stellar` is the Stellar-side implementation of the MUTAV rental-guarantee protocol. The repo is currently empty (CLAUDE.md, README.md, brand vendor, githook, design assets).
 
 Within Stellar there are two distinct stacks: **Horizon** (classic accounts, payments, friendbot, ledger queries) and **Soroban** (smart contracts, RPC, contract invocation). This spec organizes `mutav-stellar` to expose both as **two providers** behind one TypeScript API package, `@mutav-finance/mutav-stellar`. `mutav-app` (the dashboard) will eventually consume this package.
 

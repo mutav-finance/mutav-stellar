@@ -1,5 +1,5 @@
 # Discover — INDEX
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Phase: Discover · Completed: 2026-04-14
 Researcher: GSP Design Research Agent
 
@@ -8,9 +8,9 @@ Researcher: GSP Design Research Agent
 ## What This Phase Is
 
 Discover is the foundation of the GSP branding process. It answers three questions before any design decisions are made:
-1. What market is TGA entering, and what has already happened in it?
+1. What market is MUTAV entering, and what has already happened in it?
 2. Who are the real competitors, and where are the gaps?
-3. What design and cultural trends are shaping how TGA's two core personas see the world right now?
+3. What design and cultural trends are shaping how MUTAV's two core personas see the world right now?
 
 The output of this phase feeds directly into Define (brand positioning, tone of voice, naming architecture) and Design (visual system, component library, motion language).
 
@@ -19,7 +19,7 @@ The output of this phase feeds directly into Define (brand positioning, tone of 
 ## Files in This Directory
 
 ### `market-landscape.md`
-Industry overview, market size, key players, and trajectory for both of TGA's market contexts: the Brazilian rental guarantee market (PropTech) and the Solana RWA/DeFi ecosystem.
+Industry overview, market size, key players, and trajectory for both of MUTAV's market contexts: the Brazilian rental guarantee market (PropTech) and the Solana RWA/DeFi ecosystem.
 
 Covers:
 - The QuintoCred and CredPago collapses (2025) and their structural implications
@@ -28,7 +28,7 @@ Covers:
 - User expectation shifts for Lucas (proprietário) and Ana (investidora DeFi)
 - Strategic opportunity window: why now, why Solana, why rental guarantee specifically
 
-Key finding: The traditional market has proven counterparty risk is the unsolved problem. TGA's architecture (mechanism, not promise) is the direct answer to the failure mode Lucas experienced. The investidor market (Ana's context) has real yield scarcity and a complete absence of Brazil-specific RWA products.
+Key finding: The traditional market has proven counterparty risk is the unsolved problem. MUTAV's architecture (mechanism, not promise) is the direct answer to the failure mode Lucas experienced. The investidor market (Ana's context) has real yield scarcity and a complete absence of Brazil-specific RWA products.
 
 ---
 
@@ -40,14 +40,14 @@ Covers:
 - Ecosystem competitors: Ondo Finance, Maple Finance, Centrifuge, Colosseum rental projects
 - Visual language analysis per competitor
 - Positioning map: Conservative↔Progressive × Traditional product↔Modern infrastructure
-- Five competitive gaps TGA can own
+- Five competitive gaps MUTAV can own
 
-Key finding: The top-right quadrant of the positioning map (Progressive × Modern Infrastructure) is currently empty in both markets. No traditional guarantee player has onchain infrastructure; no Solana protocol has Brazilian rental specificity. TGA's target position is uncontested.
+Key finding: The top-right quadrant of the positioning map (Progressive × Modern Infrastructure) is currently empty in both markets. No traditional guarantee player has onchain infrastructure; no Solana protocol has Brazilian rental specificity. MUTAV's target position is uncontested.
 
 ---
 
 ### `trend-analysis.md`
-Five macro trends shaping TGA's dual audience, each with definition, visual language, adoption phase, three brand examples, and TGA-specific risks/opportunities.
+Five macro trends shaping MUTAV's dual audience, each with definition, visual language, adoption phase, three brand examples, and MUTAV-specific risks/opportunities.
 
 Trends covered:
 1. **Infrastructure Legibility** — "Show the Machine." Proof over promise as design language.
@@ -77,9 +77,9 @@ Key finding: The dual-front architecture must share structural DNA (type system,
 
 The Define phase will use this Discover output to establish:
 
-1. **Brand positioning statement** — Where TGA sits relative to the competitive map, in one sentence
+1. **Brand positioning statement** — Where MUTAV sits relative to the competitive map, in one sentence
 2. **Tone of voice system** — Dual-register verbal guidelines (Ledger vs Garantia), with specific word choices and exclusions
-3. **Naming architecture** — Final decision on TGA / TGA / TGA Core naming hierarchy
+3. **Naming architecture** — Final decision on MUTAV / MUTAV / MUTAV Core naming hierarchy
 4. **Brand promise framework** — How "O protocolo que não falha quando o mercado falha" operationalizes across touchpoints
 
 Critical inputs from Discover to carry into Define:
