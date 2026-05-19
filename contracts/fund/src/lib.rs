@@ -913,7 +913,9 @@ impl Fund {
         if approved {
             e.storage().persistent().set(&key, &true);
             // ~1 year TTL; re-approve to renew if needed
-            e.storage().persistent().extend_ttl(&key, 6_220_800, 6_220_800);
+            e.storage()
+                .persistent()
+                .extend_ttl(&key, 6_220_800, 6_220_800);
         } else {
             e.storage().persistent().remove(&key);
         }
@@ -966,9 +968,7 @@ impl Fund {
     pub fn set_protocol_fee_bps(e: Env, value: u32) {
         require_admin(&e);
         assert!(value <= 5_000, "protocol_fee_bps exceeds 50%");
-        e.storage()
-            .instance()
-            .set(&DataKey::ProtocolFeeBps, &value);
+        e.storage().instance().set(&DataKey::ProtocolFeeBps, &value);
         e.events().publish((symbol_short!("set_prtf"),), (value,));
     }
 
@@ -1990,10 +1990,10 @@ mod tests {
         // alice exceeds cap → deferred; bob fits → processed despite being behind alice
         let total = fund.process_redemptions();
 
-        assert_eq!(total, 10_000_000);                           // bob's amount only
+        assert_eq!(total, 10_000_000); // bob's amount only
         assert_eq!(fund.pending_redemption(&alice), 1_000_000_000); // alice deferred
-        assert_eq!(fund.ready_redemption(&bob), 10_000_000);    // bob unblocked
-        assert_eq!(fund.queue_len(), 1);                         // only alice remains
+        assert_eq!(fund.ready_redemption(&bob), 10_000_000); // bob unblocked
+        assert_eq!(fund.queue_len(), 1); // only alice remains
     }
 
     #[test]
@@ -2276,8 +2276,16 @@ mod tests {
         let fund = FundClient::new(&s.env, &s.fund_id);
 
         let amounts: [i128; 10] = [
-            100_000_000, 200_000_000,  50_000_000, 300_000_000, 150_000_000,
-             80_000_000, 120_000_000, 250_000_000,  90_000_000, 170_000_000,
+            100_000_000,
+            200_000_000,
+            50_000_000,
+            300_000_000,
+            150_000_000,
+            80_000_000,
+            120_000_000,
+            250_000_000,
+            90_000_000,
+            170_000_000,
         ];
         let mut investors = soroban_sdk::Vec::<Address>::new(&s.env);
         for &amt in amounts.iter() {
@@ -2334,7 +2342,7 @@ mod tests {
         let fund = FundClient::new(&s.env, &s.fund_id);
 
         let deposit_per = 100_000_000i128;
-        let request_per =  10_000_000i128;
+        let request_per = 10_000_000i128;
         for _ in 0..10u32 {
             let inv = Address::generate(&s.env);
             usdc_mint(&s, &inv, deposit_per);
@@ -2344,7 +2352,10 @@ mod tests {
         // AUM = 1000M, cap = 2.5% = 25M/week, each request = 10M
 
         let call1 = fund.process_redemptions();
-        assert_eq!(call1, 20_000_000, "first call: 2 investors fit the weekly cap");
+        assert_eq!(
+            call1, 20_000_000,
+            "first call: 2 investors fit the weekly cap"
+        );
 
         // 20M already used this week; only ~4.5M remain — nobody fits the second call
         let call2 = fund.process_redemptions();
@@ -2354,7 +2365,11 @@ mod tests {
         s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 1);
         let call3 = fund.process_redemptions();
         assert_eq!(call3, 20_000_000, "new week: cap resets, 2 more processed");
-        assert_eq!(fund.queue_len(), 6, "6 investors still waiting after 2 weeks");
+        assert_eq!(
+            fund.queue_len(),
+            6,
+            "6 investors still waiting after 2 weeks"
+        );
     }
 
     /// Verifica a direção correta do NAV para cada operação:
@@ -2370,7 +2385,7 @@ mod tests {
         let fund = FundClient::new(&s.env, &s.fund_id);
 
         let alice = Address::generate(&s.env);
-        let bob   = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
 
         // Primeiro depósito: NAV = 1.0 e não deve mudar
         let nav0 = fund.nav();
@@ -2404,7 +2419,10 @@ mod tests {
         fund.set_exit_cap_bps(&5_000u32);
         let nav5 = fund.nav();
         fund.process_redemptions();
-        assert!(fund.nav() >= nav5, "process_redemptions não pode diminuir o NAV");
+        assert!(
+            fund.nav() >= nav5,
+            "process_redemptions não pode diminuir o NAV"
+        );
 
         // fulfill_redemption: só move USDC, AUM/supply já acertados — exato
         let nav6 = fund.nav();
@@ -2427,7 +2445,10 @@ mod tests {
         // cover_default: AUM cai, NAV cai
         let nav9 = fund.nav();
         fund.cover_default(&5_000_000, &Address::generate(&s.env));
-        assert!(fund.nav() < nav9, "cobertura de default deve diminuir o NAV");
+        assert!(
+            fund.nav() < nav9,
+            "cobertura de default deve diminuir o NAV"
+        );
     }
 
     /// Simula 3 rounds completos de operação: depósito → pedido → processo → fulfill.
@@ -2440,24 +2461,28 @@ mod tests {
         fund.set_exit_cap_bps(&5_000u32); // 50% — suficiente pra processar todos os resgates
 
         let alice = Address::generate(&s.env);
-        let bob   = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
         let carol = Address::generate(&s.env);
-        let dave  = Address::generate(&s.env);
+        let dave = Address::generate(&s.env);
 
         // Invariante: sum(saldo + pending) de todos os investidores == total_supply
         let check = || {
-            let accounted = fund.balance(&alice)   + fund.pending_redemption(&alice)
-                          + fund.balance(&bob)     + fund.pending_redemption(&bob)
-                          + fund.balance(&carol)   + fund.pending_redemption(&carol)
-                          + fund.balance(&dave)    + fund.pending_redemption(&dave);
+            let accounted = fund.balance(&alice)
+                + fund.pending_redemption(&alice)
+                + fund.balance(&bob)
+                + fund.pending_redemption(&bob)
+                + fund.balance(&carol)
+                + fund.pending_redemption(&carol)
+                + fund.balance(&dave)
+                + fund.pending_redemption(&dave);
             assert_eq!(accounted, fund.total_supply());
         };
 
         // ── Round 1: depósitos iniciais + resgate parcial ────────────────────
         usdc_mint(&s, &alice, 100_000_000);
-        usdc_mint(&s, &bob,   200_000_000);
+        usdc_mint(&s, &bob, 200_000_000);
         fund.deposit_investor(&alice, &100_000_000);
-        fund.deposit_investor(&bob,   &200_000_000);
+        fund.deposit_investor(&bob, &200_000_000);
         assert_eq!(fund.nav(), 10_000_000); // 1.0 — primeiros depósitos não movem o NAV
         check();
 
@@ -2477,12 +2502,12 @@ mod tests {
         assert!(fund.nav() > nav_before_yield);
 
         usdc_mint(&s, &carol, 150_000_000);
-        usdc_mint(&s, &dave,   75_000_000);
+        usdc_mint(&s, &dave, 75_000_000);
         fund.deposit_investor(&carol, &150_000_000);
-        fund.deposit_investor(&dave,   &75_000_000);
+        fund.deposit_investor(&dave, &75_000_000);
         check();
 
-        fund.request_redemption(&bob,   &(fund.balance(&bob)   / 2));
+        fund.request_redemption(&bob, &(fund.balance(&bob) / 2));
         fund.request_redemption(&carol, &(fund.balance(&carol) / 3));
         check();
 
@@ -2495,17 +2520,21 @@ mod tests {
         check();
 
         // ── Round 3: taxa de gestão → resgates finais ────────────────────────
-        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
+        s.env
+            .ledger()
+            .with_mut(|l| l.timestamp = WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
         let nav_before_fee = fund.nav();
         fund.charge_mgmt_fee();
         assert!(fund.nav() < nav_before_fee);
         check();
 
         fund.request_redemption(&alice, &fund.balance(&alice));
-        fund.request_redemption(&dave,  &fund.balance(&dave));
+        fund.request_redemption(&dave, &fund.balance(&dave));
         check();
 
-        s.env.ledger().with_mut(|l| l.timestamp = 2 * WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
+        s.env
+            .ledger()
+            .with_mut(|l| l.timestamp = 2 * WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
         let usdc3 = fund.process_redemptions();
         usdc_mint(&s, &s.fund_id, usdc3);
         fund.fulfill_redemption(&alice);
@@ -2530,13 +2559,13 @@ mod tests {
         fund.set_exit_cap_bps(&10_000u32); // 100% — processa todos de uma vez
 
         let alice = Address::generate(&s.env);
-        let bob   = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
 
         // Depósitos: 100M cada → AUM 200M, supply 200M, NAV 1.0
         usdc_mint(&s, &alice, 100_000_000);
-        usdc_mint(&s, &bob,   100_000_000);
+        usdc_mint(&s, &bob, 100_000_000);
         fund.deposit_investor(&alice, &100_000_000);
-        fund.deposit_investor(&bob,   &100_000_000);
+        fund.deposit_investor(&bob, &100_000_000);
 
         // Yield eleva o NAV para 1.1 antes dos pedidos
         fund.add_yield(&20_000_000); // AUM = 220M
@@ -2545,7 +2574,7 @@ mod tests {
 
         // Ambos pedem resgate total — preço não é calculado aqui
         fund.request_redemption(&alice, &100_000_000);
-        fund.request_redemption(&bob,   &100_000_000);
+        fund.request_redemption(&bob, &100_000_000);
         assert_eq!(fund.nav(), nav_at_request); // pedido não move NAV
 
         // Sinistro aprovado: 40M → NAV cai para 0.9
@@ -2574,9 +2603,15 @@ mod tests {
         fund.fulfill_redemption(&bob);
         let bob_payout = usdc.balance(&bob) - bob_before;
 
-        assert!(alice_payout < 100_000_000, "alice absorveu a perda do sinistro");
-        assert!(bob_payout   < 100_000_000, "bob absorveu a perda do sinistro");
-        assert_eq!(alice_payout, bob_payout, "saídas simétricas — mesmo MUTAV, mesmo NAV");
+        assert!(
+            alice_payout < 100_000_000,
+            "alice absorveu a perda do sinistro"
+        );
+        assert!(bob_payout < 100_000_000, "bob absorveu a perda do sinistro");
+        assert_eq!(
+            alice_payout, bob_payout,
+            "saídas simétricas — mesmo MUTAV, mesmo NAV"
+        );
     }
 
     /// Simula o ciclo mensal de realocação de score: imobiliária aprovada → pagamentos →
@@ -2632,22 +2667,25 @@ mod tests {
         fund.set_exit_cap_bps(&10_000u32); // 100% — drena tudo de uma vez
 
         let alice = Address::generate(&s.env);
-        let bob   = Address::generate(&s.env);
+        let bob = Address::generate(&s.env);
         let carol = Address::generate(&s.env);
 
         let check = || {
-            let accounted = fund.balance(&alice) + fund.pending_redemption(&alice)
-                          + fund.balance(&bob)   + fund.pending_redemption(&bob)
-                          + fund.balance(&carol) + fund.pending_redemption(&carol);
+            let accounted = fund.balance(&alice)
+                + fund.pending_redemption(&alice)
+                + fund.balance(&bob)
+                + fund.pending_redemption(&bob)
+                + fund.balance(&carol)
+                + fund.pending_redemption(&carol);
             assert_eq!(accounted, fund.total_supply());
         };
 
         // ── Depósitos iniciais: 100M cada → AUM 300M, NAV 1.0 ────────────────
         usdc_mint(&s, &alice, 100_000_000);
-        usdc_mint(&s, &bob,   100_000_000);
+        usdc_mint(&s, &bob, 100_000_000);
         usdc_mint(&s, &carol, 100_000_000);
         fund.deposit_investor(&alice, &100_000_000);
-        fund.deposit_investor(&bob,   &100_000_000);
+        fund.deposit_investor(&bob, &100_000_000);
         fund.deposit_investor(&carol, &100_000_000);
         assert_eq!(fund.nav(), 10_000_000);
         check();
@@ -2674,12 +2712,14 @@ mod tests {
 
         // ── Todos pedem resgate total ─────────────────────────────────────────
         fund.request_redemption(&alice, &fund.balance(&alice));
-        fund.request_redemption(&bob,   &fund.balance(&bob));
+        fund.request_redemption(&bob, &fund.balance(&bob));
         fund.request_redemption(&carol, &fund.balance(&carol));
         check();
 
         // ── Drena a fila ─────────────────────────────────────────────────────
-        s.env.ledger().with_mut(|l| l.timestamp = WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
+        s.env
+            .ledger()
+            .with_mut(|l| l.timestamp = WEEK_SECONDS + 31 * 24 * 60 * 60 + 1);
         let total_usdc = fund.process_redemptions();
         assert_eq!(fund.total_supply(), 0);
         assert!(fund.aum() < 10); // dust mínimo de truncamento inteiro
@@ -2693,7 +2733,7 @@ mod tests {
         // Cada investidor saiu com mais do que entrou — o fundo rendeu
         let usdc = token::Client::new(&s.env, &s.usdc_id);
         assert!(usdc.balance(&alice) > 100_000_000, "alice saiu com lucro");
-        assert!(usdc.balance(&bob)   > 100_000_000, "bob saiu com lucro");
+        assert!(usdc.balance(&bob) > 100_000_000, "bob saiu com lucro");
         assert!(usdc.balance(&carol) > 100_000_000, "carol saiu com lucro");
     }
 
