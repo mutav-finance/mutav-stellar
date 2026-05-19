@@ -875,7 +875,7 @@ impl Fund {
         let usdc = token::Client::new(&e, &get_usdc_token(&e));
         usdc.transfer(
             &e.current_contract_address(),
-            &get_classic_wallet(&e),
+            get_classic_wallet(&e),
             &amount,
         );
 
