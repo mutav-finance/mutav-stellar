@@ -57,11 +57,13 @@ export async function receivePayment(
   operator: Keypair,
   contractId: string,
   imobiliaria: string,
-  amountUsdc: bigint
+  amountUsdc: bigint,
+  txHash: string
 ): Promise<void> {
   await invoke(net, operator, contractId, "receive_payment", [
     new Address(imobiliaria).toScVal(),
     nativeToScVal(amountUsdc, { type: "i128" }),
+    xdr.ScVal.scvBytes(Buffer.from(txHash, "hex")),
   ]);
 }
 

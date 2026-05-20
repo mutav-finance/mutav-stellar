@@ -112,7 +112,8 @@ async function run() {
             operator,
             contractId,
             credit.imobiliaria,
-            credit.amountUsdc
+            credit.amountUsdc,
+            credit.txHash
           );
           processed.add(credit.txHash);
           console.log(`[on-ramp] receive_payment confirmado — tx: ${credit.txHash}`);
