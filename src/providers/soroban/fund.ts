@@ -1,8 +1,10 @@
 import {
+  Account,
   Contract,
   TransactionBuilder,
   BASE_FEE,
   nativeToScVal,
+  scValToNative,
   Address,
   xdr,
   type Keypair,
@@ -50,6 +52,56 @@ async function invoke(
   }
 
   return result;
+}
+
+async function query(
+  net: NetworkConfig,
+  operator: Keypair,
+  contractId: string,
+  method: string,
+  args: xdr.ScVal[] = [],
+): Promise<xdr.ScVal> {
+  const server = sorobanClient(net);
+  // Simulation does not validate sequence numbers — use a placeholder to
+  // avoid a getAccount round-trip that would be wasted on a read-only call.
+  const account = new Account(operator.publicKey(), "0");
+  const contract = new Contract(contractId);
+
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: net.passphrase,
+  })
+    .addOperation(contract.call(method, ...args))
+    .setTimeout(30)
+    .build();
+
+  const simulation = await server.simulateTransaction(tx);
+
+  if (rpc.Api.isSimulationError(simulation)) {
+    throw new Error(`Query '${method}' falhou: ${simulation.error}`);
+  }
+
+  if (!simulation.result) {
+    throw new Error(`Query '${method}': resultado inesperado — entrada expirada precisa de restore?`);
+  }
+
+  return simulation.result.retval;
+}
+
+export async function queryAum(
+  net: NetworkConfig,
+  operator: Keypair,
+  contractId: string,
+): Promise<bigint> {
+  return scValToNative(await query(net, operator, contractId, "aum")) as bigint;
+}
+
+export async function queryMgmtFeeBps(
+  net: NetworkConfig,
+  operator: Keypair,
+  contractId: string,
+): Promise<number> {
+  return scValToNative(await query(net, operator, contractId, "mgmt_fee_bps")) as number;
 }
 
 export async function receivePayment(

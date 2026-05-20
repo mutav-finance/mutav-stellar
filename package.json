@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "bun@1.3.1",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "job:mgmt-fee": "bun run src/jobs/mgmt-fee.ts"
   },
   "exports": {
     "./core/network": "./src/core/network.ts",
