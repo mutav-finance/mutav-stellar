@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "bun@1.3.1",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "job:on-ramp": "bun run src/jobs/on-ramp.ts"
   },
   "exports": {
     "./core/network": "./src/core/network.ts",
