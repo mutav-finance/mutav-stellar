@@ -1,0 +1,22 @@
+{
+  "name": "@mutav-finance/mutav-stellar",
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "bun@1.3.1",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./core/network": "./src/core/network.ts",
+    "./core/wallet": "./src/core/wallet.ts",
+    "./soroban/client": "./src/providers/soroban/client.ts",
+    "./soroban/fund": "./src/providers/soroban/fund.ts"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.4.5"
+  }
+}
