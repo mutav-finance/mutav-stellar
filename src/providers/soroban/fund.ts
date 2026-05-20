@@ -3,6 +3,7 @@ import {
   TransactionBuilder,
   BASE_FEE,
   nativeToScVal,
+  scValToNative,
   Address,
   xdr,
   type Keypair,
@@ -50,6 +51,33 @@ async function invoke(
   }
 
   return result;
+}
+
+async function query(
+  net: NetworkConfig,
+  operator: Keypair,
+  contractId: string,
+  method: string,
+): Promise<xdr.ScVal> {
+  const server = sorobanClient(net);
+  const account = await server.getAccount(operator.publicKey());
+  const contract = new Contract(contractId);
+
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: net.passphrase,
+  })
+    .addOperation(contract.call(method))
+    .setTimeout(30)
+    .build();
+
+  const simulation = await server.simulateTransaction(tx);
+
+  if (rpc.Api.isSimulationError(simulation)) {
+    throw new Error(`Query '${method}' falhou: ${simulation.error}`);
+  }
+
+  return simulation.result!.retval;
 }
 
 export async function receivePayment(
@@ -133,4 +161,20 @@ export async function extendBalanceTtl(
   await invoke(net, operator, contractId, "extend_balance_ttl", [
     new Address(investor).toScVal(),
   ]);
+}
+
+export async function queryAum(
+  net: NetworkConfig,
+  operator: Keypair,
+  contractId: string,
+): Promise<bigint> {
+  return scValToNative(await query(net, operator, contractId, "aum")) as bigint;
+}
+
+export async function queryMaxAumIncreaseBps(
+  net: NetworkConfig,
+  operator: Keypair,
+  contractId: string,
+): Promise<number> {
+  return scValToNative(await query(net, operator, contractId, "max_aum_increase_bps")) as number;
 }
