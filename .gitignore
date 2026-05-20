@@ -11,3 +11,4 @@ local.env
 dist/
 .next/
 .claude/
+data/
