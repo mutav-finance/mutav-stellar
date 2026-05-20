@@ -17,10 +17,12 @@ function loadClassicConfig() {
   if (!assetCode) throw new Error("TESOURO_ASSET_CODE não definido no .env.local");
   if (!assetIssuer) throw new Error("TESOURO_ISSUER não definido no .env.local");
 
-  return { wallet, pixKey, asset: new Asset(assetCode, assetIssuer) };
+  return { wallet, pixKey, assetCode, assetIssuer };
 }
 
-// Contract uses USDC 6 decimals; Stellar Classic assets use 7 decimal places.
+// Horizon's payment operation requires a 7-decimal string (e.g. "1.5000000").
+// The contract stores amounts as USDC with 6 decimals — pad frac to 6 digits
+// then append one zero to reach 7.
 function toStellarAmount(amount6dec: bigint): string {
   const whole = amount6dec / 1_000_000n;
   const frac = (amount6dec % 1_000_000n).toString().padStart(6, "0");
@@ -31,7 +33,6 @@ async function run() {
   const net = resolveNetwork();
   const operator = loadOperatorKeypair();
   const contractId = loadFundContractId();
-  const { wallet, pixKey, asset } = loadClassicConfig();
 
   console.log(`[mgmt-fee] iniciado — rede: ${net.name}`);
 
@@ -53,7 +54,7 @@ async function run() {
     await chargeMgmtFee(net, operator, contractId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("already charged this period") || msg.includes("management fee")) {
+    if (msg.includes("already charged this period")) {
       console.log("[mgmt-fee] taxa já cobrada neste período — nada a fazer");
       return;
     }
@@ -63,6 +64,8 @@ async function run() {
   console.log("[mgmt-fee] charge_mgmt_fee confirmado");
 
   // TODO(Etherfuse): confirmar endereço da carteira de liquidação e formato do MEMO PIX.
+  const { wallet, pixKey, assetCode, assetIssuer } = loadClassicConfig();
+  const asset = new Asset(assetCode, assetIssuer);
   const stellarAmount = toStellarAmount(fee);
   console.log(`[mgmt-fee] enviando pagamento Clássico: ${stellarAmount} ${asset.code} → ${wallet} (MEMO: ${pixKey})`);
 
