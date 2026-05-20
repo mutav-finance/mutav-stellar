@@ -7,8 +7,8 @@ const POLL_INTERVAL_MS = 30_000;
 const USDC_ASSET_CODE = "USDC";
 const CURSOR_FILE = ".on-ramp-cursor";
 
-// IDs de transações já processadas na sessão atual — segunda linha de defesa
-// contra duplo processamento (a primeira é o cursor persistido em disco).
+// Evita chamadas Soroban redundantes dentro da mesma sessão do processo.
+// O guarda autoritativo contra replay é o SeenTxHash no contrato on-chain.
 const processed = new Set<string>();
 
 interface UsdcCredit {
@@ -25,9 +25,9 @@ function stellarAmountToContractUnits(amount: string): bigint {
   return BigInt(whole + fracPadded);
 }
 
-function loadCursor(): string {
+async function loadCursor(): Promise<string> {
   try {
-    return Bun.file(CURSOR_FILE).text() as unknown as string;
+    return await Bun.file(CURSOR_FILE).text();
   } catch {
     return "now";
   }
@@ -84,7 +84,7 @@ async function run() {
   if (!usdcIssuer) throw new Error("USDC_ISSUER não definido no .env.local");
 
   const horizon = new Horizon.Server(net.horizonUrl);
-  let cursor = loadCursor();
+  let cursor = await loadCursor();
 
   console.log(`[on-ramp] iniciado — rede: ${net.name}, operador: ${operator.publicKey()}`);
   console.log(`[on-ramp] cursor: ${cursor}`);
@@ -98,8 +98,10 @@ async function run() {
         cursor
       );
 
-      cursor = nextCursor;
-      await saveCursor(cursor);
+      if (nextCursor !== cursor) {
+        cursor = nextCursor;
+        await saveCursor(cursor);
+      }
 
       for (const credit of credits) {
         console.log(

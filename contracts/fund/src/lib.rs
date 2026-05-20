@@ -453,7 +453,7 @@ impl Fund {
 
         // Replay guard: reject if this Stellar tx was already processed.
         // TTL of 7 days (~50_400 ledgers) is enough to outlast any cursor lag.
-        let seen_key = DataKey::SeenTxHash(tx_hash.clone());
+        let seen_key = DataKey::SeenTxHash(tx_hash);
         assert!(
             !e.storage().temporary().has(&seen_key),
             "tx already processed"
@@ -488,7 +488,6 @@ impl Fund {
 
         set_aum(&e, get_aum(&e) + fund_portion);
 
-        // Mark tx as seen so a backend restart cannot re-submit the same payment.
         e.storage().temporary().set(&seen_key, &true);
         e.storage()
             .temporary()
