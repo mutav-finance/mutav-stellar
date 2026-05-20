@@ -1,6 +1,6 @@
-# STYLE.md — TGA Agent Contract
+# STYLE.md — MUTAV Agent Contract
 > Token de Garantia de Aluguel · Brand System v1.0 · 2026-04-14
-> Source of truth: `tga.yml` — this document is a rendered contract for builders and agents.
+> Source of truth: `mutav.yml` — this document is a rendered contract for builders and agents.
 
 ---
 
@@ -14,14 +14,14 @@
 
 **Preset overrides:**
 - minimal-dark `motion: 4` overridden to `2` — no glow shifts, no scale transforms
-- minimal-dark `density: 2` overridden to `6` — TGA is not spacious, it is precise
+- minimal-dark `density: 2` overridden to `6` — MUTAV is not spacious, it is precise
 - terminal `density: 7` pulled back to ~6 — operators need readability, not maximum compression
 
 ---
 
 ## 2. Philosophy
 
-**Precision Brutalism.** TGA's visual grammar refuses every element that cannot carry information. No gradients. No shadows. No glass. No rounded corners. Each decision traces to a function.
+**Precision Brutalism.** MUTAV's visual grammar refuses every element that cannot carry information. No gradients. No shadows. No glass. No rounded corners. Each decision traces to a function.
 
 **Three-layer hierarchy is the core law.** Every screen in every front must present information in exactly three typographic registers:
 
@@ -33,7 +33,7 @@ No screen is complete without all three layers. This is not a stylistic preferen
 
 **Amber is scarce.** The amber accent (#E8A020 dark, #C47E10 light) occupies less than 5% of screen pixels at any moment. It appears on: CTAs, the logo, the live pulse dot, active nav states, status markers. Amber diluted is amber destroyed.
 
-**Surface stacking creates depth.** There are no shadows in TGA. Depth reads through background steps: canvas → surface-1 → surface-2 → surface-3. Each step is a deliberate darker or lighter plane. The browser stacks them; the eye reads hierarchy.
+**Surface stacking creates depth.** There are no shadows in MUTAV. Depth reads through background steps: canvas → surface-1 → surface-2 → surface-3. Each step is a deliberate darker or lighter plane. The browser stacks them; the eye reads hierarchy.
 
 **The system executes before it declares.** Voice is authoritative calm. Specific over general: "4h37m" not "fast". "R$2.847,00 · 18h22" not "paid". Verification as invitation, not as defense.
 
@@ -132,7 +132,7 @@ No screen is complete without all three layers. This is not a stylistic preferen
 | background | `#0E0F11` |
 | height | 56px |
 | border-bottom | `1px solid #2A2D33` |
-| logo | Direction 1: `"tga"` Geist Bold lowercase `#E8A020` |
+| logo | Direction 1: `"mutav"` Geist Bold lowercase `#E8A020` |
 | nav items | Inter Medium 14px `#8A8F99` |
 | active item | `#F0F0EE` + 1px `#E8A020` bottom border |
 | live dot | 6px circle `#E8A020`, opacity pulse 2s linear ∞ |
@@ -215,7 +215,7 @@ Transform properties (`scale`, `translate`, `rotate`) never transition on intera
 ### The pulse animation (only ambient animation)
 
 ```css
-@keyframes tga-pulse {
+@keyframes mutav-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
 }
@@ -225,7 +225,7 @@ Transform properties (`scale`, `translate`, `rotate`) never transition on intera
   height: 6px;
   background-color: #E8A020;
   border-radius: 0px; /* square, not circle — matches 0px system */
-  animation: tga-pulse 2s linear infinite;
+  animation: mutav-pulse 2s linear infinite;
 }
 ```
 
@@ -235,7 +235,7 @@ Transform properties (`scale`, `translate`, `rotate`) never transition on intera
 
 ## 6. Bold Bets
 
-Five non-negotiable implementation techniques that define TGA's precision:
+Five non-negotiable implementation techniques that define MUTAV's precision:
 
 **1. Zero-radius enforcement on every element.**
 `border-radius: 0` on cards, buttons, inputs, badges, modals, dropdowns, tooltips, select menus, checkboxes (custom), radio buttons (custom), and icon containers. The only exception: SVG glyph paths inside Phosphor icons (curves are fine on icon shapes). Tailwind v4: add `rounded-none` to every interactive element in shadcn base components. Override shadcn defaults globally.

@@ -1,12 +1,12 @@
 # Typography
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Identity Phase · April 2026
 
 ---
 
 ## Governing Principle
 
-TGA uses a three-typeface system. Each typeface has a specific semantic role — none are interchangeable. The system achieves its coherence through discipline: Geist Bold for authority, Inter for clarity, JetBrains Mono for data truth. The three typefaces appear together in the same interface, each in its lane.
+MUTAV uses a three-typeface system. Each typeface has a specific semantic role — none are interchangeable. The system achieves its coherence through discipline: Geist Bold for authority, Inter for clarity, JetBrains Mono for data truth. The three typefaces appear together in the same interface, each in its lane.
 
 The typography is not decorative. It is the visual argument. When Geist Bold says "Pagamento realizado" and JetBrains Mono says "R$2.847,00 · 18h22 · 4h37m desde notificação", the typographic contrast itself communicates: the name of the event is human; the numbers are machine-verified.
 
@@ -24,7 +24,7 @@ The typography is not decorative. It is the visual argument. When Geist Bold say
 
 **Tracking:** -3% to -4% (Investidor display) / -1% to -2% (Imobiliárias display)
 **Leading:** Tight — 1.05 to 1.20 depending on size and front
-**Case:** Sentence case. ALL CAPS only for data labels (NAV, TGA, APY — abbreviations, not decoration)
+**Case:** Sentence case. ALL CAPS only for data labels (NAV, MUTAV, APY — abbreviations, not decoration)
 
 ---
 

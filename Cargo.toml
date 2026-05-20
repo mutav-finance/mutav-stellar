@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "contracts/registry",
     "contracts/fund",
 ]
 resolver = "2"

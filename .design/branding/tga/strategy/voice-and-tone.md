@@ -1,12 +1,12 @@
 # Voice & Tone
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Strategy Phase · April 2026
 
 ---
 
 ## Arquitetura de Voz — Três Produtos
 
-O TGA opera com três produtos com registros de voz distintos. Os atributos de voz são compartilhados; o peso e a expressão variam por produto. A voz nunca muda. O tom calibra por contexto.
+O MUTAV opera com três produtos com registros de voz distintos. Os atributos de voz são compartilhados; o peso e a expressão variam por produto. A voz nunca muda. O tom calibra por contexto.
 
 | Produto | Audiência | Registro |
 |---|---|---|
@@ -24,7 +24,7 @@ O TGA opera com três produtos com registros de voz distintos. Os atributos de v
 |---|---|
 | **Significa** | Fala a partir de conhecimento, não de volume. Cada declaração é fundamentada. Sem exclamações de entusiasmo, sem urgência fabricada. A confiança está na estrutura da frase, não na pontuação. |
 | **Não significa** | Frieza, distância, arrogância. A autoridade calma não diz "não é para você entender." Diz o que precisa ser dito, com a precisão necessária, e para. |
-| **Ledger** | Linguagem de protocolo: declarativa, sem hedge. "O TGA liquida contratos em default segundo os parâmetros do programa." Sem "acreditamos," "esperamos," "nosso objetivo." |
+| **Ledger** | Linguagem de protocolo: declarativa, sem hedge. "O MUTAV liquida contratos em default segundo os parâmetros do programa." Sem "acreditamos," "esperamos," "nosso objetivo." |
 | **Garantia** | Linguagem de parceiro: direta, sem burocracia. "Seu aluguel está coberto." Não "estamos comprometidos a garantir a cobertura do seu contrato de locação." |
 
 **Chart Ledger:**
@@ -76,7 +76,7 @@ O TGA opera com três produtos com registros de voz distintos. Os atributos de v
 
 | | |
 |---|---|
-| **Significa** | A TGA fala quando tem algo a dizer. Cada frase carrega carga. Parágrafos introdutórios, frases de transição decorativas, e entusiasmo editorial não têm espaço. O que pode ser dito em dez palavras não é dito em vinte. |
+| **Significa** | A MUTAV fala quando tem algo a dizer. Cada frase carrega carga. Parágrafos introdutórios, frases de transição decorativas, e entusiasmo editorial não têm espaço. O que pode ser dito em dez palavras não é dito em vinte. |
 | **Não significa** | Telegráfico a ponto de ser frio ou inacessível. A economia de palavras é sobre eliminar o que não adiciona — não sobre eliminar contexto que o usuário precisa. |
 | **Ledger** | Prospecto, não pitch deck. Frases completas mas sem ornamentação. Um parágrafo por ponto. |
 | **Garantia** | Notificação, não e-mail marketing. O que aconteceu, quanto, quando. Sem preâmbulo. |
@@ -85,8 +85,8 @@ O TGA opera com três produtos com registros de voz distintos. Os atributos de v
 
 | Faça | Não Faça |
 |------|----------|
-| "TGA Core registra cada contrato onchain. Cada liquidação é um evento público." | "A TGA tem o prazer de apresentar uma solução inovadora de registro onchain que transforma a forma como contratos de garantia locatícia são gerenciados no Brasil." |
-| "TGA — Token de Garantia Acumulada. Exposição ao spread de contratos ativos. NAV atualizado a cada bloco." | "O TGA é o nosso revolucionário token que oferece acesso único ao mercado imobiliário brasileiro de uma forma nunca antes vista." |
+| "MUTAV Core registra cada contrato onchain. Cada liquidação é um evento público." | "A MUTAV tem o prazer de apresentar uma solução inovadora de registro onchain que transforma a forma como contratos de garantia locatícia são gerenciados no Brasil." |
+| "MUTAV — Token de Garantia Acumulada. Exposição ao spread de contratos ativos. NAV atualizado a cada bloco." | "O MUTAV é o nosso revolucionário token que oferece acesso único ao mercado imobiliário brasileiro de uma forma nunca antes vista." |
 
 **Chart Garantia:**
 
@@ -101,7 +101,7 @@ O TGA opera com três produtos com registros de voz distintos. Os atributos de v
 
 | | |
 |---|---|
-| **Significa** | A TGA não pede que o usuário confie — convida a verificar. Cada claim é acompanhada (ou pode ser acompanhada) de um caminho para verificação. O CTA mais importante do Ledger é "Verifique." |
+| **Significa** | A MUTAV não pede que o usuário confie — convida a verificar. Cada claim é acompanhada (ou pode ser acompanhada) de um caminho para verificação. O CTA mais importante do Ledger é "Verifique." |
 | **Não significa** | Desafio ou arrogância: "não acredite em nós." É um convite, não uma provocação. A marca não usa a verificabilidade para parecer superior — usa para parecer confiável. |
 | **Ledger** | Links de endereço de programa, audit reports, transaction hashes como parte do copy padrão — não em footnotes. |
 | **Garantia** | Histórico de pagamentos acessível, registro de contratos consultável. "Consulte o histórico completo de repasses" — não como diferencial, mas como padrão. |
@@ -126,7 +126,7 @@ O TGA opera com três produtos com registros de voz distintos. Os atributos de v
 
 | | |
 |---|---|
-| **Significa** | Lucas não precisa entender Solana. Ana não precisa ser vendida. Nenhum dos dois precisa de entusiasmo fabricado. A TGA trata cada persona com o nível de sofisticação que ela traz — sem subestimar Lucas por ele não saber o que é DeFi, sem infantilizar Ana com oversimplification. |
+| **Significa** | Lucas não precisa entender Solana. Ana não precisa ser vendida. Nenhum dos dois precisa de entusiasmo fabricado. A MUTAV trata cada persona com o nível de sofisticação que ela traz — sem subestimar Lucas por ele não saber o que é DeFi, sem infantilizar Ana com oversimplification. |
 | **Não significa** | Uniformidade de linguagem entre as duas frentes. O respeito pela inteligência de Lucas significa não usar jargão técnico desnecessário. O respeito por Ana significa não usar eufemismos quando há termos precisos. |
 | **Ledger** | Usa termos técnicos corretos sem definir o óbvio para o público. Ana sabe o que é NAV, liquidez, spread. |
 | **Garantia** | Nunca usa jargão de DeFi, nunca menciona Solana, nunca pressupõe que Lucas quer entender o mecanismo. |
@@ -185,14 +185,14 @@ O Ledger opera no registro 2 em quase todas as escalas — institucional, técni
 ### 3.2 Jargão
 
 **Ledger:**
-- Termos DeFi aceitos sem definição: NAV, spread, yield, liquidação, programa address, smart contract, onchain, TVL, TGA
-- Termos que requerem definição na primeira ocorrência: TGA Core, Programmable Settlement Layer
+- Termos DeFi aceitos sem definição: NAV, spread, yield, liquidação, programa address, smart contract, onchain, TVL, MUTAV
+- Termos que requerem definição na primeira ocorrência: MUTAV Core, Programmable Settlement Layer
 - Termos nunca a usar: "moonshot," "alpha," "degen," "ape in," qualquer gíria de CT (Crypto Twitter)
 
 **Garantia:**
 - Termos imobiliários aceitos: inadimplência, contrato de locação, garantia locatícia, imobiliária, vistoria
 - Termos financeiros simples: repasse, valor do aluguel, cobertura
-- Termos absolutamente proibidos: blockchain, Solana, onchain, smart contract, token, DeFi, TGA (como produto — pode aparecer internamente em documentação técnica, nunca na frente Lucas), yield, wallet, protocolo (no sentido tecnológico), liquidação (no sentido de protocolo — use "repasse")
+- Termos absolutamente proibidos: blockchain, Solana, onchain, smart contract, token, DeFi, MUTAV (como produto — pode aparecer internamente em documentação técnica, nunca na frente Lucas), yield, wallet, protocolo (no sentido tecnológico), liquidação (no sentido de protocolo — use "repasse")
 
 ### 3.3 Emojis
 
@@ -229,12 +229,12 @@ O Ledger opera no registro 2 em quase todas as escalas — institucional, técni
 **Garantia:**
 - "Seu imóvel," "seu contrato," "seu repasse" — direto, pessoal, proprietário
 - "Nós" quando referindo à equipe em contextos de suporte e onboarding
-- Nunca "o sistema" ou "o protocolo" na frente Lucas — use "TGA" como marca, não como infraestrutura
+- Nunca "o sistema" ou "o protocolo" na frente Lucas — use "MUTAV" como marca, não como infraestrutura
 - Endereço ao proprietário: "você" é correto e preferido
 
 ### 3.7 Voz Ativa vs. Passiva
 
-Ambas as frentes: **voz ativa sempre.** "O protocolo liquidou o contrato" não "o contrato foi liquidado." "TGA transferiu R$2.847,00" não "R$2.847,00 foram transferidos."
+Ambas as frentes: **voz ativa sempre.** "O protocolo liquidou o contrato" não "o contrato foi liquidado." "MUTAV transferiu R$2.847,00" não "R$2.847,00 foram transferidos."
 
 Exceção: linguagem técnica de protocolo onde a voz passiva é norma de especificação — aceitável em documentação interna e audit trails.
 
@@ -245,22 +245,22 @@ Exceção: linguagem técnica de protocolo onde a voz passiva é norma de especi
 ### 4.1 Hierarquia de Marca
 
 ```
-TGA — Token de Garantia de Aluguel
+MUTAV — Token de Garantia de Aluguel
 ├── Dashboard Investidor          (frente investidor — Ana)
-│   └── TGA             (Token de Garantia Acumulada — produto de investimento)
-│   └── TGA Core        (camada de registro de contratos)
+│   └── MUTAV             (Token de Garantia Acumulada — produto de investimento)
+│   └── MUTAV Core        (camada de registro de contratos)
 │   └── Programmable Settlement Layer  (camada de liquidação programática)
 └── Dashboard Imobiliárias        (Dashboard Imobiliárias — Lucas)
-    └── [sem produto nomeado separadamente — é "a garantia TGA"]
+    └── [sem produto nomeado separadamente — é "a garantia MUTAV"]
 ```
 
 ### 4.2 Convenções de Nomenclatura
 
 | Termo | Uso Correto | Uso Incorreto |
 |---|---|---|
-| **TGA** | "TGA" (todas maiúsculas, sem ponto) | "Sgr," "S.G.R.," "a sgr" |
-| **TGA** | "TGA" (todas maiúsculas) + "Token de Garantia Acumulada" na primeira menção | "Tga," "o tga" sem maiúsculas, "TGA token" (redundante) |
-| **TGA Core** | "TGA Core" (maiúsculas + capitalização de substantivo próprio) | "TGA core," "o Core" isolado sem TGA |
+| **MUTAV** | "MUTAV" (todas maiúsculas, sem ponto) | "Sgr," "S.G.R.," "a sgr" |
+| **MUTAV** | "MUTAV" (todas maiúsculas) + "Token de Garantia Acumulada" na primeira menção | "Tga," "o mutav" sem maiúsculas, "MUTAV token" (redundante) |
+| **MUTAV Core** | "MUTAV Core" (maiúsculas + capitalização de substantivo próprio) | "MUTAV core," "o Core" isolado sem MUTAV |
 | **Programmable Settlement Layer** | Por extenso na primeira menção; "PSL" aceitável depois apenas em contexto técnico | Nunca na Dashboard Imobiliárias |
 | **Dashboard Investidor / Dashboard Imobiliárias** | "Dashboard Investidor," "Dashboard Imobiliárias" (minúsculo em "frente") | "Dashboard Investidor" com F maiúsculo, "plataforma Ledger" |
 | **Onchain** | "onchain" (uma palavra, sem hífen) | "on-chain," "on chain," "On Chain" |
@@ -269,13 +269,13 @@ TGA — Token de Garantia de Aluguel
 
 ### 4.3 Referências ao Produto na Dashboard Imobiliárias
 
-Lucas nunca vê "TGA," "PSL," "onchain," "blockchain," "smart contract." O que ele vê:
+Lucas nunca vê "MUTAV," "PSL," "onchain," "blockchain," "smart contract." O que ele vê:
 
-- "garantia TGA" (o produto)
+- "garantia MUTAV" (o produto)
 - "repasse" (o pagamento — não "liquidação," não "transferência on-chain")
 - "cobertura" (o que o contrato oferece)
 - "contrato ativo" / "contrato em default" (estados — não "liquidated," "settled")
-- "TGA" como marca de confiança, não como descrição de protocolo
+- "MUTAV" como marca de confiança, não como descrição de protocolo
 
 ---
 
@@ -289,10 +289,10 @@ Lucas nunca vê "TGA," "PSL," "onchain," "blockchain," "smart contract." O que e
 | Solana | Tecnologia não-relevante para Lucas | [omitir] |
 | onchain / on-chain | Jargão DeFi | [omitir] |
 | smart contract | Tecnologia não-relevante | "sistema automatizado" se absolutamente necessário |
-| token / TGA | Instrumento financeiro de outra frente | [omitir da frente Lucas] |
+| token / MUTAV | Instrumento financeiro de outra frente | [omitir da frente Lucas] |
 | yield | Jargão de investimento inadequado | [omitir] |
 | DeFi / Web3 | Contexto alienante | [omitir] |
-| protocolo (tecnológico) | Soa como burocracia ou tecnologia | "TGA" como sujeito |
+| protocolo (tecnológico) | Soa como burocracia ou tecnologia | "MUTAV" como sujeito |
 | liquidação (de protocolo) | Ambíguo, soa negativo | "repasse," "pagamento" |
 | wallet / carteira digital | Irrelevante para Lucas | [omitir] |
 | Inovação / inovador | Platitude; também soa como "não testado" | [omitir — prove pelo mecanismo] |
@@ -311,7 +311,7 @@ Lucas nunca vê "TGA," "PSL," "onchain," "blockchain," "smart contract." O que e
 | moonshot / alpha / degen | Gíria de CT incompatível com registro institucional | [omitir] |
 | "Alta liquidez" sem dado | Claim sem verificação | "Liquidez: R$X em pool ativo" |
 | "Ecossistema" (genérico) | Platitude de pitch deck DeFi | Especificar: "Solana mainnet," "814 contratos" |
-| Seguro (como categoria) | TGA não é seguradora — é protocolo de garantia | "garantia locatícia," "protocolo de garantia" |
+| Seguro (como categoria) | MUTAV não é seguradora — é protocolo de garantia | "garantia locatícia," "protocolo de garantia" |
 | "Oportunidade única" | Urgency fabricada | [omitir — a especificidade do produto é suficiente] |
 
 ### 5.3 Nunca Em Nenhuma Frente

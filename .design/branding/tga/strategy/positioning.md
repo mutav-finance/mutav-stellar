@@ -1,5 +1,5 @@
 # Positioning
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Strategy Phase · April 2026
 
 ---
@@ -8,7 +8,7 @@ Strategy Phase · April 2026
 
 ### 1.1 Dashboard Imobiliárias — Para Lucas (Proprietário)
 
-> Para proprietários de imóveis que precisam de uma garantia locatícia que realmente funcione quando o inquilino para de pagar, a TGA é a garantidora que executa automaticamente o repasse — sem formulário, sem espera, sem intermediário — porque seu mecanismo de liquidação é programático e verificável, não uma promessa feita por uma pessoa numa central de atendimento.
+> Para proprietários de imóveis que precisam de uma garantia locatícia que realmente funcione quando o inquilino para de pagar, a MUTAV é a garantidora que executa automaticamente o repasse — sem formulário, sem espera, sem intermediário — porque seu mecanismo de liquidação é programático e verificável, não uma promessa feita por uma pessoa numa central de atendimento.
 
 **Anatomy:**
 - **Audience:** Proprietários de imóveis (45–55, Curitiba e demais capitais do Sul e Sudeste)
@@ -19,7 +19,7 @@ Strategy Phase · April 2026
 
 ### 1.2 Dashboard Investidor — Para Ana (Investidora)
 
-> Para investidoras cripto-nativas que buscam yield real verificável com colateral específico e auditável, a TGA é o único protocolo na Solana com exposição ao mercado brasileiro de garantias locatícias — um ativo de R$36B com fluxo de caixa denominado em BRL, integração legal via Lei do Inquilinato e histórico de execução onchain — porque nenhum produto DeFi existente combina especificidade geográfica, mecanismo auditável e equipe identificada na mesma estrutura.
+> Para investidoras cripto-nativas que buscam yield real verificável com colateral específico e auditável, a MUTAV é o único protocolo na Solana com exposição ao mercado brasileiro de garantias locatícias — um ativo de R$36B com fluxo de caixa denominado em BRL, integração legal via Lei do Inquilinato e histórico de execução onchain — porque nenhum produto DeFi existente combina especificidade geográfica, mecanismo auditável e equipe identificada na mesma estrutura.
 
 **Anatomy:**
 - **Audience:** Investidoras DeFi/Solana (25–35, cripto-nativas, allocators de RWA)
@@ -87,7 +87,7 @@ Strategy Phase · April 2026
 - Ondo e Maple: institucional + genérico (Treasuries, private credit US-centric). Alta confiança, zero especificidade local. Não competem diretamente.
 - Centrifuge: específico por tipo de ativo mas genérico geograficamente, não-Solana. Mais próximo estruturalmente; não é concorrente de mercado.
 - Crib Connect / SolNest / projetos hackathon: acessível + genérico. Nenhum tem camada de garantia real; nenhum tem especificidade brasileira.
-- **Dashboard Investidor:** acessível (retail cripto-nativo pode entrar via TGA) + específico (mercado brasileiro de garantias locatícias). Quadrante inferior-direito está vazio.
+- **Dashboard Investidor:** acessível (retail cripto-nativo pode entrar via MUTAV) + específico (mercado brasileiro de garantias locatícias). Quadrante inferior-direito está vazio.
 
 ---
 
@@ -95,7 +95,7 @@ Strategy Phase · April 2026
 
 ### 3.1 Por Que O Espaço Está Vazio (Dashboard Imobiliárias)
 
-O quadrante "infraestrutura verificável" não existia como categoria no Brasil antes de 2024. As garantidoras tradicionais são juridicamente serviços, não protocolos — a auditabilidade real exigiria publicação de reservas e registros de desembolso que nenhum player incumbente tem interesse em publicar. TGA pode ocupar este espaço por construção técnica (onchain = audita por design) e por postura de marca (publicar o log antes que qualquer regulador exija).
+O quadrante "infraestrutura verificável" não existia como categoria no Brasil antes de 2024. As garantidoras tradicionais são juridicamente serviços, não protocolos — a auditabilidade real exigiria publicação de reservas e registros de desembolso que nenhum player incumbente tem interesse em publicar. MUTAV pode ocupar este espaço por construção técnica (onchain = audita por design) e por postura de marca (publicar o log antes que qualquer regulador exija).
 
 **Barreiras à entrada no espaço em branco:**
 1. Integração técnica real (smart contract + boleto + Lei do Inquilinato) — não replicável por incumbentes em time de hackathon
@@ -111,11 +111,11 @@ Nenhum protocolo Solana tem tese Brasil-específica com garantias locatícias co
 2. O mercado de garantias locatícias brasileiro não é óbvio para quem não conhece a Lei do Inquilinato
 3. Boleto como trilho de pagamento requer parceria operacional no Brasil — barreira real de entrada
 
-**Risco:** Um hackathon Colosseum poderia produzir um clone. A diferença é que TGA é o clone com integração legal real, não o projeto com deck e sem contrato.
+**Risco:** Um hackathon Colosseum poderia produzir um clone. A diferença é que MUTAV é o clone com integração legal real, não o projeto com deck e sem contrato.
 
 ### 3.3 Posicionamento Único Consolidado
 
-TGA não se define por contra-posição. TGA não menciona o que outros falharam em fazer. A marca se define pelo que entrega:
+MUTAV não se define por contra-posição. MUTAV não menciona o que outros falharam em fazer. A marca se define pelo que entrega:
 
 **Para Lucas:** O protocolo que paga — não que promete pagar.
 **Para Ana:** O único yield de garantia locatícia brasileira na Solana — verificável, específico, auditável.
@@ -125,6 +125,6 @@ TGA não se define por contra-posição. TGA não menciona o que outros falharam
 
 ## 4. Constrainte de Posicionamento (Reforço)
 
-Este documento não usa falhas de concorrentes como alavanca de promessa. Competidores são plotados no mapa para identificar espaço em branco — não para construir posição por contraste. TGA se posiciona pelo que é, não pelo que outros não são.
+Este documento não usa falhas de concorrentes como alavanca de promessa. Competidores são plotados no mapa para identificar espaço em branco — não para construir posição por contraste. MUTAV se posiciona pelo que é, não pelo que outros não são.
 
 A única exceção permitida: ao falar com Lucas sobre o registro verificável, o fato de que nenhum concorrente publica registros de desembolso é contexto educacional (por que isso importa), não alavanca de confiança (eles falharam, nós não). A diferença é sutil mas mandatória.

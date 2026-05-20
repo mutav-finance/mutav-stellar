@@ -1,12 +1,12 @@
 # Market Landscape
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Discover Phase · April 2026
 
 ---
 
 ## 1. Industry Overview
 
-TGA operates at the intersection of two structurally distinct markets: Brazilian PropTech (rental guarantee vertical) and Solana DeFi/RWA infrastructure. Each market has its own maturity curve, failure modes, and user vocabulary. TGA's core thesis is that these two markets have a hidden dependency — one needs trustworthy capital, the other needs real yield — and that dependency has never been formalized onchain.
+MUTAV operates at the intersection of two structurally distinct markets: Brazilian PropTech (rental guarantee vertical) and Solana DeFi/RWA infrastructure. Each market has its own maturity curve, failure modes, and user vocabulary. MUTAV's core thesis is that these two markets have a hidden dependency — one needs trustworthy capital, the other needs real yield — and that dependency has never been formalized onchain.
 
 ### 1.1 Brazilian Rental Guarantee Market (Garantias Locatícias)
 
@@ -19,7 +19,7 @@ The market's fragility was proven catastrophically in 2025:
 
 These dual collapses forced rapid consolidation. Loft absorbed distressed portfolios from both. Creditas grew 280% in the rental guarantee segment between January and August 2025, opportunistically filling the vacuum. The market is now effectively a duopoly between Creditas and the remnants of Loft's consolidated position — but the trust damage with landlords and real estate agencies is structural and lasting.
 
-**The takeaway for TGA:** The traditional market just demonstrated, at scale, that counterparty risk is the central unsolved problem in Brazilian rental guarantees. Lucas — the landlord who waited 90 days while his mortgage came due — now has visceral proof that "guaranteed" does not mean "guaranteed." The market is primed for an infrastructure argument, not a product argument.
+**The takeaway for MUTAV:** The traditional market just demonstrated, at scale, that counterparty risk is the central unsolved problem in Brazilian rental guarantees. Lucas — the landlord who waited 90 days while his mortgage came due — now has visceral proof that "guaranteed" does not mean "guaranteed." The market is primed for an infrastructure argument, not a product argument.
 
 ### 1.2 PropTech Macro Context (Brazil)
 
@@ -61,7 +61,7 @@ Critically for Ana's persona: the Solana ecosystem has a shortage of RWA product
 
 **Loft / CredPago** — Consolidated multiple distressed books. CredPago brand remains active but trust-damaged. Loft's primary business is sales, not guarantees; the guarantee vertical is a distribution play, not a core product.
 
-**Garantia Investe** (Loft product) — Investment-backed guarantee using Tesouro Direto as collateral. 84% YoY growth in 2025. Closest comparable to TGA concept, but centralized, opaque, and locked to the Loft ecosystem.
+**Garantia Investe** (Loft product) — Investment-backed guarantee using Tesouro Direto as collateral. 84% YoY growth in 2025. Closest comparable to MUTAV concept, but centralized, opaque, and locked to the Loft ecosystem.
 
 **Porto Seguro, SulAmérica** — Traditional insurers offering seguro-fiança (rental insurance). Slow, paper-heavy, expensive, but backed by regulated capital. Trust anchor for conservative landlords.
 
@@ -71,7 +71,7 @@ Critically for Ana's persona: the Solana ecosystem has a shortage of RWA product
 
 **Maple Finance** — Institutional private credit on-chain. High minimum allocations. Focused on US/EU markets.
 
-**Centrifuge** — $1.1B+ in originated loans. Structured credit for invoices, mortgages, consumer loans. Most structurally similar to TGA's model. EVM-based (not Solana-native), generalist.
+**Centrifuge** — $1.1B+ in originated loans. Structured credit for invoices, mortgages, consumer loans. Most structurally similar to MUTAV's model. EVM-based (not Solana-native), generalist.
 
 **Colosseum Ecosystem comps** — Crib Connect, RentalHive, TrustRent, SolNest, RentChain, Rentify: all generic rental marketplace projects with no Brazilian market specificity and no guarantee-layer focus. None have shipped a guarantee liquidation mechanism.
 
@@ -83,7 +83,7 @@ Critically for Ana's persona: the Solana ecosystem has a shortage of RWA product
 
 The QuintoCred/CredPago collapse produced a generational shift in Lucas's mental model. He no longer believes in the guarantee product as a promise. He has seen the promise fail in real time.
 
-What Lucas now needs to believe — and what TGA must prove — is that the guarantee is a mechanism, not a promise. The distinction is critical: mechanisms operate without human discretion; promises require trusting the institution making them.
+What Lucas now needs to believe — and what MUTAV must prove — is that the guarantee is a mechanism, not a promise. The distinction is critical: mechanisms operate without human discretion; promises require trusting the institution making them.
 
 **Expectation shifts post-2025:**
 - Speed of disbursement has replaced brand trust as the primary decision criterion. "How fast?" beats "Who are you?"
@@ -101,7 +101,7 @@ Ana has been burned by protocol risk (rug pulls, anonymous teams, unsustainable 
 - RWAs are mainstream; generic RWA yield is not differentiated. She needs a specific thesis, not just "real yield."
 - On-chain auditability is table stakes, not a differentiator. What differentiates is the quality of the underlying collateral and the specificity of the market.
 - Founder visibility matters. Anonymous protocols are effectively disqualified from her consideration set.
-- She tracks NAV appreciation as the primary signal. A TGA that compounds via spread is more interesting than a fixed-rate instrument.
+- She tracks NAV appreciation as the primary signal. A MUTAV that compounds via spread is more interesting than a fixed-rate instrument.
 
 **Design implication:** The investidor front must lead with architecture transparency, not yield numbers. The mechanism must be publicly legible. Ana will read the program address before she reads the copy.
 
@@ -109,7 +109,7 @@ Ana has been burned by protocol risk (rug pulls, anonymous teams, unsustainable 
 
 ## 5. Strategic Opportunity Window
 
-The convergence of three factors creates a narrow, time-sensitive entry window for TGA:
+The convergence of three factors creates a narrow, time-sensitive entry window for MUTAV:
 
 1. **Supply vacuum**: Two major guarantee providers collapsed in 2025. The trust vacuum has not been filled. Creditas is growing but is perceived as another centralized intermediary.
 
@@ -117,4 +117,4 @@ The convergence of three factors creates a narrow, time-sensitive entry window f
 
 3. **Regulatory arbitrage window**: The Brazilian rental guarantee market has no specific regulatory framework. This is simultaneously the risk (no protection) and the opportunity (no compliance barrier to innovation). This window will close as regulators respond to the 2025 collapses.
 
-TGA's first-mover advantage is not technological — it is reputational and architectural. Being the first verifiably solvent guarantee protocol in Brazil is worth more than any feature set, for exactly as long as the market is searching for trustworthy alternatives.
+MUTAV's first-mover advantage is not technological — it is reputational and architectural. Being the first verifiably solvent guarantee protocol in Brazil is worth more than any feature set, for exactly as long as the market is searching for trustworthy alternatives.

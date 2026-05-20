@@ -1,18 +1,18 @@
 # Brand Platform
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Strategy Phase · April 2026
 
 ---
 
 ## 1. Purpose (Por Que Existimos)
 
-**TGA existe porque garantias devem funcionar como mecanismos, não como promessas.**
+**MUTAV existe porque garantias devem funcionar como mecanismos, não como promessas.**
 
 O mercado brasileiro de garantias locatícias falhou repetidamente — não por má-fé, mas por arquitetura. Quando a garantia é uma promessa feita por uma empresa com reservas opacas e processos manuais, ela falha exatamente quando é mais necessária. A solução não é confiar mais nas empresas. É construir mecanismos que não precisem de confiança para funcionar.
 
-TGA não existe para ser a garantidora mais honesta. Existe para ser a garantidora que honestidade não precisa medir — porque o protocolo executa independente de quem está operando, e qualquer um pode verificar.
+MUTAV não existe para ser a garantidora mais honesta. Existe para ser a garantidora que honestidade não precisa medir — porque o protocolo executa independente de quem está operando, e qualquer um pode verificar.
 
-Da mesma forma, o mercado de investimentos em ativos reais brasileiros não tem acesso a uma infraestrutura transparente que conecte capital cripto-nativo ao yield do mercado imobiliário local. TGA existe para construir essa ponte com a especificidade e auditabilidade que o momento exige.
+Da mesma forma, o mercado de investimentos em ativos reais brasileiros não tem acesso a uma infraestrutura transparente que conecte capital cripto-nativo ao yield do mercado imobiliário local. MUTAV existe para construir essa ponte com a especificidade e auditabilidade que o momento exige.
 
 **Em uma frase:**
 > Infraestrutura de garantia que cumpre porque foi construída para cumprir — verificável por qualquer parte, a qualquer momento.
@@ -26,20 +26,20 @@ Um mercado de garantias locatícias no Brasil onde o proprietário nunca espera 
 O estado final: contratos de aluguel com execução automática de garantia, sem intermediário discricionário, com registro público de cada desembolso — e um protocolo de liquidez que conecta esse fluxo de caixa a capital global de forma verificável e auditável.
 
 **Marcos que definem a visão:**
-- Cada contrato garantido pela TGA tem um endereço de programa público e consultável
+- Cada contrato garantido pela MUTAV tem um endereço de programa público e consultável
 - Cada inadimplência produz um repasse automático dentro do prazo programado — sem formulário, sem fila
-- O TGA é o instrumento de referência para quem quer exposição a RWA brasileiro na Solana
-- O registro de desembolsos da TGA é citado por agências imobiliárias como evidência de confiabilidade — não o marketing, o registro
+- O MUTAV é o instrumento de referência para quem quer exposição a RWA brasileiro na Solana
+- O registro de desembolsos da MUTAV é citado por agências imobiliárias como evidência de confiabilidade — não o marketing, o registro
 
 ---
 
 ## 3. Mission (Como Entregamos)
 
-TGA entrega sua visão através de três produtos complementares que compartilham o mesmo protocolo:
+MUTAV entrega sua visão através de três produtos complementares que compartilham o mesmo protocolo:
 
 **Dashboard Imobiliárias:** Para imobiliárias, proprietários e inquilinos — liquidação programática de garantias, integração com boleto, Lei do Inquilinato. O proprietário recebe automaticamente quando o inquilino para de pagar. Sem jargão técnico, sem formulário.
 
-**Dashboard Investidor:** Para investidores cripto-nativos na Solana — acesso ao yield do mercado de garantias locatícias via TGA token, NAV verificável onchain, log de liquidações público, arquitetura auditável por qualquer alocador.
+**Dashboard Investidor:** Para investidores cripto-nativos na Solana — acesso ao yield do mercado de garantias locatícias via MUTAV token, NAV verificável onchain, log de liquidações público, arquitetura auditável por qualquer alocador.
 
 **Terminal (Dashboard de Gestão e Controle):** Para operadores do protocolo — gestão do fundo, aprovação e rejeição de garantias, monitoramento de contratos, controle onchain. A camada que mantém o protocolo operando com integridade.
 
@@ -49,7 +49,7 @@ A missão une os três produtos: **construir a infraestrutura que faz Lucas rece
 
 ## 4. Valores (Como Nos Comportamos)
 
-Os valores da TGA são comportamentais — descrevem o que a marca faz, não o que aspira ser. Cada valor tem um teste: "podemos mostrar evidência de que fizemos isso?"
+Os valores da MUTAV são comportamentais — descrevem o que a marca faz, não o que aspira ser. Cada valor tem um teste: "podemos mostrar evidência de que fizemos isso?"
 
 ### 4.1 Execução Antes de Declaração
 
@@ -57,14 +57,14 @@ Nenhuma promessa é feita sem mecanismo. Antes de comunicar qualquer SLA, capaci
 
 **Na prática:**
 - O primeiro repasse de inadimplência é executado antes de qualquer press release sobre velocidade de pagamento
-- O NAV do TGA é publicado antes de qualquer material de investimento
+- O NAV do MUTAV é publicado antes de qualquer material de investimento
 - Toda afirmação de velocidade ("4h37m") tem um transaction hash correspondente
 
 **Não é:** Perfeccionismo paralisante ou comunicação só depois de tudo pronto. É a ordem correta: mecanismo → evidência → comunicação.
 
 ### 4.2 Verificabilidade Como Padrão
 
-Qualquer afirmação que a TGA faz sobre seu desempenho deve poder ser verificada por uma parte externa sem depender da boa vontade da TGA. O onchain não é uma escolha técnica — é uma escolha de accountability.
+Qualquer afirmação que a MUTAV faz sobre seu desempenho deve poder ser verificada por uma parte externa sem depender da boa vontade da MUTAV. O onchain não é uma escolha técnica — é uma escolha de accountability.
 
 **Na prática:**
 - Registros de desembolso são públicos por padrão, não por solicitação
@@ -75,7 +75,7 @@ Qualquer afirmação que a TGA faz sobre seu desempenho deve poder ser verificad
 
 ### 4.3 Especificidade Radical
 
-TGA não usa linguagem vaga onde linguagem específica é possível. Não "paga rápido" — "paga em 4h37m." Não "retorno atrativo" — "yield de X% a.a. calculado sobre o spread médio dos contratos ativos." A especificidade é o sinal anti-vaporware mais poderoso disponível para uma marca em estágio inicial.
+MUTAV não usa linguagem vaga onde linguagem específica é possível. Não "paga rápido" — "paga em 4h37m." Não "retorno atrativo" — "yield de X% a.a. calculado sobre o spread médio dos contratos ativos." A especificidade é o sinal anti-vaporware mais poderoso disponível para uma marca em estágio inicial.
 
 **Na prática:**
 - Copy de produto nunca usa advérbios de quantidade vagos: "tipicamente," "geralmente," "aproximadamente"
@@ -86,7 +86,7 @@ TGA não usa linguagem vaga onde linguagem específica é possível. Não "paga 
 
 ### 4.4 Presença Silenciosa
 
-Um bom sistema não precisa se anunciar. TGA opera de forma que o proprietário só pensa na marca quando recebe a notificação de pagamento — não quando está preocupado com inadimplência. O silêncio operacional é uma entrega de produto, não uma falha de comunicação.
+Um bom sistema não precisa se anunciar. MUTAV opera de forma que o proprietário só pensa na marca quando recebe a notificação de pagamento — não quando está preocupado com inadimplência. O silêncio operacional é uma entrega de produto, não uma falha de comunicação.
 
 **Na prática:**
 - Notificações são de estado, não de alarme: "pagamento confirmado" mais do que "inadimplência detectada — ação necessária"
@@ -97,7 +97,7 @@ Um bom sistema não precisa se anunciar. TGA opera de forma que o proprietário 
 
 ### 4.5 Responsabilidade Identificada
 
-Protocolos anônimos existem. TGA não é um deles. Cada decisão de arquitetura, cada parâmetro de risco, cada mudança de protocolo tem um responsável identificado e comunicado. A descentralização do mecanismo não exclui a responsabilidade dos fundadores sobre o que foi construído.
+Protocolos anônimos existem. MUTAV não é um deles. Cada decisão de arquitetura, cada parâmetro de risco, cada mudança de protocolo tem um responsável identificado e comunicado. A descentralização do mecanismo não exclui a responsabilidade dos fundadores sobre o que foi construído.
 
 **Na prática:**
 - Fundadores nomeados com credenciais verificáveis em posição prominente

@@ -1,4 +1,4 @@
-# SGR Stellar Devex Foundation Implementation Plan
+# MUTAV Stellar Devex Foundation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -74,10 +74,10 @@ If verification fails, do **not** commit — re-fetch from `https://www.apache.o
 Write the following file at `NOTICE` (repo root):
 
 ```
-SGR Stellar
-Copyright 2026 TGA Protocol contributors.
+MUTAV Stellar
+Copyright 2026 MUTAV Protocol contributors.
 
-This product is part of SGR (Sistema de Garantia Registrada),
+This product is part of MUTAV,
 an onchain rental-guarantee protocol. See https://github.com/mutav-finance/mutav.
 ```
 

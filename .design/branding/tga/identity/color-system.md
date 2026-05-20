@@ -1,12 +1,12 @@
 # Color System
-**TGA — Token de Garantia de Aluguel**
+**MUTAV — Token de Garantia de Aluguel**
 Identity Phase · April 2026
 
 ---
 
 ## Governing Principle
 
-TGA runs three color systems that share a single amber anchor. The amber is the same brand signal regardless of front — but its weight, luminosity, and permitted surface area shift per context. The unifying rule: amber is scarce everywhere. Its scarcity is what makes it mean something.
+MUTAV runs three color systems that share a single amber anchor. The amber is the same brand signal regardless of front — but its weight, luminosity, and permitted surface area shift per context. The unifying rule: amber is scarce everywhere. Its scarcity is what makes it mean something.
 
 Composition strategy per front:
 - **Dashboard Investidor:** Neutral + Single Accent. Obsidian dominates. Amber appears in fewer than 5% of screen pixels at any moment.
@@ -78,7 +78,7 @@ Composition strategy per front:
 | Foreground Primary | `#E8E4DC` | oklch(0.918 0.009 87) | Primary monospace text — all data output | Warmer than Dashboard Investidor — reduces eye strain in extended operator sessions. |
 | Foreground Secondary | `#7A7870` | oklch(0.545 0.010 78) | Secondary labels, parameter names, timestamps | Receded but warm — never cool grey in the terminal. |
 | Foreground Dim | `#4A4844` | oklch(0.360 0.008 78) | Commented lines, inactive state labels, ghost data | The terminal's whisper register. |
-| Accent (Amber) | `#E8A020` | oklch(0.758 0.152 74.86) | Active contract status, protocol live indicator | Same amber as Dashboard Investidor — TGA signal is identical at every layer. |
+| Accent (Amber) | `#E8A020` | oklch(0.758 0.152 74.86) | Active contract status, protocol live indicator | Same amber as Dashboard Investidor — MUTAV signal is identical at every layer. |
 | Accent Warm (Copper) | `#B87010` | oklch(0.610 0.132 65) | Secondary status indicators, fund utilization % | Dimmer copper-toned amber for secondary data states. Replaces ANSI green. |
 | Accent Sienna | `#8B4A2A` | oklch(0.420 0.091 47) | Third-tier status indicators, background annotation | Deep warm sienna for tertiary data. Replaces what would be blue/cyan in a conventional terminal. |
 | Confirmed | `#3DAB72` | oklch(0.664 0.132 156.97) | Liquidation executed, transaction confirmed | Same functional green as Dashboard Investidor. Disbursement confirmed onchain. |
@@ -146,7 +146,7 @@ Composition strategy per front:
 
 ## Color Rationale — Archetype Connection
 
-**Why amber anchors the entire system:** The Ruler archetype communicates through gold and amber across cultures and centuries. Bloomberg's amber-on-black terminal, heraldic gold, and sovereign seals all use the amber-on-dark combination to signal serious capital and infrastructure authority. TGA's amber is not decorative — it is the single permission the system gives itself for color. That restraint amplifies authority: when amber appears, it matters.
+**Why amber anchors the entire system:** The Ruler archetype communicates through gold and amber across cultures and centuries. Bloomberg's amber-on-black terminal, heraldic gold, and sovereign seals all use the amber-on-dark combination to signal serious capital and infrastructure authority. MUTAV's amber is not decorative — it is the single permission the system gives itself for color. That restraint amplifies authority: when amber appears, it matters.
 
 **Why Obsidian not pure black:** Pure black is an absence, not a color. `#0E0F11` carries a faint blue-grey undertone that keeps the surface from reading as void. The amber accent only works against a surface that has its own temperature.
 
