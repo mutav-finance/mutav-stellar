@@ -1,4 +1,5 @@
 import {
+  Account,
   Contract,
   TransactionBuilder,
   BASE_FEE,
@@ -58,16 +59,19 @@ async function query(
   operator: Keypair,
   contractId: string,
   method: string,
+  args: xdr.ScVal[] = [],
 ): Promise<xdr.ScVal> {
   const server = sorobanClient(net);
-  const account = await server.getAccount(operator.publicKey());
+  // Simulation does not validate sequence numbers — use a placeholder to
+  // avoid a getAccount round-trip that would be wasted on a read-only call.
+  const account = new Account(operator.publicKey(), "0");
   const contract = new Contract(contractId);
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,
     networkPassphrase: net.passphrase,
   })
-    .addOperation(contract.call(method))
+    .addOperation(contract.call(method, ...args))
     .setTimeout(30)
     .build();
 
@@ -77,7 +81,11 @@ async function query(
     throw new Error(`Query '${method}' falhou: ${simulation.error}`);
   }
 
-  return simulation.result!.retval;
+  if (!simulation.result) {
+    throw new Error(`Query '${method}': resultado inesperado — entrada expirada precisa de restore?`);
+  }
+
+  return simulation.result.retval;
 }
 
 export async function receivePayment(

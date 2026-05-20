@@ -13,7 +13,12 @@ async function run() {
     );
   }
 
-  const yieldAmount = BigInt(rawAmount);
+  let yieldAmount: bigint;
+  try {
+    yieldAmount = BigInt(rawAmount);
+  } catch {
+    throw new Error(`Valor inválido: "${rawAmount}". Use inteiro em 6 decimais (ex: 1500000 = 1.50 USDC)`);
+  }
   if (yieldAmount <= 0n) {
     console.log("[yield-sync] valor zero ou negativo — nada a fazer");
     return;
