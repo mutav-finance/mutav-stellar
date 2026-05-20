@@ -40,7 +40,8 @@ async function invoke(
     throw new Error(`Transação rejeitada: ${JSON.stringify(sent.errorResult)}`);
   }
 
-  // polling até confirmar
+  // Stellar ledger closes every ~5 s — skip the first 2 s poll which is almost always wasted.
+  await Bun.sleep(5000);
   let result = await server.getTransaction(sent.hash);
   while (result.status === "NOT_FOUND") {
     await Bun.sleep(2000);
