@@ -441,12 +441,7 @@ impl Fund {
     /// operator calls this function. Pulls amount_usdc from the operator wallet, splits
     /// protocol_fee_bps → protocol wallet and remainder → classic_wallet (converted to
     /// TESOURO via Etherfuse eYield). Only approved partners are accepted.
-    pub fn receive_payment(
-        e: Env,
-        imobiliaria: Address,
-        amount_usdc: i128,
-        tx_hash: BytesN<32>,
-    ) {
+    pub fn receive_payment(e: Env, imobiliaria: Address, amount_usdc: i128, tx_hash: BytesN<32>) {
         require_operator(&e);
         require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
