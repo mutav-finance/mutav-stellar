@@ -2,6 +2,33 @@
 
 Where things run, today and in the target state. The current topology is testnet-grade; the mainnet target adds isolation, redundancy, and observability.
 
+## Cross-repo topology
+
+```mermaid
+flowchart LR
+  subgraph protocol [mutav-stellar - Protocol side]
+    C[Fund contract]
+    D[6 operator daemons]
+    SDK[TS SDK]
+    INV[Investor dApp<br/>forthcoming]
+    D -->|signs as operator| C
+    INV -->|reads + wallet-signs| C
+    INV --> SDK
+    D --> SDK
+  end
+
+  subgraph app [mutav-app - Agency dashboard]
+    AGY[Agency UI<br/>UI only, no keys]
+  end
+
+  AGY -->|imports| SDK
+  AGY -->|reads chain| C
+  AGY -.agency users sign their own USDC payments.-> C
+```
+
+Two repos, one dependency arrow. `mutav-app` consumes the SDK published from this repo and reads on-chain state via the same RPC. **No operator or admin key ever lives on `mutav-app`**.
+
+
 ## Current (testnet, 2026-05-27)
 
 ```mermaid

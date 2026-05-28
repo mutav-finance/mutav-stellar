@@ -1,17 +1,38 @@
-# MUTAV Stellar — Rental Guarantee Tokenization on Stellar
+# MUTAV Stellar — Protocol
 
-Soroban smart contracts for the MUTAV Finance rental guarantee protocol — part of the NearX acceleration program.
+The **protocol side** of MUTAV Finance: Soroban smart contracts, operator daemons, TypeScript SDK, and (forthcoming) investor dApp. Part of the NearX acceleration program.
 
-> *Contratos Soroban para o protocolo MUTAV de garantia locatícia — programa de aceleração NearX.*
+> *Lado de protocolo do MUTAV: contratos Soroban, daemons do operador, SDK em TypeScript e (em breve) dApp do investidor. Programa de aceleração NearX.*
+
+## Scope
+
+This repo houses everything that requires **operator or admin authority**, plus the public investor surface:
+
+- **Smart contracts** (`contracts/`) — the `Fund` Soroban contract
+- **TS SDK** (`src/`) — typed interface to the contract, consumed by all UIs
+- **Operator daemons** (`src/jobs/`, in flight) — on-ramp, off-ramp, yield-sync, mgmt-fee, heartbeat, ttl-watchdog
+- **Investor dApp** (forthcoming) — public-facing UI for deposit / redeem / NAV view; signs client-side via wallet
+
+The **agency dashboard** lives in a sibling repo, [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app), which depends on this repo's SDK and never holds operator/admin keys.
+
+```mermaid
+flowchart LR
+  S[mutav-stellar<br/>Protocol side<br/>contracts · daemons · SDK · investor dApp]
+  A[mutav-app<br/>Agency dashboard<br/>UI only · no keys]
+  A -->|consumes SDK + reads chain| S
+```
 
 ## Docs
 
-Shared strategy, whitepaper, and brand assets live in [`mutav-finance/mutav`](https://github.com/mutav-finance/mutav).
+Architecture: [`docs/architecture/`](./docs/architecture/) — start with the README inside.
+
+Protocol-wide strategy, whitepaper, and brand assets live in [`mutav-finance/mutav`](https://github.com/mutav-finance/mutav).
 
 ## Stack
 
-- Stellar (Soroban/Rust) — smart contracts
-- TBD — frontend
+- **Stellar (Soroban / Rust)** — smart contracts
+- **Bun + TypeScript** — SDK + operator daemons
+- **Frontend** — TBD (investor dApp; likely Next.js)
 
 ## Setup
 
@@ -21,7 +42,7 @@ cd mutav-stellar
 git config core.hooksPath .githooks
 ```
 
-See [CONTRIBUTING.md](https://github.com/mutav-finance/mutav/blob/main/CONTRIBUTING.md) in the shared docs repo for branch workflow and PR guidelines.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for branch workflow and PR guidelines.
 
 ## License
 

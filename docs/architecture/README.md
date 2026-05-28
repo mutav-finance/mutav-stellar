@@ -22,7 +22,22 @@ First-time readers: read 01 → 06 in order for a complete mental model. Then dr
 
 Architecture files document the current state plus its known gaps. Each file ends with a "Known gaps" section that cross-links to filed GitHub issues. When an issue is resolved, the corresponding doc is updated in the same PR.
 
-## Status snapshot (2026-05-27)
+## Repo boundary
+
+This repo is the **protocol side** of MUTAV. The agency-facing UI lives in the sibling repo [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app).
+
+| Concern | Lives here (`mutav-stellar`) | Lives on `mutav-app` |
+|---|---|---|
+| Smart contracts | yes | — |
+| TS SDK (chain interface) | yes (consumed by `mutav-app`) | — |
+| Operator daemons | yes (operator key only here) | — |
+| Admin tooling | yes | — |
+| Investor dApp (deposit/redeem/NAV) | yes (forthcoming) | — |
+| Agency dashboard (partner UI) | — | yes |
+
+**Boundary rule**: operator/admin keys never live in `mutav-app`. Agency users sign their own USDC payments with their own wallets; the daemons here pick those up via Horizon and call `receive_payment`.
+
+## Status snapshot (2026-05-28)
 
 - **Phase**: testnet — contract deployed; backend daemons in PRs #22–#27 (changes-requested per audit).
 - **Phase B (mainnet)**: gated on the pre-mainnet readiness checklist (issue #40).

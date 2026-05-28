@@ -30,7 +30,16 @@ The hot/cold split is enforced on-chain via `require_auth` on each function. Key
 - **MUTAV** (SEP-0041, this contract): fund shares. NAV = AUM / supply (USDC per MUTAV).
 - **TESOURO** (Classic asset, issued by Etherfuse): off-chain reserve representation. Held in `classic_wallet` after conversion.
 
-## Status (2026-05-27)
+## Repo split
+
+The protocol is delivered across two repositories — split by key custody, not by domain:
+
+- **`mutav-stellar`** (this repo, "protocol side") — everything that holds the operator or admin key: contracts, daemons, admin tooling. Plus the TS SDK and the investor dApp (public, signs client-side).
+- **`mutav-app`** (sibling, "agency dashboard") — pure UI for partner agencies. Reads the chain via the SDK from this repo. Never holds operator or admin keys. Agencies sign their own USDC payments with their own wallets.
+
+Dependency: `mutav-app → mutav-stellar` (consumes the SDK). Not the other way.
+
+## Status (2026-05-28)
 
 - Phase A — testnet, contract deployed, backend scaffold landed (PR #21).
 - Phase B — 6 backend daemons in flight (PRs #22–#27), all CHANGES_REQUESTED post-audit.
