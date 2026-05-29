@@ -26,16 +26,16 @@ Architecture files document the current state plus its known gaps. Each file end
 
 The protocol is delivered across three repos, separated by audit surface and change cadence:
 
-| Concern | `mutav-stellar` (here) | [`mutav-app`](https://github.com/mutav-finance/mutav-app) | `mutav-invest` (forthcoming) |
+| Concern | `mutav-stellar` (here) | [`mutav-app`](https://github.com/mutav-finance/mutav-app) | [`mutav-fund`](https://github.com/mutav-finance/mutav-fund) |
 |---|---|---|---|
 | Smart contracts | yes | — | — |
 | TS SDK (chain interface) | yes (published) | consumes | consumes |
 | Operator daemons | yes (operator key only here) | — | — |
 | Admin tooling | yes | — | — |
 | Real-estate platform — agency dashboard, rental-contract mgmt, payment collection | — | yes (Auth0 + Convex) | — |
-| Investor portal — fund data, deposit/redeem, NAV view, KYC | — | — | yes |
+| Web3 portal — investor flows (deposit/redeem/NAV/KYC) + fund management UI (admin dashboard, partner mgmt, parameter changes, `cover_default`) | — | — | yes (wallet-signed) |
 | Stack | Rust + Bun | Auth0 + Convex | Next.js 16 + Bun + Stellar wallet kit |
-| Audience | protocol team | real-estate agencies | investors |
+| Audience | protocol team | real-estate agencies | investors + protocol team (admin) |
 | Change cadence | contract: slow (audit gate); daemons: medium | medium | fast |
 
 **Why three repos**: tight change control on the contracts. The Rust contract surface lives in `mutav-stellar` and moves slowly; the agency platform and investor portal iterate fast on their own schedules without dragging contract-grade rigor. *Trade-offs*: SDK release coordination across siblings, multi-repo CI gates, fragmented onboarding for newcomers, harder cross-cutting refactors.

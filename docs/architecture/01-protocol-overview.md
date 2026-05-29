@@ -36,7 +36,7 @@ The protocol is delivered across three repositories — separated by audit surfa
 
 - **`mutav-stellar`** (this repo) — Stellar contracts + operator infrastructure. Houses two surfaces with different discipline: the **Rust contract** (audit-gated, slow) and the **TS SDK + operator daemons** (operator-authority code; not "audited" in the same sense). Plus admin tooling. No UI.
 - **`mutav-app`** (sibling, "real-estate platform") — agency-facing SaaS for rental-contract management and agency payment flows. Stack: Auth0 + Convex. Consumes this repo's SDK to read chain state. Surfaces "pay USDC to wallet X" instructions to agencies; agencies sign with their own wallets.
-- **`mutav-invest`** (sibling, "investor portal") — public investor dApp. Fund data, NAV view, deposit/redeem flows via wallet. Stack: Next.js 16 + Bun + Stellar wallet kit. Consumes this repo's SDK. KYC and onboarding live here.
+- **`mutav-fund`** (sibling, "web3 portal") — public dApp serving two audiences via wallet-signed transactions. **Investors**: deposit, request redemption, claim, NAV/portfolio view, KYC. **Protocol team (admin)**: dashboard, partner whitelist, parameter changes, `cover_default`, pause toggle, admin handover. Stack: Next.js 16 + Bun + Stellar wallet kit. Consumes this repo's SDK. No server-side keys; admin features gated by on-chain `admin()` check.
 
 Dependencies: both sibling repos consume `mutav-stellar`'s SDK; neither feeds back.
 
