@@ -10,4 +10,7 @@ local.env
 *.log
 dist/
 .next/
-.claude/
+# Claude (local-only; committed skills tree mirrored from mutav-app)
+.claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks.lock

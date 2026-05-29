@@ -1,0 +1,184 @@
+name: retro
+description: 90s internet nostalgia — Windows 95 bevels, garish RGB colors, marquee text, zero smooth
+tags: [vintage, retro, nostalgic, 90s, windows95]
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#C0C0C0"
+    foreground: "#000000"
+    card: "#FFFFFF"
+    card-foreground: "#000000"
+    popover: "#FFFFFF"
+    popover-foreground: "#000000"
+    primary: "#0000FF"
+    primary-foreground: "#FFFFFF"
+    secondary: "#FF0000"
+    secondary-foreground: "#FFFFFF"
+    accent: "#FFFF00"
+    accent-foreground: "#000000"
+    muted: "#808080"
+    muted-foreground: "#404040"
+    destructive: "#FF0000"
+    border: "#808080"
+    input: "#808080"
+    ring: "#0000FF"
+    # Sidebar
+    sidebar: "#FFFFFF"
+    sidebar-foreground: "#000000"
+    sidebar-primary: "#0000FF"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#C0C0C0"
+    sidebar-accent-foreground: "#000000"
+    sidebar-border: "#808080"
+    sidebar-ring: "#0000FF"
+    # Extras
+    success: "#00FF00"
+    warning: "#FFFF00"
+    info: "#0000FF"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#0000FF"  # Web-safe blue (primary)
+    chart-2: "#FF0000"  # Web-safe red (secondary)
+    chart-3: "#008000"  # Web-safe green
+    chart-4: "#800080"  # Web-safe purple
+    chart-5: "#FF8000"  # Web-safe orange
+
+  system:
+    titlebar: "#000080"
+    visited-link: "#800080"
+
+  typography:
+    font-family-primary: "MS Sans Serif, Tahoma, Verdana, sans-serif"
+    font-family-display: "Arial Black, Impact, sans-serif"
+    font-family-mono: "Courier New, monospace"
+    font-weight-heading: 700
+    font-weight-body: 400
+    font-size-base: "14px"
+    line-height-base: 1.4
+
+  shape:
+    border-radius-sm: "0px"
+    border-radius-md: "0px"
+    border-radius-lg: "0px"
+    border-width: "2px"
+
+  bevel:
+    outset: "border-color: #ffffff #808080 #808080 #ffffff"
+    inset: "border-color: #808080 #ffffff #ffffff #808080"
+
+  elevation:
+    shadow-sm: "inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf"
+    shadow-md: "inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf"
+    shadow-lg: "inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf, 2px 2px 0 #808080"
+    shadow-xl: "inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf, 3px 3px 0 #808080"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "0ms"
+    duration-normal: "0ms"
+    easing: "step-end"
+
+dark_mode:
+  color:
+    background: "#000080"
+    foreground: "#C0C0C0"
+    card: "#000000"
+    card-foreground: "#C0C0C0"
+    muted: "#404040"
+    muted-foreground: "#808080"
+    border: "#808080"
+    input: "#808080"
+    sidebar: "#000000"
+    sidebar-foreground: "#C0C0C0"
+    sidebar-border: "#808080"
+
+intensity:
+  variance: 8     # chaotic layouts, clashing colors, deliberate visual excess
+  motion: 6       # marquee scrolling, rainbow cycling, pulse-glow badges, but instant button states
+  density: 8      # dense table-like grids, tight spacing, maximum visual information
+
+patterns:
+  card:
+    border: "{shape.border-width} solid with 4-value outset bevel ({bevel.outset})"
+    shadow: "{elevation.shadow-sm} — inset bevel highlights, never soft drop shadows"
+    radius: "0px"
+    background: "{color.background}"
+    header: "navy-to-blue gradient title bar (#000080 to #1084D0), white bold text"
+    content: "inset bevel, white or {system.titlebar}-tinted background"
+  button-primary:
+    background: "{color.primary}"
+    border: "{shape.border-width} with blue-tinted bevel (#5555ff top-left, #000080 bottom-right)"
+    shadow: "{elevation.shadow-sm}"
+    text: "uppercase, bold, tracking-wide, centered"
+    radius: "0px"
+  button-secondary:
+    background: "{color.background}"
+    border: "{shape.border-width} with outset bevel ({bevel.outset})"
+    shadow: "{elevation.shadow-sm}"
+    text: "uppercase, bold, black text"
+    radius: "0px"
+  input:
+    border: "{shape.border-width} with inset bevel ({bevel.inset})"
+    radius: "0px"
+    background: "{color.surface}"
+    focus: "dotted 2px black outline, 2px offset"
+    height: "h-10"
+  badge:
+    shape: "0px radius, outset bevel border"
+    text: "uppercase bold text-xs, bright solid color backgrounds"
+    decoration: "animate-pulse for NEW!/HOT! badges, pulse-glow animation"
+  nav:
+    logo: "beveled button-face with bold text"
+    links: "blue underlined always, red on hover, purple when visited"
+    mobile: "beveled hamburger button"
+  layout:
+    archetype: "table-grid"
+    max-width: "max-w-5xl"
+    section-spacing: "py-16"
+    grid-gap: "gap-4 to gap-6"
+    surfaces: "tiled diagonal crosshatch pattern on body background — never flat"
+    decoration: "construction warning stripes (yellow/black 45deg), groove HRs, hit counter displays"
+    windows: "cards styled as Windows 95 application windows with title bar gradient"
+
+constraints:
+  never:
+    - "border-radius of any kind — not even 1px, the 90s had none"
+    - "soft drop shadows — only inset bevel shadows for 3D depth"
+    - "gradients on surfaces — except title bar navy-to-blue and construction stripes"
+    - "semi-transparent overlays — colors are always opaque"
+    - "thin fonts — everything bold or black weight, no light weights exist"
+    - "smooth easing curves — linear or instant transitions only"
+    - "removing link underlines — always visible, always blue"
+    - "modern minimalist spacing — dense, not airy"
+    - "scaling on hover — no scale transforms except 1.05 for pulse badges"
+  always:
+    - "3D outset bevel (4-value border-color) on every interactive element and container"
+    - "active/pressed state reverses to inset bevel + translate(1px, 1px)"
+    - "tiled background pattern on page body"
+    - "at least one marquee scrolling text element"
+    - "at least one rainbow-animated text heading"
+    - "hit counter aesthetic on at least one stats section"
+    - "construction stripe (yellow/black 45deg) on at least one section"
+    - "alternating row backgrounds (white/#E8E8E8) in table-like layouts"
+
+effects:
+  interaction-vocabulary: [bevel-press, color-cycle, blink-badge, marquee-scroll]
+  hover:
+    card: "background lightens one shade, maintain outset bevel"
+    button: "background lightens 1-2 shades, outset bevel maintained"
+    link: "color shifts blue to red — instant, no transition"
+  active:
+    button: "bevel-press — border-color reverses to inset, translate(1px, 1px), instant"
+  focus:
+    general: "dotted 2px black outline, 2px offset — Windows 95 authentic"
+  transition: "duration-0 to duration-50, step-end — no smooth easing"
+  ambient:
+    - "color-cycle — rainbow text 4s linear infinite on hero headline"
+    - "blink-badge — pulse-glow 1.5s ease-in-out infinite on NEW!/HOT! badges"
+    - "marquee-scroll — continuous horizontal scroll at 40-60px/s, pauseOnHover"
+
+compatibility: [maximalism]
+clashes: [professional, luxury, modern-dark, swiss-minimalist]

@@ -1,0 +1,166 @@
+name: bauhaus
+description: Functionalist geometric minimalism — primary colors, hard shadows, constructivist modernism
+tags: [functionalist, geometric, minimal, modernist, primary-colors]
+trend_ref: trends/bauhaus.md
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#FFFFFF"
+    foreground: "#000000"
+    card: "#F0F0F0"
+    card-foreground: "#000000"
+    popover: "#F0F0F0"
+    popover-foreground: "#000000"
+    primary: "#D02020"
+    primary-foreground: "#FFFFFF"
+    secondary: "#1040C0"
+    secondary-foreground: "#FFFFFF"
+    accent: "#F0C020"
+    accent-foreground: "#000000"
+    muted: "#E0E0E0"
+    muted-foreground: "#555555"
+    destructive: "#DC2626"
+    border: "#000000"
+    input: "#000000"
+    ring: "#D02020"
+    # Sidebar
+    sidebar: "#F0F0F0"
+    sidebar-foreground: "#000000"
+    sidebar-primary: "#D02020"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#E0E0E0"
+    sidebar-accent-foreground: "#000000"
+    sidebar-border: "#000000"
+    sidebar-ring: "#D02020"
+    # Extras
+    success: "#16A34A"
+    warning: "#F0C020"
+    info: "#1040C0"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#D02020"  # Bauhaus red (primary)
+    chart-2: "#1040C0"  # Bauhaus blue (secondary)
+    chart-3: "#E8B000"  # Bauhaus yellow (shifted deeper)
+    chart-4: "#16A34A"  # constructivist green
+    chart-5: "#6B21A8"  # modernist violet
+
+  typography:
+    font-family-primary: "Outfit, sans-serif"
+    font-family-mono: "JetBrains Mono, monospace"
+    font-weight-heading: 800
+    font-weight-body: 400
+    font-size-base: "16px"
+    line-height-base: 1.5
+
+  shape:
+    border-radius-sm: "0px"
+    border-radius-md: "0px"
+    border-radius-lg: "9999px"
+    border-width: "4px"
+
+  elevation:
+    shadow-sm: "4px 4px 0px 0px #000000"
+    shadow-md: "8px 8px 0px 0px #000000"
+    shadow-lg: "12px 12px 0px 0px #000000"
+    shadow-xl: "16px 16px 0px 0px #000000"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "150ms"
+    duration-normal: "250ms"
+    easing: "ease"
+
+dark_mode:
+  color:
+    background: "#1A1A1A"
+    foreground: "#F0F0F0"
+    card: "#2A2A2A"
+    card-foreground: "#F0F0F0"
+    popover: "#2A2A2A"
+    popover-foreground: "#F0F0F0"
+    border: "#F0F0F0"
+    input: "#F0F0F0"
+
+intensity:
+  variance: 7     # asymmetric color-blocked sections, overlapping geometric shapes, broken grids
+  motion: 3       # snappy mechanical transitions, no ambient — static compositions with interaction only
+  density: 6      # poster-dense — thick borders, color blocks, geometric shapes fill the visual field
+
+patterns:
+  card:
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "{elevation.shadow-md}"
+    radius: "0px"
+    background: "{color.background}"
+    decoration: "small geometric shape (8px) in top-right corner — circle, square, or triangle in primary color"
+  button-primary:
+    background: "{color.primary}"
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "{elevation.shadow-sm}"
+    text: "uppercase, font-bold, tracking-wider, white"
+    radius: "0px or rounded-full — binary extremes only"
+  button-secondary:
+    background: "{color.secondary}"
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "{elevation.shadow-sm}"
+    text: "uppercase, font-bold, tracking-wider, white"
+    radius: "0px or rounded-full"
+  input:
+    border: "{shape.border-width} solid {shape.border-color}"
+    radius: "0px"
+    background: "{color.background}"
+    focus: "ring-2 ring-offset-2 ring-{color.primary}"
+    height: "h-12"
+  badge:
+    shape: "0px radius or rounded-full — binary extremes"
+    text: "uppercase font-bold tracking-widest text-xs"
+    decoration: "solid primary color background (red, blue, or yellow)"
+  nav:
+    logo: "three geometric shapes (circle, square, triangle) in primary colors"
+    links: "uppercase font-bold tracking-wider, hover color shifts to primary"
+    border: "border-b-4 {shape.border-color}"
+  layout:
+    archetype: "constructivist-poster"
+    max-width: "max-w-7xl"
+    section-spacing: "py-16 to py-24"
+    grid-gap: "gap-6 to gap-8"
+    surfaces: "solid color-blocked sections — alternating red, blue, yellow, white, black backgrounds"
+    decoration: "overlapping circles, rotated-45 squares, triangles (clip-path polygon), dot grid patterns"
+    dividers: "border-b-4 border-black between every section — strong horizontal rhythm"
+
+constraints:
+  never:
+    - "in-between border-radius (1px-9998px) — binary: 0px or 9999px only"
+    - "gradients of any kind — solid color blocks only, no blending"
+    - "soft blurred shadows — hard-offset (Npx Npx 0px 0px black) only"
+    - "thin borders — minimum 2px mobile, 4px desktop"
+    - "muted or desaturated colors — primary red, blue, yellow at full intensity"
+    - "organic curves or blob shapes — circles, squares, triangles only"
+    - "subtle effects or transparency — everything is direct and declarative"
+  always:
+    - "hard-offset shadows (4-8px, 0px blur, pure black) on every elevated element"
+    - "thick black borders (border-2 mobile, border-4 desktop) on every container"
+    - "at least 3 color-blocked sections using solid primary backgrounds"
+    - "geometric shape decorations (circle/square/triangle) on cards and corners"
+    - "45-degree rotation on every 3rd decorative shape"
+    - "grayscale images by default with hover:grayscale-0 reveal"
+    - "extreme type scale contrast (text-8xl headlines vs text-base body)"
+
+effects:
+  interaction-vocabulary: [press-down, geometric-lift, shape-scale, color-block-shift]
+  hover:
+    card: "geometric-lift — -translate-y-1, shadow maintained"
+    button: "color-block-shift — opacity-90 on background color"
+    icon-shape: "shape-scale — scale-110 via group-hover"
+    image: "grayscale-reveal — grayscale-0 over 300ms"
+  active:
+    button: "press-down — translate-x-[2px] translate-y-[2px], shadow-none"
+  focus:
+    general: "ring-2 ring-{color.primary} ring-offset-2"
+  transition: "duration-200 to duration-300, ease-out — mechanical, decisive"
+
+compatibility: [neubrutalism, flat-design]
+clashes: [glassmorphism, liquid-glass, neumorphism]

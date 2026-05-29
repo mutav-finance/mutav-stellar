@@ -1,0 +1,155 @@
+name: flat-design
+description: Clean 2D aesthetic — solid colors, zero shadows, bold color blocks as structure
+tags: [flat, 2d, minimal, clean, colorful]
+trend_ref: trends/flat-design.md
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#FFFFFF"
+    foreground: "#212121"
+    card: "#FAFAFA"
+    card-foreground: "#212121"
+    popover: "#FAFAFA"
+    popover-foreground: "#212121"
+    primary: "#2196F3"
+    primary-foreground: "#FFFFFF"
+    secondary: "#4CAF50"
+    secondary-foreground: "#FFFFFF"
+    accent: "#FF9800"
+    accent-foreground: "#FFFFFF"
+    muted: "#9E9E9E"
+    muted-foreground: "#616161"
+    destructive: "#F44336"
+    border: "transparent"
+    input: "transparent"
+    ring: "#2196F3"
+    # Sidebar
+    sidebar: "#FAFAFA"
+    sidebar-foreground: "#212121"
+    sidebar-primary: "#2196F3"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#F5F5F5"
+    sidebar-accent-foreground: "#212121"
+    sidebar-border: "transparent"
+    sidebar-ring: "#2196F3"
+    # Extras
+    success: "#4CAF50"
+    warning: "#FF9800"
+    info: "#2196F3"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#2196F3"  # flat blue (primary)
+    chart-2: "#4CAF50"  # flat green (secondary)
+    chart-3: "#FF9800"  # flat orange (accent)
+    chart-4: "#9C27B0"  # flat purple
+    chart-5: "#F44336"  # flat red
+
+  typography:
+    font-family-primary: "Outfit, Open Sans, sans-serif"
+    font-family-mono: "Roboto Mono, monospace"
+    font-weight-heading: 700
+    font-weight-body: 400
+    font-size-base: "16px"
+    line-height-base: 1.5
+
+  shape:
+    border-radius-sm: "4px"
+    border-radius-md: "8px"
+    border-radius-lg: "12px"
+    border-width: "0px"
+
+  elevation:
+    shadow-sm: "none"
+    shadow-md: "none"
+    shadow-lg: "none"
+    shadow-xl: "none"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "150ms"
+    duration-normal: "200ms"
+    easing: "ease"
+
+dark_mode:
+  color:
+    background: "#212121"
+    foreground: "#FAFAFA"
+    card: "#303030"
+    card-foreground: "#FAFAFA"
+    popover: "#303030"
+    popover-foreground: "#FAFAFA"
+    border: "transparent"
+    input: "transparent"
+
+intensity:
+  variance: 3     # rigid grid, predictable layout, geometric purity
+  motion: 3       # snappy scale transforms and color shifts, no spectacle
+  density: 5      # balanced — functional, not airy, not packed
+
+patterns:
+  card:
+    border: "none"
+    shadow: "none — zero shadows, ever"
+    radius: "{shape.border-radius-md}"
+    background: "{color.surface} or soft color tint (blue-50, green-50)"
+    padding: "p-6 to p-8"
+  button-primary:
+    background: "{color.primary}"
+    border: "none"
+    text: "weight 500, sentence case"
+    radius: "{shape.border-radius-sm}"
+  button-secondary:
+    background: "{color.surface}"
+    border: "none"
+    text: "weight 500, {color.on-background}"
+    radius: "{shape.border-radius-sm}"
+  input:
+    border: "none resting, border-2 solid {color.primary} on focus"
+    radius: "{shape.border-radius-sm}"
+    background: "{color.surface}"
+    focus: "border-2 {color.primary} — hard border, no glow ring"
+  badge:
+    shape: "rounded-full, solid accent background"
+    text: "text-xs, font-medium, sentence case"
+  nav:
+    style: "clean horizontal, solid background blocks"
+    links: "font-medium, hover darkens background"
+  layout:
+    archetype: "color-block-grid"
+    max-width: "max-w-7xl"
+    section-spacing: "py-16 to py-24"
+    grid-gap: "gap-6 to gap-8"
+    surfaces: "solid color blocks define sections — no texture, no grain"
+    decoration: "large geometric shapes (circles, squares) at low opacity, absolute positioned"
+
+constraints:
+  never:
+    - "box-shadow of any kind — zero shadows on any element"
+    - "gradients on buttons or cards — solid fills only"
+    - "backdrop-blur or glass effects — conflicts with flat 2D aesthetic"
+    - "textures, grain, or noise overlays — surfaces are clean and solid"
+    - "3D transforms or perspective — everything exists on one plane"
+    - "thin subtle borders for structure — use color blocks instead"
+  always:
+    - "solid flat color fills for backgrounds and interactive elements"
+    - "consistent border-radius across same-level components"
+    - "color contrast as the primary hierarchy tool"
+    - "geometric shapes for decorative elements (circles, squares, rectangles)"
+    - "sharp color transitions between sections — never blurred or gradual"
+
+effects:
+  interaction-vocabulary: [scale-pop, color-shift, color-fill, icon-scale]
+  hover:
+    card: "scale-pop — scale-[1.02], background color intensifies"
+    button: "color-shift — background darkens one shade"
+  active:
+    button: "scale-pop — scale-[0.97], instant press feedback"
+  focus:
+    general: "ring-2 ring-{color.primary} ring-offset-2 — solid outline, no glow"
+  transition: "duration-150 to duration-200, ease"
+
+compatibility: [bauhaus, swiss-minimalist]
+clashes: [glassmorphism, neumorphism, liquid-glass]

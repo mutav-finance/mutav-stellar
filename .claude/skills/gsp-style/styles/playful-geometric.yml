@@ -1,0 +1,188 @@
+name: playful-geometric
+description: Memphis-inspired fun — confetti colors, candy buttons, sticker cards, bouncy interactions
+tags: [geometric, playful, fun, colorful, bouncy]
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#FFFDF5"
+    foreground: "#1E293B"
+    card: "#FFFFFF"
+    card-foreground: "#1E293B"
+    popover: "#FFFFFF"
+    popover-foreground: "#1E293B"
+    primary: "#3B82F6"
+    primary-foreground: "#FFFFFF"
+    secondary: "#F472B6"
+    secondary-foreground: "#FFFFFF"
+    accent: "#8B5CF6"
+    accent-foreground: "#FFFFFF"
+    muted: "#CBD5E1"
+    muted-foreground: "#64748B"
+    destructive: "#EF4444"
+    border: "#1E293B"
+    input: "#1E293B"
+    ring: "#3B82F6"
+    # Sidebar
+    sidebar: "#FFFFFF"
+    sidebar-foreground: "#1E293B"
+    sidebar-primary: "#3B82F6"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#8B5CF6"
+    sidebar-accent-foreground: "#FFFFFF"
+    sidebar-border: "#1E293B"
+    sidebar-ring: "#3B82F6"
+    # Extras
+    success: "#34D399"
+    warning: "#FBBF24"
+    info: "#3B82F6"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#3B82F6"  # confetti blue (primary)
+    chart-2: "#F472B6"  # confetti pink (secondary)
+    chart-3: "#8B5CF6"  # confetti violet (accent)
+    chart-4: "#FBBF24"  # confetti amber
+    chart-5: "#34D399"  # confetti mint
+
+  color-rotate:
+    blue: "#3B82F6"
+    pink: "#F472B6"
+    violet: "#8B5CF6"
+    amber: "#FBBF24"
+    mint: "#34D399"
+
+  typography:
+    font-family-primary: "Outfit, Plus Jakarta Sans, sans-serif"
+    font-family-display: "Fredoka One, sans-serif"
+    font-family-mono: "JetBrains Mono, monospace"
+    font-weight-heading: 700
+    font-weight-body: 400
+    font-size-base: "16px"
+    line-height-base: 1.5
+
+  shape:
+    border-radius-sm: "8px"
+    border-radius-md: "16px"
+    border-radius-lg: "9999px"
+    border-width: "2px"
+
+  elevation:
+    shadow-sm: "4px 4px 0px #1E293B"
+    shadow-md: "6px 6px 0px #1E293B"
+    shadow-lg: "8px 8px 0px #1E293B"
+    shadow-xl: "12px 12px 0px #1E293B"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "200ms"
+    duration-normal: "300ms"
+    easing: "cubic-bezier(0.34, 1.56, 0.64, 1)"
+
+dark_mode:
+  color:
+    background: "#1E293B"
+    foreground: "#F8FAFC"
+    card: "#334155"
+    card-foreground: "#F8FAFC"
+    muted: "#475569"
+    muted-foreground: "#94A3B8"
+    border: "#F8FAFC"
+    input: "#F8FAFC"
+    sidebar: "#334155"
+    sidebar-foreground: "#F8FAFC"
+    sidebar-border: "#F8FAFC"
+
+intensity:
+  variance: 7     # Memphis shapes, confetti decoration, blob radii, rotated elements
+  motion: 6       # bouncy overshoot easing, wiggle hovers, pop-in entrances, marquees
+  density: 5      # colorful but readable — shapes fill space around clean content areas
+
+patterns:
+  card:
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "{elevation.shadow-lg} — hard offset, no blur"
+    radius: "{shape.border-radius-md} (rounded-xl)"
+    background: "{color.surface}"
+    decoration: "floating circle icon half-in/half-out of top border, colored shadow for featured (pink or amber)"
+    hover: "rotate -1deg, scale 1.02 — wiggle sticker effect"
+  button-primary:
+    background: "{color.accent}"
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "{elevation.shadow-sm}"
+    text: "font-bold text-white"
+    radius: "rounded-full — pill shape always"
+    icon: "ArrowRight in circular white background inside button"
+  button-secondary:
+    background: "transparent"
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "none"
+    text: "{color.on-background}"
+    radius: "rounded-full"
+    fill: "hover fills {color.warning} (amber/yellow) — surprise color pop"
+  input:
+    border: "2px solid {shape.border-color}"
+    radius: "{shape.border-radius-md}"
+    background: "{color.surface}"
+    shadow: "4px 4px 0px transparent resting, 4px 4px 0px {color.accent} on focus"
+    focus: "border {color.accent}, hard color shadow appears"
+    label: "bold uppercase text-sm tracking-wide above input"
+  badge:
+    shape: "rounded-full, {shape.border-width} border, accent background rotated per badge"
+    text: "font-bold text-sm, white on colored background"
+    decoration: "rotate-2 to rotate-6, sticker-style offset"
+  nav:
+    logo: "display font (Fredoka One), colored accent, bouncy hover"
+    links: "font-medium, hover adds squiggly underline SVG"
+    mobile: "candy-colored hamburger with hard shadow"
+  layout:
+    archetype: "candy-playground"
+    max-width: "max-w-6xl"
+    section-spacing: "py-24 — spacious, filled with pattern decoration"
+    grid-gap: "gap-8 to gap-12"
+    asymmetry: "blob-masked images, alternating card header colors (violet/pink/amber)"
+    surfaces: "dot grid background, squiggly SVG dividers, confetti shapes behind content"
+    decoration: "primitive shapes (circles, triangles, squares) as background elements, dashed SVG connectors between cards"
+
+constraints:
+  never:
+    - "dark mode as default — this is a warm, light, paper-cream aesthetic"
+    - "thin borders (1px) — minimum border-2 for chunky candy feel"
+    - "soft blur shadows — all shadows hard-offset, zero blur"
+    - "muted or desaturated colors — palette is punchy, high-saturation candy colors"
+    - "serious or corporate typography — display font must feel friendly and rounded"
+    - "empty background sections — fill with dot grids, confetti, or squiggles"
+    - "matching shadow color to element — shadows are always dark ({color.on-background}) or accent-colored"
+    - "static decorative shapes — shapes should bounce, wiggle, or float"
+  always:
+    - "hard-offset shadows (no blur) on every elevated element"
+    - "chunky border-2 in dark color on all interactive surfaces"
+    - "rounded-full (pill) on all buttons"
+    - "confetti color rotation — cycle {color-rotate} across repeated elements"
+    - "at least one squiggly SVG divider or underline per page"
+    - "primitive shape decorations (circles, triangles) behind content blocks"
+    - "icon containers — icons enclosed in colored circles, never floating alone"
+
+effects:
+  interaction-vocabulary: [pop-lift, sticker-press, wiggle-jiggle, candy-fill, bounce-in]
+  hover:
+    card: "wiggle-jiggle — rotate(-1deg) + scale(1.02), sticker pickup feel"
+    button-primary: "pop-lift — translate(-2px, -2px), shadow extends to 6px 6px"
+    button-secondary: "candy-fill — background floods with surprise color (amber/yellow)"
+    link: "squiggly underline SVG appears, color shifts to {color.accent}"
+    badge: "wiggle-jiggle — rotation oscillates +-3deg"
+  active:
+    button: "sticker-press — translate(2px, 2px), shadow shrinks to 2px 2px"
+  focus:
+    input: "candy-fill — hard color shadow appears (4px 4px 0px {color.accent}), border accent"
+    general: "ring-2 ring-{color.accent} ring-offset-2 — chunky visible focus"
+  transition: "duration-200 to duration-300, cubic-bezier(0.34, 1.56, 0.64, 1) — bouncy overshoot"
+  ambient:
+    - "confetti-float — background shapes drift slowly with gentle rotation (5-8s ease-in-out)"
+    - "wiggle-idle — decorative icons oscillate rotate(0->3->-3->0) (2s ease-in-out infinite)"
+    - "bounce-in — elements enter viewport with scale(0->1) + bounce overshoot"
+    - "marquee-scroll — client logos or keywords in infinite horizontal scroll"
+
+compatibility: [neubrutalism, flat-design]
+clashes: [monochrome, luxury, swiss-minimalist]

@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # MUTAV Stellar — Agent Context
 
 ## Project
