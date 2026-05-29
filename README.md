@@ -1,17 +1,54 @@
-# MUTAV Stellar — Rental Guarantee Tokenization on Stellar
+# MUTAV Stellar — Contracts + Infrastructure
 
-Soroban smart contracts for the MUTAV Finance rental guarantee protocol — part of the NearX acceleration program.
+The **Stellar contracts and operator infrastructure** for MUTAV Finance. Part of the NearX acceleration program.
 
-> *Contratos Soroban para o protocolo MUTAV de garantia locatícia — programa de aceleração NearX.*
+> *Contratos Stellar e infraestrutura do operador do MUTAV. Programa de aceleração NearX.*
+
+## Scope
+
+This repo houses two distinct surfaces, both kept under strict change control because a bug here moves money:
+
+- **Rust contract** (`contracts/`) — audit-gated, slow change cadence, the smallest changeable thing in the system. The "audited surface" proper.
+- **TS SDK + operator daemons** (`src/`) — operator-authority code that holds keys and executes money flows. Not audited in the same sense the contract is; needs its own change-control regime (release tags, separate review bar).
+- **Admin tooling** — scripts and runbooks for cold-wallet operations.
+
+UI surfaces live in sibling repos by design.
+
+## The three-repo split
+
+The protocol is delivered across three repos, separated by audit surface and change cadence:
+
+```mermaid
+flowchart LR
+  STL[mutav-stellar<br/>contracts, SDK, daemons<br/>audited; slow cadence]
+  APP[mutav-app<br/>real-estate platform<br/>Auth0 + Convex]
+  INV[mutav-invest<br/>investor portal<br/>fund data + dApp]
+  APP -->|consumes SDK| STL
+  INV -->|consumes SDK| STL
+```
+
+| Repo | Stack | Audience | Why separate |
+|---|---|---|---|
+| **`mutav-stellar`** (here) | Rust + Bun | Protocol team | Audited contracts; tight change control; no UI |
+| [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app) | Auth0 + Convex | Real-estate agencies | Web2 SaaS for rental-contract management + agency payment flows |
+| [`mutav-finance/mutav-invest`](https://github.com/mutav-finance/mutav-invest) | Next.js 16 + Bun + Stellar wallet kit | Investors | Public dApp; fund data, deposit/redeem, KYC if required |
+
+Dependency: both sibling repos consume this repo's SDK; neither feeds back into it.
+
+**Boundary rule** — *custody-locality claim, not a security guarantee*: operator/admin custody never leaves `mutav-stellar`'s deployment. Agency and investor custody is end-user-owned and out of scope here. See [`02-actors-and-trust.md`](./docs/architecture/02-actors-and-trust.md) for the full trust model — including off-chain routing surfaces (e.g. `mutav-app` displaying which address agencies pay) that a compromised sibling could still affect without touching an operator key.
+
+**Trade-offs** of three repos: SDK release coordination across siblings, multi-repo CI gates, fragmented onboarding for newcomers, harder cross-cutting refactors. These are real costs; the benefit (tight change control on the audited surface) is the trade we accept.
 
 ## Docs
 
-Shared strategy, whitepaper, and brand assets live in [`mutav-finance/mutav`](https://github.com/mutav-finance/mutav).
+Architecture: [`docs/architecture/`](./docs/architecture/) — start with the README inside.
+
+Protocol-wide strategy, whitepaper, and brand assets live in [`mutav-finance/mutav`](https://github.com/mutav-finance/mutav).
 
 ## Stack
 
-- Stellar (Soroban/Rust) — smart contracts
-- TBD — frontend
+- **Stellar (Soroban / Rust)** — smart contracts
+- **Bun + TypeScript** — SDK + operator daemons
 
 ## Setup
 
@@ -21,7 +58,7 @@ cd mutav-stellar
 git config core.hooksPath .githooks
 ```
 
-See [CONTRIBUTING.md](https://github.com/mutav-finance/mutav/blob/main/CONTRIBUTING.md) in the shared docs repo for branch workflow and PR guidelines.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for branch workflow and PR guidelines.
 
 ## License
 
