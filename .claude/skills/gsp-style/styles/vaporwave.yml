@@ -1,0 +1,180 @@
+name: vaporwave
+description: Retro-futurist pastel aesthetic — gradient skies, lo-fi nostalgia, 80s/90s digital dreams
+tags: [retro, pastel, expressive, nostalgic, gradient]
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#1A0533"
+    foreground: "#E8D5FF"
+    card: "#2D1B4E"
+    card-foreground: "#E8D5FF"
+    popover: "#2D1B4E"
+    popover-foreground: "#E8D5FF"
+    primary: "#FF71CE"
+    primary-foreground: "#FFFFFF"
+    secondary: "#01CDFE"
+    secondary-foreground: "#FFFFFF"
+    accent: "#B967FF"
+    accent-foreground: "#FFFFFF"
+    muted: "#4A3566"
+    muted-foreground: "#A78BCA"
+    destructive: "#FF6B6B"
+    border: "rgba(255, 113, 206, 0.3)"
+    input: "rgba(255, 113, 206, 0.3)"
+    ring: "#FF71CE"
+    # Sidebar
+    sidebar: "#2D1B4E"
+    sidebar-foreground: "#E8D5FF"
+    sidebar-primary: "#FF71CE"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#B967FF"
+    sidebar-accent-foreground: "#FFFFFF"
+    sidebar-border: "rgba(255, 113, 206, 0.3)"
+    sidebar-ring: "#FF71CE"
+    # Extras
+    success: "#05FFA1"
+    warning: "#FFE66D"
+    info: "#01CDFE"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#FF71CE"  # vaporwave pink (primary)
+    chart-2: "#01CDFE"  # vaporwave cyan (secondary)
+    chart-3: "#B967FF"  # vaporwave purple (accent)
+    chart-4: "#05FFA1"  # vaporwave mint (success)
+    chart-5: "#FFE66D"  # vaporwave yellow
+
+  typography:
+    font-family-primary: "Space Grotesk, sans-serif"
+    font-family-display: "Bungee, cursive"
+    font-family-mono: "VT323, monospace"
+    font-weight-heading: 700
+    font-weight-body: 400
+    font-size-base: "16px"
+    line-height-base: 1.6
+
+  shape:
+    border-radius-sm: "8px"
+    border-radius-md: "12px"
+    border-radius-lg: "20px"
+    border-width: "2px"
+
+  elevation:
+    shadow-sm: "0 4px 12px rgba(185, 103, 255, 0.15)"
+    shadow-md: "0 8px 24px rgba(185, 103, 255, 0.20)"
+    shadow-lg: "0 16px 40px rgba(185, 103, 255, 0.25)"
+    shadow-xl: "0 24px 56px rgba(185, 103, 255, 0.30)"
+
+  gradient:
+    sky: "linear-gradient(180deg, #1A0533 0%, #2D1B4E 40%, #FF71CE 100%)"
+    sunset: "linear-gradient(135deg, #FF71CE, #B967FF, #01CDFE)"
+    chrome: "linear-gradient(90deg, #01CDFE, #B967FF, #FF71CE)"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "200ms"
+    duration-normal: "400ms"
+    easing: "cubic-bezier(0.4, 0, 0.2, 1)"
+
+dark_mode:
+  color:
+    background: "#0D0019"
+    foreground: "#E8D5FF"
+    card: "#1A0533"
+    card-foreground: "#E8D5FF"
+    muted: "#3D2660"
+    muted-foreground: "#A78BCA"
+    border: "rgba(255, 113, 206, 0.2)"
+    input: "rgba(255, 113, 206, 0.2)"
+    sidebar: "#1A0533"
+    sidebar-foreground: "#E8D5FF"
+    sidebar-border: "rgba(255, 113, 206, 0.2)"
+
+intensity:
+  variance: 7     # skewed buttons, rotated icon diamonds, perspective grids, alternating timelines
+  motion: 7       # glow amplification, un-skew transforms, CRT ambient, continuous orb drift
+  density: 5      # balanced — neon effects need breathing room to read against dark void
+
+patterns:
+  card:
+    border: "1px solid {color.primary}/30, border-t-2 {color.secondary} accent laser"
+    shadow: "{elevation.shadow-md}"
+    radius: "{shape.border-radius-sm}"
+    background: "{color.surface}/80 with backdrop-blur-md"
+    header: "cyan title with drop-shadow glow, monospace description"
+  button-primary:
+    background: "transparent"
+    border: "2px solid {color.secondary}"
+    shadow: "none resting, 0 0 20px {color.secondary} on hover"
+    text: "uppercase, tracking-wider, font-mono, {color.secondary}"
+    radius: "0px"
+    shape: "-skew-x-12 transform, inner content counter-skewed"
+  button-secondary:
+    background: "{color.primary}"
+    border: "2px solid {color.primary}"
+    shadow: "none"
+    text: "uppercase, tracking-wider, white"
+    radius: "0px"
+    shape: "-skew-x-12 transform"
+  input:
+    border: "border-b-2 {color.primary} — underline only"
+    radius: "0px"
+    background: "black"
+    focus: "border shifts to {color.secondary}, glow shadow appears"
+    font: "monospace, {color.secondary} text"
+  badge:
+    shape: "-skew-x-12, 0px radius, neon border"
+    text: "uppercase tracking-widest text-xs font-mono"
+    decoration: "neon glow shadow matching border color"
+  nav:
+    style: "terminal window chrome with colored dots (magenta, cyan, orange)"
+    background: "dark glass with backdrop-blur"
+    links: "monospace uppercase tracking-wider, glow on hover"
+  layout:
+    archetype: "neon-void"
+    max-width: "max-w-7xl"
+    section-spacing: "py-20 to py-32"
+    grid-gap: "gap-8 to gap-12"
+    surfaces: "CRT scanlines overlay (4px repeating), perspective grid floor, floating sun orb"
+    decoration: "RGB chromatic aberration, dot patterns (magenta 1px), gradient text fills"
+    depth: "z-layered — grid z-0, sun z-1, content z-10, scanlines z-50"
+
+constraints:
+  never:
+    - "light backgrounds — dark void ({color.background}) is mandatory"
+    - "subtle or muted colors — all accents at maximum saturation"
+    - "organic easing curves — linear or instant for digital feel"
+    - "minimalist or sparse layouts — dense with effects, borders, and overlays"
+    - "removing CRT scanline overlay — always present for atmosphere"
+    - "soft diffused shadows — all shadows are colored neon glows"
+    - "serif fonts — geometric sans (Orbitron) and monospace (Share Tech Mono) only"
+  always:
+    - "CRT scanline overlay fixed across entire viewport"
+    - "perspective grid background in at least one section"
+    - "gradient text fill (sunset: orange via magenta to cyan) on hero headline"
+    - "skewed buttons with -skew-x-12 transform"
+    - "neon glow shadows (colored, not black) on interactive elements"
+    - "terminal/window chrome with colored dots on at least one container"
+    - "IRC-style angle bracket formatting on testimonials"
+
+effects:
+  interaction-vocabulary: [un-skew, glow-explode, diamond-spin, neon-border-shift]
+  hover:
+    card: "neon-border-shift — border opacity increases, -translate-y-2, shadow deepens"
+    button: "un-skew — skew returns to 0, bg fills neon, text inverts to black, glow explodes 2-3x"
+    icon: "diamond-spin — rotate-45 container spins to rotate-90"
+    link: "neon-border-shift — underline appears, color shifts, glow added"
+  active:
+    button: "scale-95, glow dims slightly"
+  focus:
+    general: "ring-2 ring-{color.secondary} with ambient glow"
+  transition: "duration-200, ease-linear — fast, digital, unnatural"
+  ambient:
+    - "orb-drift — floating sun gradient (600px, blur-100px) slow drift"
+    - "scanline-flicker — CRT overlay at constant opacity"
+    - "icon-pulse — animate-pulse on placeholder icons"
+
+compatibility: [kinetic-typography, aurora-gradients]
+clashes: [swiss-minimalist, professional, terminal]

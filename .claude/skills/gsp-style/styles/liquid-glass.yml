@@ -1,0 +1,207 @@
+name: liquid-glass
+description: Apple 2025 design language — refractive translucency, fluid morphing, specular highlights
+tags: [premium, translucent, modern, apple, fluid]
+trend_ref: trends/liquid-glass.md
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#F2F2F7"
+    foreground: "#1C1C1E"
+    card: "oklch(100% 0 0 / 0.60)"
+    card-foreground: "#1C1C1E"
+    popover: "oklch(100% 0 0 / 0.60)"
+    popover-foreground: "#1C1C1E"
+    primary: "#007AFF"
+    primary-foreground: "#FFFFFF"
+    secondary: "#5856D6"
+    secondary-foreground: "#FFFFFF"
+    accent: "#FF2D55"
+    accent-foreground: "#FFFFFF"
+    muted: "#E5E5EA"
+    muted-foreground: "#8E8E93"
+    destructive: "#FF3B30"
+    border: "oklch(100% 0 0 / 0.80)"
+    input: "oklch(100% 0 0 / 0.80)"
+    ring: "#007AFF"
+    # Sidebar
+    sidebar: "oklch(100% 0 0 / 0.60)"
+    sidebar-foreground: "#1C1C1E"
+    sidebar-primary: "#007AFF"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#E5E5EA"
+    sidebar-accent-foreground: "#1C1C1E"
+    sidebar-border: "oklch(100% 0 0 / 0.80)"
+    sidebar-ring: "#007AFF"
+    # Extras
+    success: "#34C759"
+    warning: "#FF9500"
+    info: "#5AC8FA"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#007AFF"  # iOS blue (primary)
+    chart-2: "#FF2D55"  # iOS red (accent)
+    chart-3: "#34C759"  # iOS green (success)
+    chart-4: "#FF9500"  # iOS orange (warning)
+    chart-5: "#5856D6"  # iOS purple (secondary)
+
+  typography:
+    font-family-primary: "SF Pro Display, -apple-system, system-ui, sans-serif"
+    font-family-mono: "SF Mono, Menlo, monospace"
+    font-weight-heading: 600
+    font-weight-body: 400
+    font-size-base: "17px"
+    line-height-base: 1.47
+
+  shape:
+    border-radius-sm: "10px"
+    border-radius-md: "16px"
+    border-radius-lg: "24px"
+    border-width: "0.5px"
+
+  elevation:
+    shadow-sm: "0 2px 8px rgba(0, 0, 0, 0.08)"
+    shadow-md: "0 8px 32px rgba(31, 38, 135, 0.15)"
+    shadow-lg: "0 16px 48px rgba(31, 38, 135, 0.20)"
+    shadow-xl: "0 24px 64px rgba(31, 38, 135, 0.25)"
+
+  glass:
+    backdrop-blur: "2px"
+    backdrop-saturate: "180%"
+    surface-opacity: 0.60
+    border-opacity: 0.80
+    highlight: "inset 0 4px 20px rgba(255, 255, 255, 0.30)"
+    refraction: "inset -10px -8px 0px -11px rgba(255, 255, 255, 1)"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "200ms"
+    duration-normal: "350ms"
+    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)"
+
+dark_mode:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#000000"
+    foreground: "#F5F5F7"
+    card: "oklch(100% 0 0 / 0.10)"
+    card-foreground: "#F5F5F7"
+    popover: "oklch(100% 0 0 / 0.10)"
+    popover-foreground: "#F5F5F7"
+    primary: "#007AFF"
+    primary-foreground: "#FFFFFF"
+    secondary: "#5856D6"
+    secondary-foreground: "#FFFFFF"
+    accent: "#FF2D55"
+    accent-foreground: "#FFFFFF"
+    muted: "#1C1C1E"
+    muted-foreground: "#8E8E93"
+    destructive: "#FF3B30"
+    border: "oklch(100% 0 0 / 0.18)"
+    input: "oklch(100% 0 0 / 0.18)"
+    ring: "#007AFF"
+    # Sidebar
+    sidebar: "oklch(100% 0 0 / 0.10)"
+    sidebar-foreground: "#F5F5F7"
+    sidebar-primary: "#007AFF"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#1C1C1E"
+    sidebar-accent-foreground: "#F5F5F7"
+    sidebar-border: "oklch(100% 0 0 / 0.18)"
+    sidebar-ring: "#007AFF"
+
+intensity:
+  variance: 3     # clean Apple grid layouts, consistent spacing, restrained composition
+  motion: 7       # fluid shape morphing between states, smooth 350ms transitions, specular animation
+  density: 4      # generous Apple-style whitespace, content breathes within glass surfaces
+
+patterns:
+  card:
+    background: "{color.surface}"
+    blur: "backdrop-blur-[2px] backdrop-saturate-[180%]"
+    border: "1px solid {shape.border-color}"
+    shadow: "{elevation.shadow-md} with {glass.highlight}"
+    radius: "{shape.border-radius-md}"
+    inner-layer: "::after — backdrop-blur-[1px], bg-white/10, refraction edge shadow"
+    hover: "surface opacity steps 0.60→0.70, border 0.80→0.90, shadow deepens"
+  button-primary:
+    background: "{color.primary}"
+    border: "1px solid white/20"
+    shadow: "0 2px 8px {color.primary}/30, inset 0 1px 0 white/30 (specular highlight)"
+    text: "weight 600, sentence case, white"
+    radius: "{shape.border-radius-sm}"
+    hover: "bg darkens, shadow expands, specular brightens"
+  button-secondary:
+    background: "{color.surface}"
+    blur: "backdrop-blur-[2px] backdrop-saturate-[180%]"
+    border: "1px solid {shape.border-color}"
+    text: "weight 600, {color.primary}"
+    radius: "{shape.border-radius-sm}"
+    shadow: "{elevation.shadow-sm}, inset 0 2px 8px white/20"
+  input:
+    background: "rgba(255,255,255,0.40)"
+    blur: "backdrop-blur-[2px]"
+    border: "1px solid white/60"
+    radius: "{shape.border-radius-sm}"
+    focus: "bg steps to 0.60, border shifts to {color.primary}/50, ring glow 3px {color.primary}/20"
+    shadow: "inset 0 1px 3px rgba(0,0,0,0.06)"
+  badge:
+    shape: "rounded-full"
+    background: "{color.primary}/15"
+    text: "text-xs font-medium {color.primary}"
+    border: "1px solid {color.primary}/20"
+    blur: "backdrop-blur-[1px]"
+  nav:
+    background: "rgba(255,255,255,0.50)"
+    blur: "backdrop-blur-[4px] backdrop-saturate-[180%]"
+    border: "border-b border-white/60"
+    position: "fixed top-0, z-50"
+    shadow: "0 1px 0 rgba(0,0,0,0.04)"
+  layout:
+    archetype: "apple-clean-grid"
+    max-width: "max-w-7xl"
+    section-spacing: "py-16 to py-24"
+    grid-gap: "gap-3 to gap-4"
+    surfaces: "light background (#F2F2F7), pastel gradient washes (blue-200/30, purple-200/20)"
+    depth: "surface opacity scale: 0.40→0.50→0.60→0.70→0.80 by z-level"
+    background: "warm-neutral, never stark white — subtle color washes behind glass"
+
+constraints:
+  never:
+    - "high blur (12px+) — that is glassmorphism, not Liquid Glass; 2px is the refractive sweet spot"
+    - "low-opacity borders (0.20) — borders must be 0.80+ for polished glass edge"
+    - "dark backgrounds as default — light mode (#F2F2F7) is canonical"
+    - "surfaces without specular highlights — inner shadows or ::after refraction required"
+    - "hard state swaps — all state changes must use fluid shape transitions"
+    - "bold neon background orbs — use pastel washes only (blue-200, purple-200)"
+    - "mixing glassmorphism high-blur with Liquid Glass high-opacity — they cancel out"
+    - "pure white (#FFFFFF) page backgrounds — use #F2F2F7 system grey"
+  always:
+    - "specular highlights (inset box-shadow or ::after) on every glass surface"
+    - "backdrop-blur at 2px (1-4px range) — refractive, not frosted"
+    - "strong borders (white/80+) for polished glass edge quality"
+    - "dual-layer construction (outer glass + inner ::after light layer)"
+    - "-webkit-backdrop-filter prefix for Safari"
+    - "fluid shape morphing between states (border-radius, scale, shadow transitions)"
+    - "surface opacity hierarchy matching z-depth"
+
+effects:
+  interaction-vocabulary: [glass-brighten, specular-shift, fluid-morph, tactile-press, refraction-step]
+  hover:
+    card: "glass-brighten — surface 0.60→0.70, border 0.80→0.90, shadow deepens"
+    button-primary: "specular-shift — bg darkens, glow expands, inset highlight strengthens"
+    button-secondary: "glass-brighten — surface brightens, shadow deepens"
+    tab: "refraction-step — inactive→active with glass surface + specular emerging"
+  active:
+    button: "tactile-press — scale-[0.98], shadow contracts, specular dims"
+  focus:
+    general: "ring glow — 0 0 0 3px {color.primary}/20, border shifts to {color.primary}/50"
+  transition: "duration-200 to duration-350, cubic-bezier(0.2, 0.8, 0.2, 1)"
+  ambient:
+    - "specular-drift — inner light layer shifts subtly with scroll position"
+    - "pastel-wash — background gradient washes drift slowly for glass tinting"
+
+compatibility: [glassmorphism, aurora-gradients]
+clashes: [neubrutalism, terminal, cyberpunk]

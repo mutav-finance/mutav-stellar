@@ -1,0 +1,183 @@
+name: monochrome
+description: Austere editorial — pure black and white, zero accent colors, typographic depth only
+tags: [black-white, monochrome, high-contrast, editorial, minimal]
+
+tokens:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#FFFFFF"
+    foreground: "#000000"
+    card: "#F5F5F5"
+    card-foreground: "#000000"
+    popover: "#F5F5F5"
+    popover-foreground: "#000000"
+    primary: "#000000"
+    primary-foreground: "#FFFFFF"
+    secondary: "#525252"
+    secondary-foreground: "#FFFFFF"
+    accent: "#000000"
+    accent-foreground: "#FFFFFF"
+    muted: "#525252"
+    muted-foreground: "#737373"
+    destructive: "#000000"
+    border: "#000000"
+    input: "#000000"
+    ring: "#000000"
+    # Sidebar
+    sidebar: "#F5F5F5"
+    sidebar-foreground: "#000000"
+    sidebar-primary: "#000000"
+    sidebar-primary-foreground: "#FFFFFF"
+    sidebar-accent: "#E5E5E5"
+    sidebar-accent-foreground: "#000000"
+    sidebar-border: "#000000"
+    sidebar-ring: "#000000"
+    # Extras
+    success: "#000000"
+    warning: "#000000"
+    info: "#000000"
+    # Chart — data-viz colors (distinct, accessible at small sizes)
+    chart-1: "#000000"  # black
+    chart-2: "#333333"  # charcoal
+    chart-3: "#666666"  # mid gray
+    chart-4: "#999999"  # light gray
+    chart-5: "#CCCCCC"  # pale gray
+
+  typography:
+    font-family-primary: "Playfair Display, serif"
+    font-family-secondary: "Source Serif 4, serif"
+    font-family-mono: "JetBrains Mono, monospace"
+    font-weight-heading: 900
+    font-weight-body: 400
+    font-size-base: "16px"
+    line-height-base: 1.6
+
+  shape:
+    border-radius-sm: "0px"
+    border-radius-md: "0px"
+    border-radius-lg: "0px"
+    border-width: "2px"
+    border-width-max: "8px"
+
+  elevation:
+    shadow-sm: "none"
+    shadow-md: "none"
+    shadow-lg: "none"
+    shadow-xl: "none"
+
+  spacing:
+    base: 8
+    scale: [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+  motion:
+    duration-fast: "0ms"
+    duration-normal: "100ms"
+    easing: "linear"
+
+  texture:
+    horizontal-lines-opacity: 0.015
+    grid-opacity: 0.015
+    diagonal-opacity: 0.01
+    noise-opacity: 0.02
+
+dark_mode:
+  color:
+    # Core — shadcn/ui CSS vars
+    background: "#000000"
+    foreground: "#FFFFFF"
+    card: "#0A0A0A"
+    card-foreground: "#FFFFFF"
+    popover: "#0A0A0A"
+    popover-foreground: "#FFFFFF"
+    primary: "#FFFFFF"
+    primary-foreground: "#000000"
+    secondary: "#A3A3A3"
+    secondary-foreground: "#000000"
+    accent: "#FFFFFF"
+    accent-foreground: "#000000"
+    muted: "#171717"
+    muted-foreground: "#737373"
+    destructive: "#FFFFFF"
+    border: "#FFFFFF"
+    input: "#FFFFFF"
+    ring: "#FFFFFF"
+    # Sidebar
+    sidebar: "#0A0A0A"
+    sidebar-foreground: "#FFFFFF"
+    sidebar-primary: "#FFFFFF"
+    sidebar-primary-foreground: "#000000"
+    sidebar-accent: "#171717"
+    sidebar-accent-foreground: "#FFFFFF"
+    sidebar-border: "#FFFFFF"
+    sidebar-ring: "#FFFFFF"
+
+intensity:
+  variance: 3     # editorial asymmetry through type scale, but structurally disciplined
+  motion: 1       # near-zero motion — instant binary state changes
+  density: 2      # dramatic negative space, editorial breathing room
+
+patterns:
+  card:
+    border: "{shape.border-width} solid {shape.border-color}"
+    shadow: "none — zero shadows, depth from inversion and borders"
+    radius: "0px"
+    background: "{color.background}"
+  button-primary:
+    background: "{color.primary}"
+    border: "none"
+    text: "uppercase, tracking-widest, font-medium, text-sm"
+    radius: "0px"
+  button-secondary:
+    background: "transparent"
+    border: "{shape.border-width} solid {shape.border-color}"
+    text: "uppercase, tracking-widest, {color.on-background}"
+    radius: "0px"
+  input:
+    border: "border-b {shape.border-width} solid {shape.border-color}"
+    radius: "0px"
+    background: "{color.background}"
+    focus: "border thickens to 4px — border-only focus, no ring, no glow"
+  badge:
+    shape: "0px radius, thin border"
+    text: "uppercase, tracking-widest, text-xs"
+  nav:
+    style: "minimal — logo + sparse links, heavy rule below"
+    links: "uppercase tracking-wider, underline appears on hover"
+  layout:
+    archetype: "editorial-whitespace"
+    max-width: "max-w-6xl"
+    section-spacing: "py-24 to py-40 — extreme negative space"
+    grid-gap: "gap-8 to gap-16"
+    surfaces: "horizontal lines, grid, and noise texture at very low opacity — paper-like quality"
+    dividers: "4px to 8px black horizontal rules between all major sections"
+
+constraints:
+  never:
+    - "any color besides black, white, and gray — palette is absolute"
+    - "box-shadow of any kind — depth from inversion and border weight only"
+    - "border-radius above 0px — sharp 90-degree corners everywhere"
+    - "gradients — solid fills only"
+    - "rounded or pill shapes — angular geometry is non-negotiable"
+    - "slow easing or bouncy animation — instant or 100ms maximum"
+    - "backdrop-blur or glass effects — strictly flat and opaque"
+  always:
+    - "serif typography for display and body (Playfair Display, Source Serif 4)"
+    - "oversized headlines (8xl to 9xl) as primary visual element"
+    - "heavy horizontal rules (4px-8px) between sections"
+    - "color inversion (black bg / white text) for emphasis instead of accent colors"
+    - "texture overlays (lines, grid, noise) for paper-like depth"
+    - "dramatic negative space framing all content"
+
+effects:
+  interaction-vocabulary: [color-invert, border-thicken, instant-snap]
+  hover:
+    card: "color-invert — full bg/text/border inversion, 100ms"
+    button: "color-invert — black/white swap, instant"
+  active:
+    button: "instant-snap — no transform, color change only"
+  focus:
+    general: "outline 3px solid {color.primary} offset 3px — high contrast, no ring"
+  transition: "duration-0 to duration-100, linear"
+
+compatibility: [swiss-minimalist, newsprint, bold-typography]
+clashes: [vaporwave, maximalism, cyberpunk]
