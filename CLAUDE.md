@@ -21,6 +21,12 @@ Both sibling repos consume this repo's SDK; neither feeds back into it.
 
 **Boundary rule** (custody-locality, not a security guarantee): operator/admin custody never leaves `mutav-stellar`'s deployment. Agency and investor custody is end-user-owned and out of scope for this repo. See `docs/architecture/02-actors-and-trust.md` for the full trust model — including off-chain routing surfaces (e.g. mutav-app displaying agency-payment addresses) that a compromised sibling could affect without touching operator keys.
 
+## Terminology (overloaded across repos)
+
+- **contract** here = Soroban smart contract (Rust). On `mutav-app` = rental contract (lease agreement, database record). Unrelated senses.
+- **admin** here = Stellar admin keypair (cold wallet, signs `set_*` / `cover_default` / handover). On `mutav-app` = Auth0 staff role (KYC review, no chain authority).
+- **operator**, **treasury**, **fund** are single-sense. Full table: `docs/architecture/01-protocol-overview.md#terminology`.
+
 Part of the NearX acceleration program.
 
 ## Shared docs

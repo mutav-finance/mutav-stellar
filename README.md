@@ -6,6 +6,8 @@ The **Stellar contracts and operator infrastructure** for MUTAV Finance. Part of
 
 ## Scope
 
+> **Note on terminology**: in this repo "contract" means a Soroban smart contract (Rust). On `mutav-app` the same word refers to rental contracts (lease agreements between agencies and tenants). "Admin" similarly: here = Stellar admin keypair; on `mutav-app` = Auth0 staff role. See `docs/architecture/01-protocol-overview.md#terminology` for the full table.
+
 This repo houses two distinct surfaces, both kept under strict change control because a bug here moves money:
 
 - **Rust contract** (`contracts/`) — audit-gated, slow change cadence, the smallest changeable thing in the system. The "audited surface" proper.

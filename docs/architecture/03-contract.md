@@ -1,6 +1,8 @@
-# 03 — The `Fund` contract
+# 03 — The `Fund` smart contract
 
-`contracts/fund/src/lib.rs` (2,817 LOC). Implements the SEP-0041 token interface plus fund-specific logic for partner payments, investor deposits, yield, fees, redemption queue, and default coverage.
+`contracts/fund/src/lib.rs` (2,817 LOC). The Soroban (Rust) **smart contract** that is the on-chain heart of the protocol. Implements the SEP-0041 token interface plus fund-specific logic for partner payments, investor deposits, yield, fees, redemption queue, and default coverage.
+
+> **Note on naming**: in this repo "contract" means this smart contract. On `mutav-app` the same word refers to **rental contracts** (lease agreements between agencies and tenants) — see [`01-protocol-overview.md#terminology`](./01-protocol-overview.md#terminology). They are unrelated.
 
 > **Snapshot caveat**: contract surface described as of `main` at commit `90e1185`. Items marked **(PR #N)** are not yet on main; they describe behavior introduced by the named in-flight PR. The same caveat applies to [`06-canonical-flows.md`](./06-canonical-flows.md).
 
