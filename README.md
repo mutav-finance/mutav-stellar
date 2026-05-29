@@ -6,12 +6,13 @@ The **Stellar contracts and operator infrastructure** for MUTAV Finance. Part of
 
 ## Scope
 
-This repo houses the **audited surface** of the protocol — everything that needs strict change control because a bug here moves money. By design, the UI surfaces live in sibling repos.
+This repo houses two distinct surfaces, both kept under strict change control because a bug here moves money:
 
-- **Smart contracts** (`contracts/`) — the `Fund` Soroban contract
-- **TS SDK** (`src/`) — typed interface to the contract, published as `@mutav-finance/mutav-stellar` and consumed by both sibling apps
-- **Operator daemons** (`src/jobs/`, in flight) — on-ramp, off-ramp, yield-sync, mgmt-fee, heartbeat, ttl-watchdog. Hold the operator key.
-- **Admin tooling** — scripts and runbooks for cold-wallet operations
+- **Rust contract** (`contracts/`) — audit-gated, slow change cadence, the smallest changeable thing in the system. The "audited surface" proper.
+- **TS SDK + operator daemons** (`src/`) — operator-authority code that holds keys and executes money flows. Not audited in the same sense the contract is; needs its own change-control regime (release tags, separate review bar).
+- **Admin tooling** — scripts and runbooks for cold-wallet operations.
+
+UI surfaces live in sibling repos by design.
 
 ## The three-repo split
 
@@ -30,9 +31,13 @@ flowchart LR
 |---|---|---|---|
 | **`mutav-stellar`** (here) | Rust + Bun | Protocol team | Audited contracts; tight change control; no UI |
 | [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app) | Auth0 + Convex | Real-estate agencies | Web2 SaaS for rental-contract management + agency payment flows |
-| `mutav-finance/mutav-invest` (forthcoming) | TBD (Next.js + wallet) | Investors | Public dApp; fund data, deposit/redeem, KYC if required |
+| [`mutav-finance/mutav-invest`](https://github.com/mutav-finance/mutav-invest) | Next.js 16 + Bun + Stellar wallet kit | Investors | Public dApp; fund data, deposit/redeem, KYC if required |
 
-Dependency: both sibling repos consume this repo's SDK; neither feeds back into it. **Operator/admin keys never leave this repo's deployment.**
+Dependency: both sibling repos consume this repo's SDK; neither feeds back into it.
+
+**Boundary rule** — *custody-locality claim, not a security guarantee*: operator/admin custody never leaves `mutav-stellar`'s deployment. Agency and investor custody is end-user-owned and out of scope here. See [`02-actors-and-trust.md`](./docs/architecture/02-actors-and-trust.md) for the full trust model — including off-chain routing surfaces (e.g. `mutav-app` displaying which address agencies pay) that a compromised sibling could still affect without touching an operator key.
+
+**Trade-offs** of three repos: SDK release coordination across siblings, multi-repo CI gates, fragmented onboarding for newcomers, harder cross-cutting refactors. These are real costs; the benefit (tight change control on the audited surface) is the trade we accept.
 
 ## Docs
 

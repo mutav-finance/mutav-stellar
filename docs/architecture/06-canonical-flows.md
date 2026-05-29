@@ -2,6 +2,8 @@
 
 Five operational flows + two maintenance flows. Each diagram shows the actors that participate (contract, operator, investor, etc.) and the order of events. Arrows are call/event boundaries.
 
+> **Snapshot caveat**: flows described as of `main` at commit `90e1185`. Some flows are annotated with **(PR #N)** to show behavior introduced by named in-flight PRs — Flow 1 in particular includes the PR #22 replay-guard variant, which is not on main yet. The same caveat applies to [`03-contract.md`](./03-contract.md).
+
 ## Flow 1 — Partner payment ingress (on-ramp)
 
 A partner agency pays the monthly guarantee fee in USDC to the operator wallet; the on-ramp daemon detects it and records it on-chain.
@@ -18,15 +20,16 @@ sequenceDiagram
     P->>H: Stellar payment (USDC) → operator
     D->>H: poll payments (cursor)
     H-->>D: payment record + tx_hash
-    D->>F: receive_payment(imobiliaria, amount, tx_hash)
-    F->>F: assert whitelisted + not seen
+    D->>F: receive_payment(imobiliaria, amount) %% PR #22 adds tx_hash arg %%
+    F->>F: assert whitelisted
+    Note over F: PR #22: also assert tx_hash not seen
     F->>F: split 20%/80% → protocol + AUM
     F->>CW: USDC transfer (AUM portion)
     F-->>D: success (event: rcv_pay)
     D->>D: saveCursor (advance)
 ```
 
-**Replay guard**: `SeenTxHash(tx_hash)` in temporary storage; TTL ~2.9 days. **Atomicity**: cursor must advance *after* on-chain success — currently broken (PR #22 review).
+**On main today**: no on-chain replay guard; daemon dedups in-memory only. **(PR #22)** adds `tx_hash` arg + `SeenTxHash(tx_hash)` in temporary storage with ~2.9-day TTL. **Atomicity gap**: cursor must advance *after* on-chain success — currently broken (PR #22 review).
 
 ## Flow 2 — Investor deposit
 

@@ -26,13 +26,15 @@ flowchart LR
   AGY -->|reads chain| C
   IUI -->|imports| SDK
   IUI -->|reads + wallet-signs| C
-  AGY -.agencies sign their own USDC payments.-> C
+  AGENT[Agency user<br/>off-graph human<br/>with own wallet]
+  AGY -.displays 'pay USDC to wallet X'.-> AGENT
+  AGENT -.signs USDC payment.-> C
 ```
 
-Three repos, one dependency direction. Both `mutav-app` and `mutav-invest` consume this repo's SDK; neither holds operator or admin keys. **Operator-key custody belongs with the contracts it authorizes — that's why the daemons live here.**
+Three repos, one dependency direction. Both `mutav-app` and `mutav-invest` consume this repo's SDK; neither holds operator or admin keys. Agency users (off-graph humans) sign their own payments with their own wallets. **Operator-key custody belongs with the contracts it authorizes — that's why the daemons live here.**
 
 
-## Current (testnet, 2026-05-27)
+## Current (testnet, 2026-05-29)
 
 ```mermaid
 flowchart LR
@@ -90,7 +92,10 @@ flowchart LR
 - **Deploy**: manual `soroban contract deploy` from operator workstation. No CI workflow, no wasm artifact attestation, no reproducible-build check (#43).
 - **Etherfuse + PIX**: API integrations are placeholder TODOs in code; not wired to a real provider yet.
 
-## Target (pre-mainnet)
+## Target (pre-mainnet — aspirational)
+
+> The target topology below describes the destination, not committed scope. For a solo-dev pre-mainnet project, the full picture is ~2 quarters of work. The migration-path section below splits items into **mainnet blockers** (must land first) and **post-mainnet hardening** (acceptable to defer).
+
 
 ```mermaid
 flowchart LR
@@ -160,13 +165,19 @@ For each daemon process, the host must provide:
 
 ## Migration path
 
-The route from current → target is staged:
+The route from current → target is staged. Items split by phase:
 
-1. **Foundation modules** (#36, #37, #38) land before daemon rebuild.
-2. **Address registry + wasm attestation** (#43) land before mainnet contract is deployed.
-3. **Key custody + KMS** (#41) lands before any production daemon runs.
-4. **Observability stack** (#44) lands before mainnet contract is unpaused.
-5. **Pre-mainnet checklist** (#40) is the gate.
+**Mainnet blockers** (must land before mainnet):
+1. **Foundation modules** (#36, #37, #38) — bootstrap validation, nominal types, logger/retry/shutdown.
+2. **Address registry + wasm attestation** (#43) — `addresses/mainnet.json` + SLSA provenance.
+3. **Key custody runbook** (#41) — admin multisig procedure, operator KMS-wrapping documented.
+4. **Daemon audit follow-ups** (PRs #22–#27 review findings) — the daemons need their own change-control before they're trusted with mainnet operator authority.
+5. **Pre-mainnet checklist** (#40) — the gate.
+
+**Post-mainnet hardening** (acceptable to defer; ship contract paused, harden under live observation):
+- Multi-vendor RPC failover.
+- Full Prometheus metrics + indexer + pager — start with structured logs + a single ad-hoc alert channel.
+- Per-daemon scoped keys via OIDC + KMS — one shared operator key is acceptable for early mainnet IF a clear rotation procedure is in place.
 
 ## Known gaps
 

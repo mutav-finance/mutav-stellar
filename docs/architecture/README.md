@@ -34,17 +34,17 @@ The protocol is delivered across three repos, separated by audit surface and cha
 | Admin tooling | yes | — | — |
 | Real-estate platform — agency dashboard, rental-contract mgmt, payment collection | — | yes (Auth0 + Convex) | — |
 | Investor portal — fund data, deposit/redeem, NAV view, KYC | — | — | yes |
-| Stack | Rust + Bun | Auth0 + Convex | TBD (Next.js + wallet) |
+| Stack | Rust + Bun | Auth0 + Convex | Next.js 16 + Bun + Stellar wallet kit |
 | Audience | protocol team | real-estate agencies | investors |
-| Change cadence | slow (audit gate) | medium | fast |
+| Change cadence | contract: slow (audit gate); daemons: medium | medium | fast |
 
-**Why three repos**: tight change control on the contracts. The audited surface lives in `mutav-stellar` and moves slowly; the agency platform and investor portal iterate fast on their own schedules without dragging contract-grade rigor.
+**Why three repos**: tight change control on the contracts. The Rust contract surface lives in `mutav-stellar` and moves slowly; the agency platform and investor portal iterate fast on their own schedules without dragging contract-grade rigor. *Trade-offs*: SDK release coordination across siblings, multi-repo CI gates, fragmented onboarding for newcomers, harder cross-cutting refactors.
 
-**Boundary rule**: operator/admin keys never leave `mutav-stellar`'s deployment. Both sibling repos consume the SDK to read chain state; users sign their own transactions client-side.
+**Boundary rule** (custody-locality, not a system-wide security guarantee): operator/admin custody never leaves `mutav-stellar`'s deployment. Agency and investor custody is end-user-owned and out of scope here. Both sibling repos consume the SDK to read chain state; users sign their own transactions client-side. See [`02-actors-and-trust.md`](./02-actors-and-trust.md) for the full trust model.
 
-## Status snapshot (2026-05-28)
+## Status snapshot (2026-05-29)
 
-- **Phase**: testnet — contract deployed; backend daemons in PRs #22–#27 (changes-requested per audit).
+- **Phase A (testnet)**: contract deployed; backend daemons in PRs #22–#27 (audit follow-ups outstanding — 4 CHANGES_REQUESTED, 2 COMMENT per the per-daemon table in [`05-backend-daemons.md`](./05-backend-daemons.md)).
 - **Phase B (mainnet)**: gated on the pre-mainnet readiness checklist (issue #40).
 - **Audit**: see issue #49 for the global-audit index.
 

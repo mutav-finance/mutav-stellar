@@ -2,6 +2,8 @@
 
 `contracts/fund/src/lib.rs` (2,817 LOC). Implements the SEP-0041 token interface plus fund-specific logic for partner payments, investor deposits, yield, fees, redemption queue, and default coverage.
 
+> **Snapshot caveat**: contract surface described as of `main` at commit `90e1185`. Items marked **(PR #N)** are not yet on main; they describe behavior introduced by the named in-flight PR. The same caveat applies to [`06-canonical-flows.md`](./06-canonical-flows.md).
+
 ## Storage tiers
 
 Soroban has three storage classes with different TTL semantics and cost profiles. The contract uses all three:
@@ -10,7 +12,7 @@ Soroban has three storage classes with different TTL semantics and cost profiles
 |---|---|---|
 | **Instance** | `admin`, `operator`, `classic_wallet`, `protocol_addr`, `usdc_token`, fee/cap config, `aum`, `total_supply`, `paused`, `pending_admin`, `last_fee_timestamp`, `weekly_exit_used`, `weekly_epoch` | Shared by every call; one TTL bumps everything |
 | **Persistent** | `Balance(investor)`, `Allowance(from,to)`, `PendingRedemption(investor)`, `RedemptionQueue` (Vec), `ApprovedPartner(addr)` | Per-user state; survives across calls; ~30-day TTL leases |
-| **Temporary** | `ReadyRedemption(investor)` (with `deadline`), `SeenTxHash(hash)` (PR #22 replay guard, ~2.9-day TTL) | Short-lived; auto-cleaned after expiry |
+| **Temporary** | `ReadyRedemption(investor)` (with `deadline`); **(PR #22)** `SeenTxHash(hash)` for `receive_payment` replay guard, ~2.9-day TTL | Short-lived; auto-cleaned after expiry |
 
 Heartbeat daemon (#25) extends instance TTL; TTL-watchdog (#27) extends per-investor balance TTL.
 
@@ -20,7 +22,8 @@ Heartbeat daemon (#25) extends instance TTL; TTL-watchdog (#27) extends per-inve
 - `initialize(...)` — one-shot setup of admin, operator, asset, wallets, fee config.
 
 ### Inflows (operator)
-- `receive_payment(imobiliaria, amount, tx_hash)` — partner fee split: `protocol_fee_bps` → protocol; remainder → classic_wallet (AUM↑). Replay-guarded by `tx_hash`.
+- `receive_payment(imobiliaria, amount)` *(current on main)* — partner fee split: `protocol_fee_bps` → protocol; remainder → classic_wallet (AUM↑).
+  - **(PR #22)** Adds `tx_hash: BytesN<32>` arg and `SeenTxHash` replay guard. New signature: `receive_payment(imobiliaria, amount, tx_hash)`.
 - `deposit_investor(investor, amount)` — investor mints MUTAV at current NAV; USDC → classic_wallet (AUM↑).
 
 ### Redemption queue (investor + operator)
@@ -58,7 +61,7 @@ Heartbeat daemon (#25) extends instance TTL; TTL-watchdog (#27) extends per-inve
 - **NAV**: `NAV = AUM / total_supply` (initial 1.0 when `total_supply == 0`). NAV is locked at *process time*, not request time.
 - **Supply conservation**: total MUTAV minted = `total_supply`; `request_redemption` locks tokens (still in supply); `process_redemptions` burns them.
 - **Weekly exit cap**: `weekly_exit_used` ≤ `aum × exit_cap_bps / 10_000` per epoch (`WEEK_SECONDS`). Resets every epoch.
-- **Replay**: `receive_payment` rejects same `tx_hash` within the temporary-storage TTL (PR #22; TTL math wrong per #22 review — 2.9 days, not 7).
+- **Replay (PR #22)**: once #22 merges, `receive_payment` will reject same `tx_hash` within the temporary-storage TTL. TTL math wrong per #22 review — 2.9 days, not 7. **On main today there is no on-chain replay guard**; the on-ramp daemon dedups in-memory only.
 - **Pause**: blocks `deposit_investor` and `request_redemption`. Does NOT block `cancel_redemption` or `reclaim_expired_redemption` — investors can always exit a paused fund (by design).
 
 ## NAV math (locations)
