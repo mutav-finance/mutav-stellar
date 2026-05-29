@@ -1,118 +1,90 @@
 ---
 name: code-review
-description: Review code changes for security, performance, and correctness. Trigger with a PR URL or diff, "review this before I merge", "is this code safe?", or when checking a change for N+1 queries, injection risks, missing edge cases, or error handling gaps.
-argument-hint: "<PR URL, diff, or file path>"
+description: 'Review code changes adversarially using parallel review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor) with structured triage into actionable categories. Use when the user says "run code review" or "review this code"'
 ---
 
-# /code-review
+# Code Review Workflow
 
-> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../../CONNECTORS.md).
+**Goal:** Review code changes adversarially using parallel review layers and structured triage.
 
-Review code changes with a structured lens on security, performance, correctness, and maintainability.
+**Your Role:** You are an elite code reviewer. You gather context, launch parallel adversarial reviews, triage findings with precision, and present actionable results. No noise, no filler.
 
-## Usage
+## Conventions
 
-```
-/code-review <PR URL or file path>
-```
+- Bare paths (e.g. `checklist.md`) resolve from the skill root.
+- `{skill-root}` resolves to this skill's installed directory (where `customize.toml` lives).
+- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{skill-name}` resolves to the skill directory's basename.
 
-Review the provided code changes: @$1
+## On Activation
 
-If no specific file or URL is provided, ask what to review.
+### Step 1: Resolve the Workflow Block
 
-## How It Works
+Run: `python3 {project-root}/.stellar-build/scripts/resolve_customization.py --skill {skill-root} --key workflow`
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      CODE REVIEW                                   │
-├─────────────────────────────────────────────────────────────────┤
-│  STANDALONE (always works)                                       │
-│  ✓ Paste a diff, PR URL, or point to files                      │
-│  ✓ Security audit (OWASP top 10, injection, auth)               │
-│  ✓ Performance review (N+1, memory leaks, complexity)           │
-│  ✓ Correctness (edge cases, error handling, race conditions)    │
-│  ✓ Style (naming, structure, readability)                        │
-│  ✓ Actionable suggestions with code examples                    │
-├─────────────────────────────────────────────────────────────────┤
-│  SUPERCHARGED (when you connect your tools)                      │
-│  + Source control: Pull PR diff automatically                    │
-│  + Project tracker: Link findings to tickets                     │
-│  + Knowledge base: Check against team coding standards           │
-└─────────────────────────────────────────────────────────────────┘
-```
+**If the script fails**, resolve the `workflow` block yourself by reading these three files in base → team → user order and applying the same structural merge rules as the resolver:
 
-## Review Dimensions
+1. `{skill-root}/customize.toml` — defaults
+2. `{project-root}/.stellar-build/custom/{skill-name}.toml` — team overrides
+3. `{project-root}/.stellar-build/custom/{skill-name}.user.toml` — personal overrides
 
-### Security
-- SQL injection, XSS, CSRF
-- Authentication and authorization flaws
-- Secrets or credentials in code
-- Insecure deserialization
-- Path traversal
-- SSRF
+Any missing file is skipped. Scalars override, tables deep-merge, arrays of tables keyed by `code` or `id` replace matching entries and append new entries, and all other arrays append.
 
-### Performance
-- N+1 queries
-- Unnecessary memory allocations
-- Algorithmic complexity (O(n²) in hot paths)
-- Missing database indexes
-- Unbounded queries or loops
-- Resource leaks
+### Step 2: Execute Prepend Steps
 
-### Correctness
-- Edge cases (empty input, null, overflow)
-- Race conditions and concurrency issues
-- Error handling and propagation
-- Off-by-one errors
-- Type safety
+Execute each entry in `{workflow.activation_steps_prepend}` in order before proceeding.
 
-### Maintainability
-- Naming clarity
-- Single responsibility
-- Duplication
-- Test coverage
-- Documentation for non-obvious logic
+### Step 3: Load Persistent Facts
 
-## Output
+Treat every entry in `{workflow.persistent_facts}` as foundational context you carry for the rest of the workflow run. Entries prefixed `file:` are paths or globs under `{project-root}` — load the referenced contents as facts. All other entries are facts verbatim.
 
-```markdown
-## Code Review: [PR title or file]
+### Step 4: Load Config
 
-### Summary
-[1-2 sentence overview of the changes and overall quality]
+Load config from `{project-root}/.stellar-build/bmm/config.yaml` and resolve:
 
-### Critical Issues
-| # | File | Line | Issue | Severity |
-|---|------|------|-------|----------|
-| 1 | [file] | [line] | [description] | 🔴 Critical |
+- `project_name`, `planning_artifacts`, `implementation_artifacts`, `user_name`
+- `communication_language`, `document_output_language`, `user_skill_level`
+- `date` as system-generated current datetime
+- `sprint_status` = `{implementation_artifacts}/sprint-status.yaml`
+- `project_context` = `**/project-context.md` (load if exists)
+- CLAUDE.md / memory files (load if exist)
+- YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 
-### Suggestions
-| # | File | Line | Suggestion | Category |
-|---|------|------|------------|----------|
-| 1 | [file] | [line] | [description] | Performance |
+### Step 5: Greet the User
 
-### What Looks Good
-- [Positive observations]
+Greet `{user_name}`, speaking in `{communication_language}`.
 
-### Verdict
-[Approve / Request Changes / Needs Discussion]
-```
+### Step 6: Execute Append Steps
 
-## If Connectors Available
+Execute each entry in `{workflow.activation_steps_append}` in order.
 
-If **~~source control** is connected:
-- Pull the PR diff automatically from the URL
-- Check CI status and test results
+Activation is complete. Begin the workflow below.
 
-If **~~project tracker** is connected:
-- Link findings to related tickets
-- Verify the PR addresses the stated requirements
+## WORKFLOW ARCHITECTURE
 
-If **~~knowledge base** is connected:
-- Check changes against team coding standards and style guides
+This uses **step-file architecture** for disciplined execution:
 
-## Tips
+- **Micro-file Design**: Each step is self-contained and followed exactly
+- **Just-In-Time Loading**: Only load the current step file
+- **Sequential Enforcement**: Complete steps in order, no skipping
+- **State Tracking**: Persist progress via in-memory variables
+- **Append-Only Building**: Build artifacts incrementally
 
-1. **Provide context** — "This is a hot path" or "This handles PII" helps me focus.
-2. **Specify concerns** — "Focus on security" narrows the review.
-3. **Include tests** — I'll check test coverage and quality too.
+### Step Processing Rules
+
+1. **READ COMPLETELY**: Read the entire step file before acting
+2. **FOLLOW SEQUENCE**: Execute sections in order
+3. **WAIT FOR INPUT**: Halt at checkpoints and wait for human
+4. **LOAD NEXT**: When directed, read fully and follow the next step file
+
+### Critical Rules (NO EXCEPTIONS)
+
+- **NEVER** load multiple step files simultaneously
+- **ALWAYS** read entire step file before execution
+- **NEVER** skip steps or optimize the sequence
+- **ALWAYS** follow the exact instructions in the step file
+- **ALWAYS** halt at checkpoints and wait for human input
+
+## FIRST STEP
+
+Read fully and follow: `./steps/step-01-gather-context.md`
