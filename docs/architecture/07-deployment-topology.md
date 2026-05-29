@@ -18,8 +18,8 @@ flowchart LR
     AGY[Agency UI<br/>+ Convex backend]
   end
 
-  subgraph inv [mutav-invest - investor portal]
-    IUI[Investor dApp<br/>forthcoming]
+  subgraph inv [mutav-fund - web3 portal]
+    IUI[Investor flows<br/>+ admin fund mgmt]
   end
 
   AGY -->|imports| SDK
@@ -31,7 +31,7 @@ flowchart LR
   AGENT -.signs USDC payment.-> C
 ```
 
-Three repos, one dependency direction. Both `mutav-app` and `mutav-invest` consume this repo's SDK; neither holds operator or admin keys. Agency users (off-graph humans) sign their own payments with their own wallets. **Operator-key custody belongs with the contracts it authorizes — that's why the daemons live here.**
+Three repos, one dependency direction. Both `mutav-app` and `mutav-fund` consume this repo's SDK; neither holds operator or admin keys. Agency users (off-graph humans) sign their own payments with their own wallets. **Operator-key custody belongs with the contracts it authorizes — that's why the daemons live here.**
 
 
 ## Current (testnet, 2026-05-29)

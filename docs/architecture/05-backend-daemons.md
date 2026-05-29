@@ -2,7 +2,7 @@
 
 Six long-lived processes wrap the contract for day-to-day operations. All are in `src/jobs/*.ts` per the PR #22–#27 stack; the shared helpers live in `src/core/*` and `src/providers/*`. Each daemon owns one operational responsibility, runs on its own schedule, and (currently) shares one operator keypair.
 
-> **Why they live here, not on `mutav-app` or `mutav-invest`**: every daemon holds operator authority and signs on-chain transactions. The sibling repos are UI surfaces (with their own backends in the case of `mutav-app`/Convex) but neither holds operator keys. Daemons live here because operator-key custody belongs with the contracts they authorize.
+> **Why they live here, not on `mutav-app` or `mutav-fund`**: every daemon holds operator authority and signs on-chain transactions. The sibling repos are UI surfaces (with their own backends in the case of `mutav-app`/Convex) but neither holds operator keys. Daemons live here because operator-key custody belongs with the contracts they authorize.
 >
 > **They are not "audited" in the same sense the Rust contract is.** The contract is the audit-gated surface; daemons are operator-authority software that changes weekly and needs its own change-control regime (release tags, separate review bar). The 6 PRs landing here, with mixed audit verdicts, are the live evidence of that gap — they have not been through the same rigor the contract will get pre-mainnet.
 

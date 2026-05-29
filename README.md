@@ -22,7 +22,7 @@ The protocol is delivered across three repos, separated by audit surface and cha
 flowchart LR
   STL[mutav-stellar<br/>contracts, SDK, daemons<br/>audited; slow cadence]
   APP[mutav-app<br/>real-estate platform<br/>Auth0 + Convex]
-  INV[mutav-invest<br/>investor portal<br/>fund data + dApp]
+  INV[mutav-fund<br/>web3 portal<br/>investor + fund mgmt]
   APP -->|consumes SDK| STL
   INV -->|consumes SDK| STL
 ```
@@ -31,7 +31,7 @@ flowchart LR
 |---|---|---|---|
 | **`mutav-stellar`** (here) | Rust + Bun | Protocol team | Audited contracts; tight change control; no UI |
 | [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app) | Auth0 + Convex | Real-estate agencies | Web2 SaaS for rental-contract management + agency payment flows |
-| [`mutav-finance/mutav-invest`](https://github.com/mutav-finance/mutav-invest) | Next.js 16 + Bun + Stellar wallet kit | Investors | Public dApp; fund data, deposit/redeem, KYC if required |
+| [`mutav-finance/mutav-fund`](https://github.com/mutav-finance/mutav-fund) | Next.js 16 + Bun + Stellar wallet kit | Investors + protocol team (admin) | Web3 portal: investor flows (deposit/redeem/NAV/KYC) + fund management UI (dashboard, partner mgmt, parameter changes, `cover_default`). All wallet-signed. |
 
 Dependency: both sibling repos consume this repo's SDK; neither feeds back into it.
 

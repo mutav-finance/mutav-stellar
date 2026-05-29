@@ -15,7 +15,7 @@ Scope of this repo:
 Three-repo split:
 - **`mutav-stellar`** (here): contracts + SDK + operator daemons + admin tooling.
 - **`mutav-finance/mutav-app`**: real-estate platform — rental-contract management + agency payments. Stack: Auth0 + Convex. Audience: agencies.
-- **`mutav-finance/mutav-invest`**: investor portal — fund data + dApp deposit/redeem. Stack: Next.js 16 + Bun + Stellar wallet kit. Audience: investors.
+- **`mutav-finance/mutav-fund`**: investor portal — fund data + dApp deposit/redeem. Stack: Next.js 16 + Bun + Stellar wallet kit. Audience: investors.
 
 Both sibling repos consume this repo's SDK; neither feeds back into it.
 
