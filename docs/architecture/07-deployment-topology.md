@@ -18,8 +18,8 @@ flowchart LR
     AGY[Agency UI<br/>+ Convex backend]
   end
 
-  subgraph inv [mutav-fund - investor portal]
-    IUI[Investor dApp<br/>forthcoming]
+  subgraph inv [mutav-fund - web3 portal]
+    IUI[Investor flows<br/>+ admin fund mgmt]
   end
 
   AGY -->|imports| SDK
