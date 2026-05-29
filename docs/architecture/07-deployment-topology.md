@@ -6,27 +6,30 @@ Where things run, today and in the target state. The current topology is testnet
 
 ```mermaid
 flowchart LR
-  subgraph protocol [mutav-stellar - Protocol side]
+  subgraph stellar [mutav-stellar - audited surface]
     C[Fund contract]
     D[6 operator daemons]
     SDK[TS SDK]
-    INV[Investor dApp<br/>forthcoming]
     D -->|signs as operator| C
-    INV -->|reads + wallet-signs| C
-    INV --> SDK
     D --> SDK
   end
 
-  subgraph app [mutav-app - Agency dashboard]
-    AGY[Agency UI<br/>UI only, no keys]
+  subgraph app [mutav-app - real-estate platform]
+    AGY[Agency UI<br/>+ Convex backend]
+  end
+
+  subgraph inv [mutav-invest - investor portal]
+    IUI[Investor dApp<br/>forthcoming]
   end
 
   AGY -->|imports| SDK
   AGY -->|reads chain| C
-  AGY -.agency users sign their own USDC payments.-> C
+  IUI -->|imports| SDK
+  IUI -->|reads + wallet-signs| C
+  AGY -.agencies sign their own USDC payments.-> C
 ```
 
-Two repos, one dependency arrow. `mutav-app` consumes the SDK published from this repo and reads on-chain state via the same RPC. **No operator or admin key ever lives on `mutav-app`**.
+Three repos, one dependency direction. Both `mutav-app` and `mutav-invest` consume this repo's SDK; neither holds operator or admin keys. **Operator-key custody belongs with the contracts it authorizes — that's why the daemons live here.**
 
 
 ## Current (testnet, 2026-05-27)

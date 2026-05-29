@@ -2,7 +2,7 @@
 
 Six long-lived processes wrap the contract for day-to-day operations. All are in `src/jobs/*.ts` per the PR #22–#27 stack; the shared helpers live in `src/core/*` and `src/providers/*`. Each daemon owns one operational responsibility, runs on its own schedule, and (currently) shares one operator keypair.
 
-> **Why they live here, not on `mutav-app`**: every daemon holds operator authority and signs on-chain transactions. `mutav-app` is the **agency dashboard** — UI only, no keys. Putting daemons there would push the operator secret onto a host that also serves a partner-facing UI (XSS, dependency compromise, etc. would all reach the same key). The daemons stay on the protocol side; agencies talk to the chain via their own wallets and via the on-chain state the daemons maintain.
+> **Why they live here, not on `mutav-app` or `mutav-invest`**: every daemon holds operator authority and signs on-chain transactions. The sibling repos are UI surfaces (with their own backends in the case of `mutav-app`/Convex) but neither is the **audited surface**. Daemons live here because operator-key custody belongs with the contracts they authorize. Agencies and investors interact with the chain via their own wallets and via the on-chain state these daemons maintain.
 
 ## The six daemons
 

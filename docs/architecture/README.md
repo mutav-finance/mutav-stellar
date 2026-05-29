@@ -22,20 +22,25 @@ First-time readers: read 01 → 06 in order for a complete mental model. Then dr
 
 Architecture files document the current state plus its known gaps. Each file ends with a "Known gaps" section that cross-links to filed GitHub issues. When an issue is resolved, the corresponding doc is updated in the same PR.
 
-## Repo boundary
+## Repo boundary — three repos
 
-This repo is the **protocol side** of MUTAV. The agency-facing UI lives in the sibling repo [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app).
+The protocol is delivered across three repos, separated by audit surface and change cadence:
 
-| Concern | Lives here (`mutav-stellar`) | Lives on `mutav-app` |
-|---|---|---|
-| Smart contracts | yes | — |
-| TS SDK (chain interface) | yes (consumed by `mutav-app`) | — |
-| Operator daemons | yes (operator key only here) | — |
-| Admin tooling | yes | — |
-| Investor dApp (deposit/redeem/NAV) | yes (forthcoming) | — |
-| Agency dashboard (partner UI) | — | yes |
+| Concern | `mutav-stellar` (here) | [`mutav-app`](https://github.com/mutav-finance/mutav-app) | `mutav-invest` (forthcoming) |
+|---|---|---|---|
+| Smart contracts | yes | — | — |
+| TS SDK (chain interface) | yes (published) | consumes | consumes |
+| Operator daemons | yes (operator key only here) | — | — |
+| Admin tooling | yes | — | — |
+| Real-estate platform — agency dashboard, rental-contract mgmt, payment collection | — | yes (Auth0 + Convex) | — |
+| Investor portal — fund data, deposit/redeem, NAV view, KYC | — | — | yes |
+| Stack | Rust + Bun | Auth0 + Convex | TBD (Next.js + wallet) |
+| Audience | protocol team | real-estate agencies | investors |
+| Change cadence | slow (audit gate) | medium | fast |
 
-**Boundary rule**: operator/admin keys never live in `mutav-app`. Agency users sign their own USDC payments with their own wallets; the daemons here pick those up via Horizon and call `receive_payment`.
+**Why three repos**: tight change control on the contracts. The audited surface lives in `mutav-stellar` and moves slowly; the agency platform and investor portal iterate fast on their own schedules without dragging contract-grade rigor.
+
+**Boundary rule**: operator/admin keys never leave `mutav-stellar`'s deployment. Both sibling repos consume the SDK to read chain state; users sign their own transactions client-side.
 
 ## Status snapshot (2026-05-28)
 

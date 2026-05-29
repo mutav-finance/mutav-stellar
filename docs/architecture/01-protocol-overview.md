@@ -32,12 +32,15 @@ The hot/cold split is enforced on-chain via `require_auth` on each function. Key
 
 ## Repo split
 
-The protocol is delivered across two repositories — split by key custody, not by domain:
+The protocol is delivered across three repositories — separated by audit surface and change cadence:
 
-- **`mutav-stellar`** (this repo, "protocol side") — everything that holds the operator or admin key: contracts, daemons, admin tooling. Plus the TS SDK and the investor dApp (public, signs client-side).
-- **`mutav-app`** (sibling, "agency dashboard") — pure UI for partner agencies. Reads the chain via the SDK from this repo. Never holds operator or admin keys. Agencies sign their own USDC payments with their own wallets.
+- **`mutav-stellar`** (this repo) — Stellar contracts + operator infrastructure. Houses contracts, the TS SDK, the 6 operator daemons, and admin tooling. The **audited surface**; strict change control. No UI.
+- **`mutav-app`** (sibling, "real-estate platform") — agency-facing SaaS for rental-contract management and agency payment flows. Stack: Auth0 + Convex. Consumes this repo's SDK to read chain state. Surfaces "pay USDC to wallet X" instructions to agencies; agencies sign with their own wallets.
+- **`mutav-invest`** (sibling, forthcoming, "investor portal") — public investor dApp. Fund data, NAV view, deposit/redeem flows via wallet. Consumes this repo's SDK. KYC and onboarding live here.
 
-Dependency: `mutav-app → mutav-stellar` (consumes the SDK). Not the other way.
+Dependencies: both sibling repos consume `mutav-stellar`'s SDK; neither feeds back. **Operator/admin keys never leave this repo's deployment.**
+
+Why three repos: tight change control on the contracts. The audited code moves slowly; the agency platform and investor portal iterate fast on their own schedules.
 
 ## Status (2026-05-28)
 

@@ -1,26 +1,38 @@
-# MUTAV Stellar — Protocol
+# MUTAV Stellar — Contracts + Infrastructure
 
-The **protocol side** of MUTAV Finance: Soroban smart contracts, operator daemons, TypeScript SDK, and (forthcoming) investor dApp. Part of the NearX acceleration program.
+The **Stellar contracts and operator infrastructure** for MUTAV Finance. Part of the NearX acceleration program.
 
-> *Lado de protocolo do MUTAV: contratos Soroban, daemons do operador, SDK em TypeScript e (em breve) dApp do investidor. Programa de aceleração NearX.*
+> *Contratos Stellar e infraestrutura do operador do MUTAV. Programa de aceleração NearX.*
 
 ## Scope
 
-This repo houses everything that requires **operator or admin authority**, plus the public investor surface:
+This repo houses the **audited surface** of the protocol — everything that needs strict change control because a bug here moves money. By design, the UI surfaces live in sibling repos.
 
 - **Smart contracts** (`contracts/`) — the `Fund` Soroban contract
-- **TS SDK** (`src/`) — typed interface to the contract, consumed by all UIs
-- **Operator daemons** (`src/jobs/`, in flight) — on-ramp, off-ramp, yield-sync, mgmt-fee, heartbeat, ttl-watchdog
-- **Investor dApp** (forthcoming) — public-facing UI for deposit / redeem / NAV view; signs client-side via wallet
+- **TS SDK** (`src/`) — typed interface to the contract, published as `@mutav-finance/mutav-stellar` and consumed by both sibling apps
+- **Operator daemons** (`src/jobs/`, in flight) — on-ramp, off-ramp, yield-sync, mgmt-fee, heartbeat, ttl-watchdog. Hold the operator key.
+- **Admin tooling** — scripts and runbooks for cold-wallet operations
 
-The **agency dashboard** lives in a sibling repo, [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app), which depends on this repo's SDK and never holds operator/admin keys.
+## The three-repo split
+
+The protocol is delivered across three repos, separated by audit surface and change cadence:
 
 ```mermaid
 flowchart LR
-  S[mutav-stellar<br/>Protocol side<br/>contracts · daemons · SDK · investor dApp]
-  A[mutav-app<br/>Agency dashboard<br/>UI only · no keys]
-  A -->|consumes SDK + reads chain| S
+  STL[mutav-stellar<br/>contracts, SDK, daemons<br/>audited; slow cadence]
+  APP[mutav-app<br/>real-estate platform<br/>Auth0 + Convex]
+  INV[mutav-invest<br/>investor portal<br/>fund data + dApp]
+  APP -->|consumes SDK| STL
+  INV -->|consumes SDK| STL
 ```
+
+| Repo | Stack | Audience | Why separate |
+|---|---|---|---|
+| **`mutav-stellar`** (here) | Rust + Bun | Protocol team | Audited contracts; tight change control; no UI |
+| [`mutav-finance/mutav-app`](https://github.com/mutav-finance/mutav-app) | Auth0 + Convex | Real-estate agencies | Web2 SaaS for rental-contract management + agency payment flows |
+| `mutav-finance/mutav-invest` (forthcoming) | TBD (Next.js + wallet) | Investors | Public dApp; fund data, deposit/redeem, KYC if required |
+
+Dependency: both sibling repos consume this repo's SDK; neither feeds back into it. **Operator/admin keys never leave this repo's deployment.**
 
 ## Docs
 
@@ -32,7 +44,6 @@ Protocol-wide strategy, whitepaper, and brand assets live in [`mutav-finance/mut
 
 - **Stellar (Soroban / Rust)** — smart contracts
 - **Bun + TypeScript** — SDK + operator daemons
-- **Frontend** — TBD (investor dApp; likely Next.js)
 
 ## Setup
 

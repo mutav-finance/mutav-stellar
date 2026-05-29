@@ -5,15 +5,20 @@
 ## Project
 MUTAV — onchain rental guarantee infrastructure.
 
-This is the **protocol side** of MUTAV. It houses everything that requires operator or admin authority plus the public investor surface:
-- Stellar/Soroban smart contracts
-- TypeScript SDK consumed by all UIs
+This is the **Stellar contracts + operator infrastructure** for MUTAV. It houses the audited surface — strict change control because a bug here moves money. UI surfaces live in sibling repos.
+
+Scope of this repo:
+- Stellar/Soroban smart contracts (`Fund`)
+- TypeScript SDK published as `@mutav-finance/mutav-stellar`
 - Operator daemons (on-ramp, off-ramp, yield-sync, mgmt-fee, heartbeat, ttl-watchdog)
-- Investor dApp (forthcoming) — public deposit/redeem UI, signs client-side
+- Admin tooling for cold-wallet operations
 
-The **agency dashboard** lives in the sibling repo `mutav-finance/mutav-app` (UI only, no keys). It consumes this repo's SDK and reads the chain directly.
+Three-repo split:
+- **`mutav-stellar`** (here): contracts + SDK + operator daemons + admin tooling. Tight change control. No UI.
+- **`mutav-finance/mutav-app`**: real-estate platform — rental-contract management + agency payments. Stack: Auth0 + Convex. Audience: agencies. Consumes this repo's SDK.
+- **`mutav-finance/mutav-invest`** (forthcoming): investor portal — fund data + dApp deposit/redeem flows. Audience: investors. Consumes this repo's SDK.
 
-Boundary rule: operator/admin keys must never live in `mutav-app`.
+Both sibling repos consume this repo's SDK; neither feeds back into it. **Operator/admin keys never leave this repo's deployment.**
 
 Part of the NearX acceleration program.
 
