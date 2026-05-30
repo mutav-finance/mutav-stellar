@@ -32,17 +32,17 @@ The hot/cold split is enforced on-chain via `require_auth` on each function. Key
 
 ## Terminology
 
-Several terms are domain-overloaded across the three repos. The repo split disambiguates them in code; this section pins them down for prose. **When this repo (mutav-stellar) says a term unqualified, it means the smart-contract / on-chain sense below.**
+Several terms are domain-overloaded across the two protocol repos. The repo split disambiguates them in code; this section pins them down for prose. **When this repo (mutav-stellar) says a term unqualified, it means the smart-contract / on-chain sense below.**
 
-| Term | Smart-contract / on-chain sense (this repo) | Off-chain sense (sibling repos) |
+| Term | Smart-contract / on-chain sense (this repo) | Off-chain sense (on `mutav-app`) |
 |---|---|---|
-| **contract** | A Soroban Rust contract. Today there's one: the `Fund` in [`contracts/fund/`](../../contracts/fund/). | On `mutav-app`: a **rental contract** — the lease agreement between agency and tenant. Database record + CRUD UI (`convex/contracts/`, `src/components/contracts/`, `src/app/(app)/contracts/`). Wholly unrelated to Soroban code. |
-| **admin** | The Stellar **admin keypair** (cold wallet) — signs `set_*`, `cover_default`, partner whitelist, `propose_admin`/`accept_admin`. See [`02-actors-and-trust.md`](./02-actors-and-trust.md). | On `mutav-app`: an Auth0 **staff role** — reviews KYC/KYB submissions, manages internal users. Has no chain authority. |
-| **operator** | The Stellar **operator keypair** (hot wallet) — signs daemon-triggered on-chain calls. See [`02-actors-and-trust.md`](./02-actors-and-trust.md). | — (does not appear in the sibling repos) |
+| **contract** | A Soroban Rust contract. Today there's one: the `Fund` in [`contracts/fund/`](../../contracts/fund/). | A **rental contract** — the lease agreement between agency and tenant. Database record + CRUD UI in `mutav-app/convex/contracts/`, `mutav-app/src/components/contracts/`, `mutav-app/src/app/(app)/contracts/`. Wholly unrelated to Soroban code. |
+| **admin** | The Stellar **admin keypair** — signs `set_*`, `cover_default`, partner whitelist, `propose_admin`/`accept_admin`. Held by a hardware wallet inside `mutav-app/apps/admin/`. See [`02-actors-and-trust.md`](./02-actors-and-trust.md). | On `mutav-app` (Convex / Auth0 side): a **staff role** that reviews KYC/KYB submissions, manages internal users. Has no chain authority. |
+| **operator** | The Stellar **operator keypair** — signs routine fund-runtime calls (`receive_payment`, `process_redemptions`, `add_yield`, `charge_mgmt_fee`, etc.). Held in KMS; invoked by Convex Actions on `mutav-app` via short-lived OIDC credentials. See [`02-actors-and-trust.md`](./02-actors-and-trust.md). | Same — there is no second sense of "operator" off-chain. |
 | **treasury** | The Mutav **treasury account** — an off-chain Stellar account distinct from operator/admin; its keypair lives in `mutav-app`'s Convex backend and signs SEP-10/SEP-24 anchor flows only. See [`02-actors-and-trust.md`](./02-actors-and-trust.md). | Same. |
-| **fund** | The MUTAV fund — a single Soroban contract instance with AUM, NAV, redemption queue. | Same — investor flows on `mutav-fund` interact with this. |
+| **fund** | The MUTAV fund — a single Soroban contract instance with AUM, NAV, redemption queue. | Same — investor flows in `mutav-app/apps/fund/` (formerly `mutav-finance/mutav-fund`) interact with this. |
 
-**Rule of thumb**: an unqualified "contract" or "admin" in **this repo's prose** refers to the smart-contract / Stellar-key sense. In **`mutav-app`'s code or docs**, the same word means the rental-agreement / Auth0-staff sense. There is no in-repo ambiguity because neither sense appears in the other's codebase.
+**Rule of thumb**: an unqualified "contract" or "admin" in **this repo's prose** refers to the smart-contract / Stellar-key sense. In **`mutav-app`'s code or docs**, the same word means the rental-agreement / staff-role sense. There is no in-repo ambiguity because neither sense appears in the other's codebase.
 
 ## Repo split
 
