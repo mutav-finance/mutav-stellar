@@ -46,23 +46,24 @@ Several terms are domain-overloaded across the three repos. The repo split disam
 
 ## Repo split
 
-The protocol is delivered across three repositories — separated by audit surface and change cadence:
+The protocol is delivered across **two repositories** (consolidated 2026-05-30 per [`#57`](https://github.com/mutav-finance/mutav-stellar/issues/57)) — separated by audit surface and change cadence:
 
-- **`mutav-stellar`** (this repo) — Stellar contracts + operator infrastructure. Houses two surfaces with different discipline: the **Rust contract** (audit-gated, slow) and the **TS SDK + operator daemons** (operator-authority code; not "audited" in the same sense). Plus admin tooling. No UI.
-- **`mutav-app`** (sibling, "real-estate platform") — agency-facing SaaS for rental-contract management and agency payment flows. Stack: Auth0 + Convex. Consumes this repo's SDK to read chain state. Surfaces "pay USDC to wallet X" instructions to agencies; agencies sign with their own wallets.
-- **`mutav-fund`** (sibling, "web3 portal") — public dApp serving two audiences via wallet-signed transactions. **Investors**: deposit, request redemption, claim, NAV/portfolio view, KYC. **Protocol team (admin)**: dashboard, partner whitelist, parameter changes, `cover_default`, pause toggle, admin handover. Stack: Next.js 16 + Bun + Stellar wallet kit. Consumes this repo's SDK. No server-side keys; admin features gated by on-chain `admin()` check.
+- **`mutav-stellar`** (this repo) — the **protocol layer**: the `Fund` Rust contract (audit-gated, slow cadence) plus the TypeScript SDK published as `@mutav-finance/mutav-stellar`. Read-oriented SDK; composes chain reads and produces transaction XDRs for consumers to sign. **No daemons, no operator key custody, no UI.**
+- **`mutav-app`** (sibling, "the web side") — Turborepo monorepo that holds everything else: the persona-app shells served on `*.mutav.finance` subdomains (agency / investor / admin / etc.) plus the **Mutav API** (Convex backend). The operator runtime that previously lived here as Bun daemons moves to **KMS-backed Convex Actions** on `mutav-app`; admin authority lives in a hardware wallet inside `mutav-app/apps/admin/`. Consumes this repo's SDK.
 
-Dependencies: both sibling repos consume `mutav-stellar`'s SDK; neither feeds back.
+Dependency: `mutav-app` consumes `mutav-stellar`'s SDK; the direction does not reverse.
 
-**Boundary rule** (custody-locality, not a system-wide security guarantee): operator/admin custody never leaves this repo's deployment. Agency and investor custody is end-user-owned and out of scope here. See [`02-actors-and-trust.md`](./02-actors-and-trust.md) for the full trust model, including off-chain routing surfaces a compromised sibling could affect.
+The standalone [`mutav-fund`](https://github.com/mutav-finance/mutav-fund) web3 portal (formerly the third repo in this split) is soft-deprecating into `mutav-app/apps/fund/` as part of the monorepo migration ([`mutav-fund#11`](https://github.com/mutav-finance/mutav-fund/issues/11), [`mutav-app#139`](https://github.com/mutav-finance/mutav-app/issues/139)). Until the fold-in completes, `mutav-fund/main` remains the live web3 portal.
 
-*Trade-offs of three repos*: SDK release coordination across siblings, multi-repo CI gates, fragmented onboarding for newcomers, harder cross-cutting refactors. These are real costs; the benefit (tight change control on the contracts) is the trade we accept.
+**Boundary rule** (custody-locality, not a system-wide security guarantee): this repo's deployment is the on-chain contract + the published SDK. Operator and admin authority live on `mutav-app`; end-user custody (agencies, investors) is wallet-held. See [`02-actors-and-trust.md`](./02-actors-and-trust.md) for the full trust model, including off-chain routing surfaces a compromised consumer could affect without touching any key.
 
-## Status (2026-05-29)
+*Trade-offs of the split*: SDK release coordination + cross-repo CI gates between `mutav-stellar` and `mutav-app`. These are real costs; the benefit (audit-gating only the contract surface) is the trade we accept.
 
-- Phase A — testnet, contract deployed, backend scaffold landed (PR #21).
-- Phase B — 6 backend daemons in flight (PRs #22–#27), audit follow-ups outstanding (4 CHANGES_REQUESTED, 2 COMMENT — see per-daemon table in [`05-backend-daemons.md`](./05-backend-daemons.md)).
-- Mainnet — gated on the readiness checklist (issue #40).
+## Status (2026-05-30)
+
+- Phase A — testnet, contract deployed, SDK scaffold on `main` (PR #21).
+- **Daemon PRs #22–#27** — orphaned by [`#57`](https://github.com/mutav-finance/mutav-stellar/issues/57). Operator runtime moves to Convex Actions on `mutav-app`; proposed verdict for each PR in [`decisions/2026-05-30-daemon-prs-orphan-verdict.md`](./decisions/2026-05-30-daemon-prs-orphan-verdict.md).
+- Mainnet — gated on the readiness checklist (issue #40), now reframed around the Convex-Action runtime.
 
 ## Sources
 
