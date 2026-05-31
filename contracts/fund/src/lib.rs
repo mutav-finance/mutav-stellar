@@ -5,7 +5,7 @@
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short,
     token::{self, TokenInterface},
-    Address, Env, MuxedAddress, String, Vec,
+    Address, BytesN, Env, MuxedAddress, String, Vec,
 };
 
 // 30 days in seconds — minimum interval between management fee charges
@@ -70,6 +70,8 @@ enum DataKey {
     RedemptionQueue,            // Vec<Address> FIFO
     // per-fund partner whitelist (persistent storage)
     ApprovedPartner(Address),
+    // replay guard for receive_payment (temporary storage — 7-day TTL)
+    SeenTxHash(BytesN<32>),
 }
 
 #[contracttype]
@@ -439,10 +441,19 @@ impl Fund {
     /// operator calls this function. Pulls amount_usdc from the operator wallet, splits
     /// protocol_fee_bps → protocol wallet and remainder → classic_wallet (converted to
     /// TESOURO via Etherfuse eYield). Only approved partners are accepted.
-    pub fn receive_payment(e: Env, imobiliaria: Address, amount_usdc: i128) {
+    pub fn receive_payment(e: Env, imobiliaria: Address, amount_usdc: i128, tx_hash: BytesN<32>) {
         require_operator(&e);
         require_not_paused(&e);
         assert!(amount_usdc > 0, "amount must be positive");
+
+        // Replay guard: reject if this Stellar tx was already processed.
+        // TTL of 7 days (~50_400 ledgers) is long enough to outlast any reasonable
+        // operator-runtime cursor lag while keeping temporary storage bounded.
+        let seen_key = DataKey::SeenTxHash(tx_hash);
+        assert!(
+            !e.storage().temporary().has(&seen_key),
+            "tx already processed"
+        );
 
         assert!(
             e.storage()
@@ -472,6 +483,11 @@ impl Fund {
         );
 
         set_aum(&e, get_aum(&e) + fund_portion);
+
+        e.storage().temporary().set(&seen_key, &true);
+        e.storage()
+            .temporary()
+            .extend_ttl(&seen_key, 50_400, 50_400);
 
         e.events().publish(
             (symbol_short!("rcv_pay"), imobiliaria),
@@ -1381,6 +1397,13 @@ mod tests {
         token::StellarAssetClient::new(&s.env, &s.usdc_id).mint(to, &amount);
     }
 
+    // Deterministic test tx hash: encodes `n` in the first 8 bytes, zero-pads the rest.
+    fn make_tx_hash(env: &Env, n: u64) -> BytesN<32> {
+        let mut bytes = [0u8; 32];
+        bytes[..8].copy_from_slice(&n.to_be_bytes());
+        BytesN::from_array(env, &bytes)
+    }
+
     // ── existing flow tests ───────────────────────────────────────────────────
 
     #[test]
@@ -1472,7 +1495,7 @@ mod tests {
 
         // protocol_fee_bps = 2_000 (20%) set in setup()
         usdc_mint(&s, &s.operator, 100_000_000);
-        fund.receive_payment(&s.imob, &100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &make_tx_hash(&s.env, 1));
 
         let expected_protocol = 100_000_000i128 * fund.protocol_fee_bps() as i128 / 10_000;
         let expected_fund = 100_000_000 - expected_protocol;
@@ -1748,7 +1771,7 @@ mod tests {
 
         // New operator can call operator-level function
         usdc_mint(&s, &new_op, 100_000_000);
-        fund.receive_payment(&s.imob, &100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &make_tx_hash(&s.env, 1));
     }
 
     #[test]
@@ -1841,7 +1864,7 @@ mod tests {
 
         // s.imob is pre-approved in setup(); payment must succeed
         usdc_mint(&s, &s.operator, 100_000_000);
-        fund.receive_payment(&s.imob, &100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &make_tx_hash(&s.env, 1));
         assert_eq!(fund.aum(), 80_000_000); // 20% protocol fee
     }
 
@@ -1853,7 +1876,7 @@ mod tests {
 
         let unknown = Address::generate(&s.env);
         usdc_mint(&s, &s.operator, 100_000_000);
-        fund.receive_payment(&unknown, &100_000_000);
+        fund.receive_payment(&unknown, &100_000_000, &make_tx_hash(&s.env, 1));
     }
 
     #[test]
@@ -1865,7 +1888,40 @@ mod tests {
         fund.set_approved_partner(&s.imob, &false);
 
         usdc_mint(&s, &s.operator, 100_000_000);
-        fund.receive_payment(&s.imob, &100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &make_tx_hash(&s.env, 1));
+    }
+
+    #[test]
+    #[should_panic(expected = "tx already processed")]
+    fn receive_payment_rejects_duplicate_tx_hash() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        let tx = make_tx_hash(&s.env, 42);
+
+        // First call with tx_hash=42 succeeds.
+        usdc_mint(&s, &s.operator, 100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &tx);
+
+        // Second call with the same tx_hash must panic on the replay guard,
+        // even though the partner is still approved and the operator has USDC.
+        usdc_mint(&s, &s.operator, 100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &tx);
+    }
+
+    #[test]
+    fn receive_payment_allows_distinct_tx_hashes_from_same_partner() {
+        let s = setup();
+        let fund = FundClient::new(&s.env, &s.fund_id);
+
+        // Two separate Stellar txs from the same partner — both must record.
+        usdc_mint(&s, &s.operator, 100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &make_tx_hash(&s.env, 1));
+        let aum_after_first = fund.aum();
+
+        usdc_mint(&s, &s.operator, 100_000_000);
+        fund.receive_payment(&s.imob, &100_000_000, &make_tx_hash(&s.env, 2));
+        assert!(fund.aum() > aum_after_first);
     }
 
     #[test]
@@ -2628,7 +2684,7 @@ mod tests {
 
         // s.imob aprovado em setup — pagamento 1 funciona
         usdc_mint(&s, &s.operator, 50_000_000);
-        fund.receive_payment(&s.imob, &50_000_000); // 80% = 40M vai para AUM
+        fund.receive_payment(&s.imob, &50_000_000, &make_tx_hash(&s.env, 1)); // 80% = 40M vai para AUM
         let aum_after_p1 = fund.aum();
         assert!(aum_after_p1 > 100_000_000);
         assert!(fund.is_approved_partner(&s.imob));
@@ -2643,7 +2699,7 @@ mod tests {
         assert!(fund.is_approved_partner(&imob2));
 
         usdc_mint(&s, &s.operator, 30_000_000);
-        fund.receive_payment(&imob2, &30_000_000); // 24M vai para AUM
+        fund.receive_payment(&imob2, &30_000_000, &make_tx_hash(&s.env, 2)); // 24M vai para AUM
         let aum_after_imob2 = fund.aum();
         assert!(aum_after_imob2 > aum_after_p1);
 
@@ -2653,7 +2709,7 @@ mod tests {
 
         // Pagamento 2 de s.imob retomado
         usdc_mint(&s, &s.operator, 50_000_000);
-        fund.receive_payment(&s.imob, &50_000_000);
+        fund.receive_payment(&s.imob, &50_000_000, &make_tx_hash(&s.env, 3));
         assert!(fund.aum() > aum_after_imob2);
     }
 
@@ -2692,9 +2748,9 @@ mod tests {
 
         // ── Fees mensais da parceira (mês 1 e mês 2) ─────────────────────────
         usdc_mint(&s, &s.operator, 30_000_000);
-        fund.receive_payment(&s.imob, &30_000_000); // 80% = 24M → AUM
+        fund.receive_payment(&s.imob, &30_000_000, &make_tx_hash(&s.env, 1)); // 80% = 24M → AUM
         usdc_mint(&s, &s.operator, 30_000_000);
-        fund.receive_payment(&s.imob, &30_000_000); // +24M → AUM = 348M
+        fund.receive_payment(&s.imob, &30_000_000, &make_tx_hash(&s.env, 2)); // +24M → AUM = 348M
         assert!(fund.nav() > 10_000_000);
         check();
 
