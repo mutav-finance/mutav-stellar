@@ -1,14 +1,97 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "node .claude/hooks/statusline-dispatcher.js"
-  },
   "permissions": {
     "allow": [
-      "Bash",
       "Read",
       "Glob",
-      "Grep"
+      "Grep",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(echo:*)",
+      "Bash(jq:*)",
+      "Bash(sort:*)",
+      "Bash(diff:*)",
+      "Bash(which:*)",
+      "Bash(tree:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git restore --staged:*)",
+      "Bash(git stash:*)",
+      "Bash(git switch:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(bun install:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(bun test:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(rustfmt:*)",
+      "Bash(stellar contract build:*)",
+      "Bash(stellar contract optimize:*)"
+    ],
+    "ask": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git checkout .:*)",
+      "Bash(git restore .:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)",
+      "Bash(stellar contract deploy:*)",
+      "Bash(stellar keys:*)",
+      "Bash(soroban contract deploy:*)",
+      "Bash(soroban keys:*)",
+      "Read(local.env)",
+      "Bash(cat local.env)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/secrets/**)",
+      "Bash(cat .env*)",
+      "Bash(cat **/.env*)",
+      "Bash(printenv:*)",
+      "Bash(env)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; case \"$f\" in *.rs) rustfmt \"$f\" ;; esac; } 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   }
 }
