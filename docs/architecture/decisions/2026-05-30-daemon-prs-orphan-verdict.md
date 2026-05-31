@@ -1,8 +1,21 @@
 # 2026-05-30 — Daemon PR stack (#22–#27) orphan verdict
 
-**Status**: PROPOSED (awaiting Draau alignment via [`#57`](https://github.com/mutav-finance/mutav-stellar/issues/57))
+**Status**: ACCEPTED (recorded 2026-05-31; Draau is not reviewing the doc-consolidation, so decisions were made directly by @jubscodes)
 
 **First ADR in `mutav-stellar/docs/architecture/decisions/`**. Convention: `YYYY-MM-DD-<topic>.md`, modelled on `mutav-app/docs/architecture/decisions/`.
+
+## Decisions recorded 2026-05-31
+
+Acceptance changed the scope from what the original PROPOSED draft envisioned: as we walked through each PR's actual contents, it became clear that the helpers I'd initially labelled as "SDK-bound" (`invoke.ts`, `token.ts`, `classic.ts`) are operator-runtime helpers (they sign and submit transactions) and do **not** match the merged SDK scope ("Read-oriented SDK; composes chain reads and produces transaction XDRs that consumers sign — it does not hold any keys"). The same indictment applies to code already on `main`: `src/core/wallet.ts` (loads operator keypair) and `src/providers/soroban/fund.ts` (8 sign-and-submit wrappers).
+
+Q1–Q4 answers + the corrected scope:
+
+1. **TS porting strategy** — *helpers reviewed PR-by-PR*. Result: only `src/core/units.ts` (6 LOC, `parseStellarUsdc`) is genuine SDK material. Everything else either (a) is operator-runtime code that moves to `mutav-app` or (b) is already on `main` in a shape that needs restructuring.
+2. **PR #22 contract-side extraction** — *new PR off `main`*. Cleanest scope; reviewers see only the audited-surface change. Loses the daemon-side review history (acceptable).
+3. **Convex Workflow for off-ramp + mgmt-fee** — *yes, both*. Convex Workflow's persisted-step semantics resolve the atomic-split bug in mgmt-fee and the partial-fulfill recovery gap in off-ramp.
+4. **Operator key strategy at mainnet launch** — *hybrid*. Shared key for low-risk renewal crons (heartbeat, ttl-watchdog); per-Action scoped keys for AUM-touching Actions (on-ramp, off-ramp, yield-sync, mgmt-fee). Compromise between blast-radius isolation and ship speed.
+
+Implication: the original "extract contract change from #22, file 5 Convex Action issues against `mutav-app`" plan expands to also include two SDK-scope-down PRs against `mutav-stellar` (drop the signing layer from `fund.ts`; remove `wallet.ts`).
 
 ## Context
 
@@ -39,76 +52,94 @@ Six PRs land Bun-daemon scaffolding under `src/jobs/`:
 
 ## Decision
 
-**Recommendation: (B) for PR #22, (A) for PRs #23–#27.**
+**Accepted: (B) for PR #22, (A) for PRs #23–#27, plus two SDK scope-down PRs against `main` to fix code already merged that doesn't match the new SDK scope.**
 
 Per-PR plan:
 
 ### PR #22 — on-ramp
 
-- **Contract-side change**: `receive_payment(imobiliaria, amount, tx_hash)` adds a `tx_hash` arg, gated by `SeenTxHash(tx_hash)` in temporary storage (~2.9-day TTL). This is a contract-layer replay guard.
-- **Verdict**: extract the contract change to its own PR (`feat(contract): receive_payment replay guard via tx_hash`). Close the daemon-scaffolding portion.
+- **Contract-side change**: `receive_payment(imobiliaria, amount, tx_hash)` adds a `tx_hash` arg, gated by `SeenTxHash(tx_hash)` in temporary storage (~2.9-day TTL). This is a contract-layer replay guard. **Audit-relevant.**
+- **Verdict**: extract the contract change to its own PR against `main` (`feat(contract): receive_payment replay guard via tx_hash`). Add a new test `receive_payment_rejects_duplicate_tx_hash` that PR #22 did not include — the audit will want explicit coverage of the guard firing. Close the daemon-scaffolding portion of PR #22.
 - **Convex Action issue** to file against `mutav-app`: "on-ramp Convex Action — Horizon polling + receive_payment". Reference PR #22 for the cursor-race / TTL-math / decimal-truncation review findings the Action must respect.
 
 ### PR #23 — off-ramp
 
-- No new contract-side change; uses existing `process_redemptions` + `fulfill_redemption`.
+- Adds 3 SDK-shaped files (`invoke.ts`, `token.ts`, `units.ts`) + `off-ramp.ts` daemon. On review, only `units.ts` (6 LOC, `parseStellarUsdc`) is true SDK material — the other two are operator-runtime helpers that sign+submit.
 - **Verdict**: close as orphaned.
-- **Convex Action issue** to file against `mutav-app`: "off-ramp Convex Workflow — weekly redemption cycle". Reference PR #23 review for the recovery-on-partial-fulfill and 24h-timeout findings — the Workflow design must close these (Convex Workflow durability solves them natively, but the design needs to spell that out).
+- **Cherry-pick**: `src/core/units.ts` can be reapplied as part of the SDK restructure PR (PR B below). The signing helpers (`invoke.ts`, `token.ts`) port to `mutav-app` as Convex Action utilities, not to the SDK.
+- **Convex Action issue**: "off-ramp Convex Workflow — weekly redemption cycle". Per Q3, uses Convex Workflow. Reference PR #23 review for the recovery-on-partial-fulfill and 24h-timeout findings — the Workflow design closes both natively.
 
 ### PR #24 — yield-sync
 
-- No new contract-side change; reads `aum()` + `max_aum_increase_bps()`, calls `add_yield()` in a batched loop.
+- Adds `yield-sync.ts` daemon + `fund.ts` extension (`add_yield` wrapper) + `client.ts` memoization fix. The `client.ts` memoization is already on `main` via commit `79679ac` (PR #11) — no port needed.
 - **Verdict**: close as orphaned.
 - **Convex Action issue**: "yield-sync Convex Action — record Etherfuse yield". Reference PR #24 for stale-cap and operator-confirmation review findings.
 
 ### PR #25 — heartbeat
 
-- No new contract-side change; calls `extend_ttl()`.
+- Adds only `heartbeat.ts` (55 LOC Bun daemon with a 25-day `Bun.sleep` loop). No SDK material.
 - **Verdict**: close as orphaned.
 - **Convex Action issue**: "heartbeat Convex cron — instance TTL renewal". Reference PR #25 for silent-failure surface concerns.
 
 ### PR #26 — mgmt-fee
 
-- No new contract-side change; calls `charge_mgmt_fee()` + Stellar Classic payment.
+- Adds `mgmt-fee.ts` daemon + `classic.ts` (`sendClassicPayment` signs and submits Classic XDRs) + `fund.ts` extension. Same indictment as #23 — `classic.ts` is operator-runtime, not SDK.
 - **Verdict**: close as orphaned.
-- **Convex Action issue**: "mgmt-fee Convex Workflow — monthly charge + PIX payout". Reference PR #26 for the atomic-split bug, PIX MEMO overflow, USDC≠TESOURO 1:1 review findings — the Workflow must address all three.
+- **Cherry-pick**: none for the SDK. `classic.ts` ports to `mutav-app` with the PIX MEMO length validation fix that PR #26 review flagged (currently caller passes raw string and PIX UUID/email keys overflow silently).
+- **Convex Action issue**: "mgmt-fee Convex Workflow — monthly charge + PIX payout". Per Q3, uses Convex Workflow. The Workflow design closes the atomic-split bug, PIX MEMO overflow, and the USDC≠TESOURO 1:1 finding.
 
 ### PR #27 — ttl-watchdog
 
-- No new contract-side change; calls `extend_balance_ttl(investor)`.
+- Adds only `ttl-watchdog.ts` (131 LOC Bun daemon with a JSON state file on disk). No SDK material.
 - **Verdict**: close as orphaned.
-- **Convex Action issue**: "ttl-watchdog Convex Action — per-investor balance TTL renewal". Reference PR #27 for cold-boot data-loss and non-atomic state-file findings — the Convex table replaces the JSON file; bootstrap-from-deployment-ledger replaces the 24h lookback default.
+- **Convex Action issue**: "ttl-watchdog Convex Action — per-investor balance TTL renewal". The Convex table replaces the JSON file; bootstrap-from-deployment-ledger replaces the 24h-lookback default that PR #27 review flagged.
 
-## TS scaffolding — what crosses over to the SDK
+### PR B (new) — SDK scope-down: drop signing layer from `src/providers/soroban/fund.ts`
 
-Some of the work in the PR stack is genuinely cross-applicable. The list below is what should be preserved (location TBD: SDK in this repo vs. mutav-app shared utility):
+`fund.ts` on `main` exports `invoke()` + 8 sign-and-submit wrappers (`receivePayment`, `addYield`, `chargeMgmtFee`, `processRedemptions`, `fulfillRedemption`, `recordOffchainPayout`, `extendTtl`, `extendBalanceTtl`) — each takes a `Keypair` and submits. This shape is operator-runtime, not SDK.
 
-- **Nominal types** (`Usdc6`, `Stroops`, `StellarAccount`, `ContractId`, `EpochMs`, `LedgerSeq`) from issue #37 — belong in `src/` here, exported from the published SDK. Both this repo's tooling and the Convex Actions consume them.
-- **`sorobanClient` memoization fix** — already in `src/providers/soroban/client.ts` on `main` (commit `79679ac`); no rework needed.
-- **`invoke()` timeout cap** (issue #35) — belongs in the SDK if it's a useful primitive for any consumer; otherwise lives in the Convex Action layer.
-- **Fee strategy** (`src/providers/soroban/fee.ts` from issue #38) — belongs in the SDK; consumers (including Convex Actions) reuse.
-- **Read-only query helper** — likely belongs in the SDK; both PR #24 and PR #26 reimplemented it.
+- **Verdict**: rewrite to expose `xdr.Operation` builders only (e.g. `buildReceivePaymentOp(contractId, imobiliaria, amount, txHash): xdr.Operation`). Drop `invoke()`. Drop the `Keypair` parameter.
+- **Consumer impact**: nothing imports these wrappers from `mutav-app` yet — the Convex Action layer that will consume them does not exist. Safe rewrite window.
+- **Test plan**: `bun run typecheck` still passes; package exports continue to expose `./soroban/fund` with the new signatures.
 
-Items that **do not** cross over (Convex provides equivalents natively):
-- Structured logger, retry/backoff, graceful-shutdown helpers — Convex's runtime provides these.
-- Bootstrap validation, env schema validator — Convex env handling supersedes.
-- Mainnet-readiness guard — moves to a Convex-side check or stays on the contract-deployment script.
+### PR C (new) — SDK scope-down: remove `src/core/wallet.ts`
 
-## Open questions for Draau
+`wallet.ts` on `main` exports `loadOperatorKeypair` (reads `OPERATOR_SECRET` from env) and `loadFundContractId`. The first is operator-runtime concern (this repo's deployment no longer holds operator keys per the merged scope); the second can live wherever the SDK consumer needs it.
 
-1. **Any of the daemon TS code worth porting wholesale** to Convex Actions (vs. rewriting against Convex idioms)? My read is the contract-call wrappers are reusable via the SDK; the daemon-shaped state-machine code isn't a 1:1 port to Convex Actions.
-2. **Should PR #22's contract-side extraction be authored as a new PR off `main`** or rebased from `feat/backend-onramp`? Rebase is cleaner-looking; new PR is cleaner-scoped.
-3. **Convex Workflow for off-ramp and mgmt-fee** — agree this is the right durability primitive? Alternative would be Convex's built-in mutation atomicity for shorter Actions, but the off-chain-side wait (Etherfuse liquidation, PIX settlement) needs Workflow.
-4. **Per-Action scoped keys vs. one shared operator key at launch** — bootstrap with shared key + rotation procedure (faster to mainnet) or hold mainnet for per-Action keys (cleaner blast-radius)?
+- **Verdict**: delete `src/core/wallet.ts`. Remove `./core/wallet` from `package.json` exports. `loadFundContractId` is one line — consumers re-derive trivially.
+- **Consumer impact**: no current consumer.
+
+## SDK scaffolding — final categorization
+
+After the per-PR walkthrough, what crosses over into the SDK (`src/`):
+
+- **`src/core/units.ts`** (6 LOC) — `parseStellarUsdc()` converts Stellar Classic's 7-decimal asset string to bigint 6-decimal contract units. Pure conversion. Cherry-pick from PR #23 into PR B.
+- **`src/core/network.ts`** — already on `main`. Network config (testnet/mainnet) with `resolveNetwork()`. Stays.
+- **`src/providers/soroban/client.ts`** — already on `main` with memoization. RPC `Server` factory. Stays.
+- **`src/providers/soroban/fund.ts`** — already on `main` in sign-and-submit shape. **Restructure to XDR-builders only** (PR B above).
+
+What moves to `mutav-app` (Convex Action layer):
+
+- `invoke.ts`, `token.ts` from PR #23 — rewrite as Convex Action utilities that fetch the operator key from KMS (per Q4's hybrid strategy: scoped key for the AUM-touching Actions, shared key for the renewal crons).
+- `classic.ts` from PR #26 — rewrite with PIX MEMO length validation.
+- All 6 `src/jobs/*.ts` daemon files — rewrite as Convex Actions (heartbeat, ttl-watchdog, yield-sync, on-ramp) or Workflows (off-ramp, mgmt-fee per Q3).
+
+What gets removed from `mutav-stellar` entirely:
+
+- `src/core/wallet.ts` — operator-key loading. Removed in PR C.
 
 ## Sequence
 
-1. **This ADR lands** (Status: PROPOSED) with the rest of the architecture-consolidation PR.
-2. **Draau review on this PR** — adjustments to verdict per his input.
-3. **Status flips to ACCEPTED** in a follow-up commit (or amendment to this PR).
-4. **PR #22 contract-side extraction** opened as a new PR.
-5. **PRs #22–#27 close** with comments linking to this ADR + the new Convex Action issues filed against `mutav-app`.
-6. **6 issues filed against `mutav-app`** — one per Action/Workflow. Each links the original PR + this ADR.
+1. ~~ADR lands as PROPOSED~~ — done (commit `e7f837f`, merged in PR #58 on 2026-05-30).
+2. ~~Draau review~~ — Draau is not reviewing the doc-consolidation. Decisions made directly by @jubscodes on 2026-05-31.
+3. ~~Status flips to ACCEPTED~~ — this amendment.
+4. **PR A**: extract PR #22's contract-side replay guard as a new PR off `main` (`feat(contract): receive_payment replay guard via tx_hash`). Adds the missing `receive_payment_rejects_duplicate_tx_hash` test.
+5. **PR B**: SDK scope-down — rewrite `src/providers/soroban/fund.ts` as XDR-builders (no signing); cherry-pick `src/core/units.ts` from PR #23.
+6. **PR C**: SDK scope-down — remove `src/core/wallet.ts`; update `package.json` exports.
+7. **PRs #22–#27 close** with comments linking this ADR + the new Convex Action issues filed against `mutav-app`.
+8. **6 issues filed against `mutav-app`** — one per Action/Workflow. Each links the original PR + this ADR.
+
+PRs A/B/C can land in any order; they touch independent file sets. PR closures and `mutav-app` issues happen after PRs A/B/C are open.
 
 ## References
 
