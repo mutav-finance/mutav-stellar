@@ -1,0 +1,1256 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "type": "text",
+      "id": "title",
+      "x": 290,
+      "y": 15,
+      "width": 620,
+      "height": 35,
+      "text": "MUTAV — Layered Architecture",
+      "fontSize": 26,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "sub",
+      "x": 195,
+      "y": 55,
+      "width": 820,
+      "height": 20,
+      "text": "isolated protocol  ·  one Convex  ·  persona-dedicated apps  ·  mutav.finance",
+      "fontSize": 15,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "zUsers",
+      "x": 20,
+      "y": 95,
+      "width": 1160,
+      "height": 90,
+      "backgroundColor": "#fff3bf",
+      "fillStyle": "solid",
+      "strokeColor": "#f59e0b",
+      "strokeWidth": 1,
+      "opacity": 30,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "zUsersL",
+      "x": 40,
+      "y": 102,
+      "width": 200,
+      "height": 20,
+      "text": "USERS / EXTERNAL",
+      "fontSize": 14,
+      "strokeColor": "#92400e",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "uAgency",
+      "x": 60,
+      "y": 130,
+      "width": 180,
+      "height": 50,
+      "backgroundColor": "#ffd8a8",
+      "fillStyle": "solid",
+      "strokeColor": "#92400e",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "uAgencyL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "uAgencyL",
+      "x": 105,
+      "y": 145,
+      "width": 90,
+      "height": 22,
+      "text": "Agencies",
+      "fontSize": 16,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "uAgency"
+    },
+    {
+      "type": "rectangle",
+      "id": "uInv",
+      "x": 260,
+      "y": 130,
+      "width": 180,
+      "height": 50,
+      "backgroundColor": "#a5d8ff",
+      "fillStyle": "solid",
+      "strokeColor": "#1d4ed8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "uInvL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "uInvL",
+      "x": 305,
+      "y": 145,
+      "width": 90,
+      "height": 22,
+      "text": "Investors",
+      "fontSize": 16,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "uInv"
+    },
+    {
+      "type": "rectangle",
+      "id": "uAdm",
+      "x": 460,
+      "y": 130,
+      "width": 200,
+      "height": 50,
+      "backgroundColor": "#d0bfff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "uAdmL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "uAdmL",
+      "x": 495,
+      "y": 145,
+      "width": 130,
+      "height": 22,
+      "text": "Protocol Admin",
+      "fontSize": 16,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "uAdm"
+    },
+    {
+      "type": "rectangle",
+      "id": "uRails",
+      "x": 680,
+      "y": 130,
+      "width": 470,
+      "height": 50,
+      "backgroundColor": "#ffe8cc",
+      "fillStyle": "solid",
+      "strokeColor": "#92400e",
+      "strokeWidth": 2,
+      "strokeStyle": "dashed",
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "uRailsL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "uRailsL",
+      "x": 730,
+      "y": 145,
+      "width": 370,
+      "height": 22,
+      "text": "External rails:  Etherfuse  ·  PIX  ·  KYC provider",
+      "fontSize": 16,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "uRails"
+    },
+    {
+      "type": "rectangle",
+      "id": "zApp",
+      "x": 20,
+      "y": 210,
+      "width": 1160,
+      "height": 380,
+      "backgroundColor": "#d3f9d8",
+      "fillStyle": "solid",
+      "strokeColor": "#22c55e",
+      "strokeWidth": 1,
+      "opacity": 30,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "zAppL",
+      "x": 40,
+      "y": 217,
+      "width": 700,
+      "height": 20,
+      "text": "APPLICATION LAYER  ·  mutav-app monorepo  (apps + Convex backend)",
+      "fontSize": 14,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "mono",
+      "x": 40,
+      "y": 243,
+      "width": 1120,
+      "height": 340,
+      "backgroundColor": "#b2f2bb",
+      "fillStyle": "solid",
+      "strokeColor": "#22c55e",
+      "strokeWidth": 3,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "monoT",
+      "x": 60,
+      "y": 250,
+      "width": 380,
+      "height": 24,
+      "text": "mutav-app  ·  Turborepo monorepo",
+      "fontSize": 17,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "appMkt",
+      "x": 60,
+      "y": 275,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#15803d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "appMktT",
+      "x": 75,
+      "y": 283,
+      "width": 160,
+      "height": 20,
+      "text": "apps/marketing",
+      "fontSize": 15,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appMktD",
+      "x": 75,
+      "y": 305,
+      "width": 160,
+      "height": 18,
+      "text": "mutav.finance",
+      "fontSize": 13,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appMktA",
+      "x": 75,
+      "y": 326,
+      "width": 120,
+      "height": 18,
+      "text": "public · all",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appMktS",
+      "x": 75,
+      "y": 347,
+      "width": 80,
+      "height": 18,
+      "text": "Next.js",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "appAg",
+      "x": 280,
+      "y": 275,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#15803d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "appAgT",
+      "x": 295,
+      "y": 283,
+      "width": 140,
+      "height": 20,
+      "text": "apps/agency",
+      "fontSize": 15,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appAgD",
+      "x": 295,
+      "y": 305,
+      "width": 180,
+      "height": 18,
+      "text": "agency.mutav.finance",
+      "fontSize": 13,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appAgA",
+      "x": 295,
+      "y": 326,
+      "width": 100,
+      "height": 18,
+      "text": "agencies",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appAgS",
+      "x": 295,
+      "y": 347,
+      "width": 60,
+      "height": 18,
+      "text": "Auth0",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "appFn",
+      "x": 500,
+      "y": 275,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#15803d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "appFnT",
+      "x": 515,
+      "y": 283,
+      "width": 120,
+      "height": 20,
+      "text": "apps/fund",
+      "fontSize": 15,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appFnD",
+      "x": 515,
+      "y": 305,
+      "width": 160,
+      "height": 18,
+      "text": "fund.mutav.finance",
+      "fontSize": 13,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appFnA",
+      "x": 515,
+      "y": 326,
+      "width": 100,
+      "height": 18,
+      "text": "investors",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appFnS",
+      "x": 515,
+      "y": 347,
+      "width": 140,
+      "height": 18,
+      "text": "wallet / Privy",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "appAd",
+      "x": 720,
+      "y": 275,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#15803d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "appAdT",
+      "x": 735,
+      "y": 283,
+      "width": 120,
+      "height": 20,
+      "text": "apps/admin",
+      "fontSize": 15,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appAdD",
+      "x": 735,
+      "y": 305,
+      "width": 180,
+      "height": 18,
+      "text": "admin.mutav.finance",
+      "fontSize": 13,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appAdA",
+      "x": 735,
+      "y": 326,
+      "width": 140,
+      "height": 18,
+      "text": "protocol team",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appAdS",
+      "x": 735,
+      "y": 347,
+      "width": 160,
+      "height": 18,
+      "text": "hardware wallet",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "appDc",
+      "x": 940,
+      "y": 275,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#15803d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "appDcT",
+      "x": 955,
+      "y": 283,
+      "width": 110,
+      "height": 20,
+      "text": "apps/docs",
+      "fontSize": 15,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appDcD",
+      "x": 955,
+      "y": 305,
+      "width": 160,
+      "height": 18,
+      "text": "docs.mutav.finance",
+      "fontSize": 13,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appDcA",
+      "x": 955,
+      "y": 326,
+      "width": 110,
+      "height": 18,
+      "text": "developers",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appDcS",
+      "x": 955,
+      "y": 347,
+      "width": 80,
+      "height": 18,
+      "text": "Nextra",
+      "fontSize": 12,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "convex",
+      "x": 60,
+      "y": 385,
+      "width": 1080,
+      "height": 175,
+      "backgroundColor": "#d0bfff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 3,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "convexT",
+      "x": 80,
+      "y": 393,
+      "width": 700,
+      "height": 20,
+      "text": "convex/  —  Mutav API backend  ·  operator key via KMS (mainnet)",
+      "fontSize": 15,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "domLabel",
+      "x": 80,
+      "y": 418,
+      "width": 180,
+      "height": 18,
+      "text": "DOMAIN MODULES",
+      "fontSize": 12,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "mAg",
+      "x": 80,
+      "y": 437,
+      "width": 340,
+      "height": 62,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "mAgT",
+      "x": 95,
+      "y": 443,
+      "width": 120,
+      "height": 22,
+      "text": "Agencies",
+      "fontSize": 16,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "mAgD",
+      "x": 95,
+      "y": 468,
+      "width": 300,
+      "height": 18,
+      "text": "KYB  ·  payment receipts  ·  sinistro flow",
+      "fontSize": 13,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "mInv",
+      "x": 435,
+      "y": 437,
+      "width": 340,
+      "height": 62,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "mInvT",
+      "x": 450,
+      "y": 443,
+      "width": 140,
+      "height": 22,
+      "text": "Investments",
+      "fontSize": 16,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "mInvD",
+      "x": 450,
+      "y": 468,
+      "width": 300,
+      "height": 18,
+      "text": "deposit  ·  redeem  ·  NAV  ·  queue ops",
+      "fontSize": 13,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "mFm",
+      "x": 790,
+      "y": 437,
+      "width": 340,
+      "height": 62,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "mFmT",
+      "x": 805,
+      "y": 443,
+      "width": 200,
+      "height": 22,
+      "text": "Fund Management",
+      "fontSize": 16,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "mFmD",
+      "x": 805,
+      "y": 468,
+      "width": 320,
+      "height": 18,
+      "text": "params  ·  partners  ·  yield  ·  cover_default",
+      "fontSize": 13,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "svcLabel",
+      "x": 80,
+      "y": 509,
+      "width": 260,
+      "height": 18,
+      "text": "CROSS-CUTTING SERVICES",
+      "fontSize": 12,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "mPay",
+      "x": 80,
+      "y": 528,
+      "width": 525,
+      "height": 25,
+      "backgroundColor": "#e9d5ff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "mPayT",
+      "x": 95,
+      "y": 531,
+      "width": 500,
+      "height": 20,
+      "text": "Payments    on-chain tx  ·  ramp (BRL ↔ USDC)  ·  in / out",
+      "fontSize": 13,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "mCom",
+      "x": 620,
+      "y": 528,
+      "width": 510,
+      "height": 25,
+      "backgroundColor": "#e9d5ff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "mComT",
+      "x": 635,
+      "y": 531,
+      "width": 480,
+      "height": 20,
+      "text": "Compliance    KYC  ·  KYB  ·  AML  ·  identity gates",
+      "fontSize": 13,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "monoShared",
+      "x": 60,
+      "y": 568,
+      "width": 600,
+      "height": 18,
+      "text": "shared:  packages/ui  ·  packages/api-client  ·  packages/types",
+      "fontSize": 12,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "zProto",
+      "x": 20,
+      "y": 605,
+      "width": 1160,
+      "height": 150,
+      "backgroundColor": "#dbe4ff",
+      "fillStyle": "solid",
+      "strokeColor": "#4a9eed",
+      "strokeWidth": 1,
+      "opacity": 30,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "zProtoL",
+      "x": 40,
+      "y": 612,
+      "width": 420,
+      "height": 20,
+      "text": "PROTOCOL  ·  isolated repo  ·  audited surface",
+      "fontSize": 14,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "stellar",
+      "x": 40,
+      "y": 638,
+      "width": 1120,
+      "height": 113,
+      "backgroundColor": "#a5d8ff",
+      "fillStyle": "solid",
+      "strokeColor": "#1d4ed8",
+      "strokeWidth": 4,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "stellarT",
+      "x": 60,
+      "y": 646,
+      "width": 200,
+      "height": 26,
+      "text": "mutav-stellar",
+      "fontSize": 20,
+      "strokeColor": "#1d4ed8",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "contract",
+      "x": 60,
+      "y": 676,
+      "width": 540,
+      "height": 65,
+      "backgroundColor": "#d0bfff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 3,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "contractL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "contractL",
+      "x": 140,
+      "y": 697,
+      "width": 380,
+      "height": 22,
+      "text": "Fund contract  (Rust / Soroban)",
+      "fontSize": 17,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "contract"
+    },
+    {
+      "type": "rectangle",
+      "id": "sdk",
+      "x": 620,
+      "y": 676,
+      "width": 520,
+      "height": 65,
+      "backgroundColor": "#c3fae8",
+      "fillStyle": "solid",
+      "strokeColor": "#0e7490",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "sdkL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "sdkL",
+      "x": 830,
+      "y": 697,
+      "width": 100,
+      "height": 22,
+      "text": "TS SDK",
+      "fontSize": 17,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "sdk"
+    },
+    {
+      "type": "rectangle",
+      "id": "zChain",
+      "x": 20,
+      "y": 775,
+      "width": 1160,
+      "height": 95,
+      "backgroundColor": "#e5dbff",
+      "fillStyle": "solid",
+      "strokeColor": "#8b5cf6",
+      "strokeWidth": 1,
+      "opacity": 30,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "zChainL",
+      "x": 40,
+      "y": 782,
+      "width": 120,
+      "height": 20,
+      "text": "STELLAR",
+      "fontSize": 14,
+      "strokeColor": "#6b21a8",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "cFund",
+      "x": 60,
+      "y": 808,
+      "width": 240,
+      "height": 50,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "cFundL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "cFundL",
+      "x": 105,
+      "y": 822,
+      "width": 150,
+      "height": 22,
+      "text": "Fund instance",
+      "fontSize": 14,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "cFund"
+    },
+    {
+      "type": "rectangle",
+      "id": "cUsdc",
+      "x": 320,
+      "y": 808,
+      "width": 200,
+      "height": 50,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#0e7490",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "cUsdcL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "cUsdcL",
+      "x": 380,
+      "y": 822,
+      "width": 80,
+      "height": 22,
+      "text": "USDC SAC",
+      "fontSize": 14,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "cUsdc"
+    },
+    {
+      "type": "rectangle",
+      "id": "cClassic",
+      "x": 540,
+      "y": 808,
+      "width": 240,
+      "height": 50,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#06b6d4",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "cClassicL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "cClassicL",
+      "x": 585,
+      "y": 822,
+      "width": 150,
+      "height": 22,
+      "text": "classic_wallet",
+      "fontSize": 14,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "cClassic"
+    },
+    {
+      "type": "rectangle",
+      "id": "cOp",
+      "x": 800,
+      "y": 808,
+      "width": 240,
+      "height": 50,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#06b6d4",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "cOpL",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "cOpL",
+      "x": 835,
+      "y": 822,
+      "width": 170,
+      "height": 22,
+      "text": "operator G-account",
+      "fontSize": 14,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "cOp"
+    },
+    {
+      "type": "arrow",
+      "id": "a_ag_conv",
+      "x": 380,
+      "y": 370,
+      "width": 0,
+      "height": 15,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          15
+        ]
+      ],
+      "strokeColor": "#4a9eed",
+      "strokeWidth": 2,
+      "endArrowhead": "arrow"
+    },
+    {
+      "type": "arrow",
+      "id": "a_fn_conv",
+      "x": 600,
+      "y": 370,
+      "width": 0,
+      "height": 15,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          15
+        ]
+      ],
+      "strokeColor": "#4a9eed",
+      "strokeWidth": 2,
+      "endArrowhead": "arrow"
+    },
+    {
+      "type": "arrow",
+      "id": "a_ad_conv",
+      "x": 820,
+      "y": 370,
+      "width": 0,
+      "height": 15,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          15
+        ]
+      ],
+      "strokeColor": "#4a9eed",
+      "strokeWidth": 2,
+      "endArrowhead": "arrow",
+      "label": {
+        "text": "HTTPS",
+        "fontSize": 13
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_conv_sdk",
+      "x": 880,
+      "y": 560,
+      "width": 0,
+      "height": 116,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          116
+        ]
+      ],
+      "strokeColor": "#6b21a8",
+      "strokeWidth": 2,
+      "endArrowhead": "arrow",
+      "label": {
+        "text": "operator-signs via SDK",
+        "fontSize": 13
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_fn_sdk",
+      "x": 700,
+      "y": 370,
+      "width": 0,
+      "height": 306,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          306
+        ]
+      ],
+      "strokeColor": "#ef4444",
+      "strokeWidth": 2,
+      "strokeStyle": "dashed",
+      "endArrowhead": "arrow",
+      "label": {
+        "text": "wallet-signed",
+        "fontSize": 13
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_conv_rails",
+      "x": 950,
+      "y": 437,
+      "width": 0,
+      "height": 257,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          -257
+        ]
+      ],
+      "strokeColor": "#757575",
+      "strokeWidth": 2,
+      "strokeStyle": "dashed",
+      "endArrowhead": "arrow",
+      "label": {
+        "text": "KYC + ramp",
+        "fontSize": 13
+      }
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": null
+  },
+  "files": {}
+}

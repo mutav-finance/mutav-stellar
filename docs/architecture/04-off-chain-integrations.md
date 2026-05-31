@@ -1,6 +1,6 @@
 # 04 — Off-chain integrations
 
-Three trust boundaries that the on-chain contract cannot enforce: Etherfuse (reserve provider), PIX (BRL rail), and partner Horizon accounts (USDC inflow). Plus the RPC vendor for daemons.
+Three trust boundaries that the on-chain contract cannot enforce: Etherfuse (reserve provider), PIX (BRL rail), and partner Horizon accounts (USDC inflow). Plus the RPC vendor for the Convex Actions that run the operator runtime.
 
 ## Etherfuse — the reserve provider
 
@@ -17,13 +17,13 @@ USDC (Stellar) ──► Etherfuse ──► TESOURO (held by Etherfuse on class
 |---|---|---|
 | Partner payment ingress | `receive_payment` routes the AUM portion to `classic_wallet` | Etherfuse converts to TESOURO |
 | Investor deposit | `deposit_investor` routes USDC to `classic_wallet` | Etherfuse converts to TESOURO |
-| Yield reporting | (none; off-chain trigger) | Etherfuse → API call → daemon → `add_yield(amount)` |
-| Off-ramp (redemption) | `process_redemptions` returns total USDC needed | Operator triggers Etherfuse liquidation → USDC arrives on operator wallet → operator deposits to contract → `fulfill_redemption` per investor |
-| Mgmt fee payout | `charge_mgmt_fee` debits AUM | Operator sends a Stellar Classic payment (TESOURO asset, PIX MEMO) → Etherfuse → BRL via PIX |
+| Yield reporting | (none; off-chain trigger) | Etherfuse → API call → **Convex Action** → `add_yield(amount)` |
+| Off-ramp (redemption) | `process_redemptions` returns total USDC needed | **Convex Action** triggers Etherfuse liquidation → USDC arrives at the operator address (KMS-signed) → Action deposits to contract → `fulfill_redemption` per investor |
+| Mgmt fee payout | `charge_mgmt_fee` debits AUM | **Convex Action** sends a Stellar Classic payment (TESOURO asset, PIX MEMO) → Etherfuse → BRL via PIX |
 
 ### Known seams / TBD
 
-- The Etherfuse API integration is **not wired in code** — every daemon has `TODO(Etherfuse)` markers. Wallet addresses, asset codes (TESOURO), PIX MEMO format are placeholders today.
+- The Etherfuse API integration is **not wired in code** in any consumer. Operator runtime moves to `mutav-app` (Convex Actions) per [`#57`](https://github.com/mutav-finance/mutav-stellar/issues/57); the integration design (auth method, retry/idempotency, webhook vs poll) becomes part of the `mutav-app` planning effort ([`mutav-app#139`](https://github.com/mutav-finance/mutav-app/issues/139)). Wallet addresses, asset codes (TESOURO), and PIX MEMO format remain placeholders pending Etherfuse contract negotiation.
 - `MEMO` is 28 bytes — UUID and email PIX keys overflow (PR #26 review).
 - Yield-reporting cadence and authoritative source (Etherfuse API vs ledger snapshot) are not documented.
 - Counterparty risk: there is no on-chain proof that Etherfuse holds the TESOURO it claims to. Mitigation is regulatory / contractual, out of scope here.
@@ -34,18 +34,18 @@ PIX is the Brazilian instant-payment system. Used for the off-chain BRL leg of t
 
 ### Where PIX appears
 
-- **Mgmt fee** (PR #26): operator sends a Stellar Classic payment of TESOURO to an Etherfuse-controlled wallet, with the PIX key as a text MEMO. Etherfuse settles the PIX leg to the recipient bank account.
+- **Mgmt fee**: the operator Convex Action sends a Stellar Classic payment of TESOURO to an Etherfuse-controlled wallet, with the PIX key as a text MEMO. Etherfuse settles the PIX leg to the recipient bank account.
 - **Off-ramp** (future): conceptually similar for converting redemption proceeds USDC → BRL.
 - **Cover default** (future): partner agencies may be made whole via PIX after a sinistro; today, `cover_default` only debits AUM with no on-chain destination enforcement.
 
 ### Format constraints
 
-- `Memo.text` max 28 bytes UTF-8. CPF (11) and CNPJ (14) PIX keys fit; **UUID (36) and email (up to 77) PIX keys do not**. The mgmt-fee daemon must validate or hash-encode (PR #26 review).
-- Atomicity gap: on-chain `charge_mgmt_fee` debits AUM *before* the off-chain Classic payment is submitted. If Classic fails, AUM is debited but no fee was sent — manual reconciliation only (issue: same as PR #26 review, atomic split).
+- `Memo.text` max 28 bytes UTF-8. CPF (11) and CNPJ (14) PIX keys fit; **UUID (36) and email (up to 77) PIX keys do not**. The mgmt-fee Action must validate or hash-encode the key before submission.
+- Atomicity gap: on-chain `charge_mgmt_fee` debits AUM *before* the off-chain Classic payment is submitted. If Classic fails, AUM is debited but no fee was sent. The Convex Workflow runtime (Convex's durability primitive) should be used to make the two-step atomic; absent that, manual reconciliation is the only path.
 
 ## Partner Horizon accounts
 
-Partner agencies (`imobiliárias`) hold Stellar Classic accounts that pay USDC monthly to MUTAV's operator wallet. The on-ramp daemon (PR #22) reads these payments via Horizon and records them on-chain via `receive_payment`.
+Partner agencies (`imobiliárias`) hold Stellar Classic accounts that pay USDC monthly to the MUTAV operator address. The on-ramp Convex Action reads these payments via Horizon and records them on-chain via `receive_payment`.
 
 ### How identity binds
 
@@ -64,12 +64,12 @@ When an agency's risk profile shifts to a different tier, admin removes them fro
 | testnet | `soroban-testnet.stellar.org` | `horizon-testnet.stellar.org` |
 | mainnet | `mainnet.stellar.validationcloud.io/v1/soroban/rpc` | `horizon.stellar.org` |
 
-Single-vendor on mainnet. Daemons rely on RPC liveness; an outage at validationcloud stalls every daemon (heartbeat, on-ramp, off-ramp). Multi-vendor fallback is not implemented (issue #44).
+Single-vendor on mainnet. The operator runtime (Convex Actions on `mutav-app`) relies on RPC liveness; an outage at validationcloud stalls every Action (heartbeat, on-ramp, off-ramp). Multi-vendor fallback is not implemented (issue #44).
 
 ## Known gaps
 
-- Etherfuse API integration is unwritten (markers in PRs #22, #23, #26).
-- PIX MEMO validation is missing (PR #26 review).
-- Atomic split between on-chain debit and off-chain payout — no reconciliation layer (PR #26 review + issue #44).
+- Etherfuse API integration is unwritten in any consumer — design lands as part of the operator-runtime move to `mutav-app` ([`mutav-app#139`](https://github.com/mutav-finance/mutav-app/issues/139)).
+- PIX MEMO validation is missing.
+- Atomic split between on-chain debit and off-chain payout — needs Convex Workflow durability for the mgmt-fee Action; manual reconciliation otherwise.
 - Single-RPC dependency on mainnet — issue #44.
 - No counterparty-risk documentation for Etherfuse — out of scope here, but should live in the threat model (#46).

@@ -12,9 +12,9 @@ The contract is the audited surface. Match its existing conventions; new pattern
 
 <!-- BEGIN:bun-typescript-agent-rules -->
 
-# TypeScript SDK + operator daemons via Bun
+# TypeScript SDK via Bun
 
-Use `bun install --frozen-lockfile` for reproducible builds. Run `bun run typecheck` before pushing. The TS SDK lives in `src/` and is published as `@mutav-finance/mutav-stellar` for consumption by the sibling repos (`mutav-app`, `mutav-fund`). Operator daemons live under `src/jobs/` and hold the operator key — never put server-side keys in the sibling repos.
+Use `bun install --frozen-lockfile` for reproducible builds. Run `bun run typecheck` before pushing. The TS SDK lives in `src/` and is published as `@mutav-finance/mutav-stellar` for consumption by [`mutav-app`](https://github.com/mutav-finance/mutav-app). The SDK is read-oriented: it composes chain reads and produces transaction XDRs that consumers sign — it does not hold any keys. Operator-authority runtime lives on `mutav-app` (KMS-backed Convex Actions); do not add daemon scaffolding here.
 
 <!-- END:bun-typescript-agent-rules -->
 

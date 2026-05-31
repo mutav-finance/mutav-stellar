@@ -5,21 +5,19 @@
 ## Project
 MUTAV — onchain rental guarantee infrastructure.
 
-This is the **Stellar contracts + operator infrastructure** for MUTAV. Two distinct surfaces under strict change control because a bug here moves money. UI surfaces live in sibling repos.
+This is the **Stellar protocol layer** for MUTAV: the `Fund` Soroban contract plus the published TypeScript SDK. The audited surface. No daemons, no operator-key custody, no UI — those live on [`mutav-app`](https://github.com/mutav-finance/mutav-app).
 
 Scope of this repo:
 - **Rust contract** (`contracts/`) — Soroban `Fund`. Audit-gated, slow cadence; the smallest changeable thing.
-- **TS SDK + operator daemons** (`src/`) — published as `@mutav-finance/mutav-stellar`; daemons (on-ramp, off-ramp, yield-sync, mgmt-fee, heartbeat, ttl-watchdog) hold operator keys. Not "audited" in the same sense the contract is; needs its own change-control regime.
-- **Admin tooling** for cold-wallet operations.
+- **TS SDK** (`src/`) — published as `@mutav-finance/mutav-stellar`. Consumed by `mutav-app` for chain reads + transaction composition.
 
-Three-repo split:
-- **`mutav-stellar`** (here): contracts + SDK + operator daemons + admin tooling.
-- **`mutav-finance/mutav-app`**: real-estate platform — rental-contract management + agency payments. Stack: Auth0 + Convex. Audience: agencies.
-- **`mutav-finance/mutav-fund`**: investor portal — fund data + dApp deposit/redeem. Stack: Next.js 16 + Bun + Stellar wallet kit. Audience: investors.
+Two-repo split (per [`#57`](https://github.com/mutav-finance/mutav-finance/issues) — see [`docs/architecture/01-protocol-overview.md`](docs/architecture/01-protocol-overview.md#repo-split) for the canonical write-up):
+- **`mutav-stellar`** (here): contract + SDK. Protocol-only.
+- **`mutav-finance/mutav-app`**: Turborepo monorepo. Persona apps (agency / fund / admin / …) + the **Mutav API** (Convex backend). The operator runtime that used to live here (6 in-flight Bun daemons across PRs #22–#27) moves there as KMS-backed Convex Actions; orphan-verdict tracked at [`docs/architecture/decisions/2026-05-30-daemon-prs-orphan-verdict.md`](docs/architecture/decisions/2026-05-30-daemon-prs-orphan-verdict.md).
 
-Both sibling repos consume this repo's SDK; neither feeds back into it.
+`mutav-app` consumes this repo's SDK; the dependency direction does not reverse.
 
-**Boundary rule** (custody-locality, not a security guarantee): operator/admin custody never leaves `mutav-stellar`'s deployment. Agency and investor custody is end-user-owned and out of scope for this repo. See `docs/architecture/02-actors-and-trust.md` for the full trust model — including off-chain routing surfaces (e.g. mutav-app displaying agency-payment addresses) that a compromised sibling could affect without touching operator keys.
+**Boundary rule** (custody-locality, not a system-wide security guarantee): operator/admin keys do not live in this repo's deployment surface anymore — operator authority lives in a KMS-backed Convex Action on `mutav-app`, admin authority on a hardware wallet inside `mutav-app/apps/admin/`. This repo's deployment is the on-chain contract and the published SDK. See [`docs/architecture/02-actors-and-trust.md`](docs/architecture/02-actors-and-trust.md) for the full trust model — including off-chain routing surfaces (e.g. the agency app displaying payment addresses) that a compromised consumer could affect without touching any key.
 
 ## Terminology (overloaded across repos)
 
