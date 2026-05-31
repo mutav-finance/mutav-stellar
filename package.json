@@ -8,6 +8,7 @@
   },
   "exports": {
     "./core/network": "./src/core/network.ts",
+    "./core/units": "./src/core/units.ts",
     "./core/wallet": "./src/core/wallet.ts",
     "./soroban/client": "./src/providers/soroban/client.ts",
     "./soroban/fund": "./src/providers/soroban/fund.ts"
