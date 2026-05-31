@@ -8,9 +8,9 @@
       "id": "title",
       "x": 290,
       "y": 15,
-      "width": 620,
+      "width": 720,
       "height": 35,
-      "text": "MUTAV — Layered Architecture",
+      "text": "MUTAV — Layered Architecture (2026-05-31 snapshot)",
       "fontSize": 26,
       "strokeColor": "#1e1e1e",
       "fontFamily": 1
@@ -18,11 +18,11 @@
     {
       "type": "text",
       "id": "sub",
-      "x": 195,
+      "x": 100,
       "y": 55,
-      "width": 820,
+      "width": 1100,
       "height": 20,
-      "text": "isolated protocol  ·  one Convex  ·  persona-dedicated apps  ·  mutav.finance",
+      "text": "isolated protocol  ·  one Convex  ·  persona-dedicated apps  ·  mutav.finance     │     ● landed   ◐ in flight   ○ pending",
       "fontSize": 15,
       "strokeColor": "#757575",
       "fontFamily": 1
@@ -248,9 +248,9 @@
       "id": "monoT",
       "x": 60,
       "y": 250,
-      "width": 380,
+      "width": 720,
       "height": 24,
-      "text": "mutav-app  ·  Turborepo monorepo",
+      "text": "◐ mutav-app  ·  Turborepo monorepo  (PR 1/8 landed — workspace foundation)",
       "fontSize": 17,
       "strokeColor": "#15803d",
       "fontFamily": 1
@@ -260,7 +260,7 @@
       "id": "appMkt",
       "x": 60,
       "y": 275,
-      "width": 200,
+      "width": 170,
       "height": 95,
       "backgroundColor": "#ffffff",
       "fillStyle": "solid",
@@ -273,11 +273,11 @@
     {
       "type": "text",
       "id": "appMktT",
-      "x": 75,
+      "x": 72,
       "y": 283,
-      "width": 160,
+      "width": 145,
       "height": 20,
-      "text": "apps/marketing",
+      "text": "○ apps/marketing",
       "fontSize": 15,
       "strokeColor": "#15803d",
       "fontFamily": 1
@@ -285,9 +285,9 @@
     {
       "type": "text",
       "id": "appMktD",
-      "x": 75,
+      "x": 72,
       "y": 305,
-      "width": 160,
+      "width": 145,
       "height": 18,
       "text": "mutav.finance",
       "fontSize": 13,
@@ -297,9 +297,9 @@
     {
       "type": "text",
       "id": "appMktA",
-      "x": 75,
+      "x": 72,
       "y": 326,
-      "width": 120,
+      "width": 145,
       "height": 18,
       "text": "public · all",
       "fontSize": 12,
@@ -309,9 +309,9 @@
     {
       "type": "text",
       "id": "appMktS",
-      "x": 75,
+      "x": 72,
       "y": 347,
-      "width": 80,
+      "width": 145,
       "height": 18,
       "text": "Next.js",
       "fontSize": 12,
@@ -321,9 +321,9 @@
     {
       "type": "rectangle",
       "id": "appAg",
-      "x": 280,
+      "x": 238,
       "y": 275,
-      "width": 200,
+      "width": 170,
       "height": 95,
       "backgroundColor": "#ffffff",
       "fillStyle": "solid",
@@ -336,11 +336,11 @@
     {
       "type": "text",
       "id": "appAgT",
-      "x": 295,
+      "x": 250,
       "y": 283,
-      "width": 140,
+      "width": 145,
       "height": 20,
-      "text": "apps/agency",
+      "text": "○ apps/agency",
       "fontSize": 15,
       "strokeColor": "#15803d",
       "fontFamily": 1
@@ -348,11 +348,11 @@
     {
       "type": "text",
       "id": "appAgD",
-      "x": 295,
+      "x": 250,
       "y": 305,
-      "width": 180,
+      "width": 145,
       "height": 18,
-      "text": "agency.mutav.finance",
+      "text": "app.mutav.finance",
       "fontSize": 13,
       "strokeColor": "#1d4ed8",
       "fontFamily": 1
@@ -360,9 +360,9 @@
     {
       "type": "text",
       "id": "appAgA",
-      "x": 295,
+      "x": 250,
       "y": 326,
-      "width": 100,
+      "width": 145,
       "height": 18,
       "text": "agencies",
       "fontSize": 12,
@@ -372,9 +372,9 @@
     {
       "type": "text",
       "id": "appAgS",
-      "x": 295,
+      "x": 250,
       "y": 347,
-      "width": 60,
+      "width": 145,
       "height": 18,
       "text": "Auth0",
       "fontSize": 12,
@@ -384,9 +384,9 @@
     {
       "type": "rectangle",
       "id": "appFn",
-      "x": 500,
+      "x": 594,
       "y": 275,
-      "width": 200,
+      "width": 170,
       "height": 95,
       "backgroundColor": "#ffffff",
       "fillStyle": "solid",
@@ -399,11 +399,11 @@
     {
       "type": "text",
       "id": "appFnT",
-      "x": 515,
+      "x": 606,
       "y": 283,
-      "width": 120,
+      "width": 145,
       "height": 20,
-      "text": "apps/fund",
+      "text": "○ apps/fund",
       "fontSize": 15,
       "strokeColor": "#15803d",
       "fontFamily": 1
@@ -411,9 +411,9 @@
     {
       "type": "text",
       "id": "appFnD",
-      "x": 515,
+      "x": 606,
       "y": 305,
-      "width": 160,
+      "width": 145,
       "height": 18,
       "text": "fund.mutav.finance",
       "fontSize": 13,
@@ -423,9 +423,9 @@
     {
       "type": "text",
       "id": "appFnA",
-      "x": 515,
+      "x": 606,
       "y": 326,
-      "width": 100,
+      "width": 145,
       "height": 18,
       "text": "investors",
       "fontSize": 12,
@@ -435,11 +435,11 @@
     {
       "type": "text",
       "id": "appFnS",
-      "x": 515,
+      "x": 606,
       "y": 347,
-      "width": 140,
+      "width": 145,
       "height": 18,
-      "text": "wallet / Privy",
+      "text": "wallet kit (deferred)",
       "fontSize": 12,
       "strokeColor": "#757575",
       "fontFamily": 1
@@ -447,9 +447,9 @@
     {
       "type": "rectangle",
       "id": "appAd",
-      "x": 720,
+      "x": 772,
       "y": 275,
-      "width": 200,
+      "width": 170,
       "height": 95,
       "backgroundColor": "#ffffff",
       "fillStyle": "solid",
@@ -462,11 +462,11 @@
     {
       "type": "text",
       "id": "appAdT",
-      "x": 735,
+      "x": 784,
       "y": 283,
-      "width": 120,
+      "width": 145,
       "height": 20,
-      "text": "apps/admin",
+      "text": "○ apps/admin",
       "fontSize": 15,
       "strokeColor": "#15803d",
       "fontFamily": 1
@@ -474,9 +474,9 @@
     {
       "type": "text",
       "id": "appAdD",
-      "x": 735,
+      "x": 784,
       "y": 305,
-      "width": 180,
+      "width": 145,
       "height": 18,
       "text": "admin.mutav.finance",
       "fontSize": 13,
@@ -486,9 +486,9 @@
     {
       "type": "text",
       "id": "appAdA",
-      "x": 735,
+      "x": 784,
       "y": 326,
-      "width": 140,
+      "width": 145,
       "height": 18,
       "text": "protocol team",
       "fontSize": 12,
@@ -498,11 +498,11 @@
     {
       "type": "text",
       "id": "appAdS",
-      "x": 735,
+      "x": 784,
       "y": 347,
-      "width": 160,
+      "width": 145,
       "height": 18,
-      "text": "hardware wallet",
+      "text": "HW wallet (cold)",
       "fontSize": 12,
       "strokeColor": "#757575",
       "fontFamily": 1
@@ -510,9 +510,9 @@
     {
       "type": "rectangle",
       "id": "appDc",
-      "x": 940,
+      "x": 950,
       "y": 275,
-      "width": 200,
+      "width": 170,
       "height": 95,
       "backgroundColor": "#ffffff",
       "fillStyle": "solid",
@@ -525,11 +525,11 @@
     {
       "type": "text",
       "id": "appDcT",
-      "x": 955,
+      "x": 962,
       "y": 283,
-      "width": 110,
+      "width": 145,
       "height": 20,
-      "text": "apps/docs",
+      "text": "○ apps/docs",
       "fontSize": 15,
       "strokeColor": "#15803d",
       "fontFamily": 1
@@ -537,9 +537,9 @@
     {
       "type": "text",
       "id": "appDcD",
-      "x": 955,
+      "x": 962,
       "y": 305,
-      "width": 160,
+      "width": 145,
       "height": 18,
       "text": "docs.mutav.finance",
       "fontSize": 13,
@@ -549,9 +549,9 @@
     {
       "type": "text",
       "id": "appDcA",
-      "x": 955,
+      "x": 962,
       "y": 326,
-      "width": 110,
+      "width": 145,
       "height": 18,
       "text": "developers",
       "fontSize": 12,
@@ -561,9 +561,9 @@
     {
       "type": "text",
       "id": "appDcS",
-      "x": 955,
+      "x": 962,
       "y": 347,
-      "width": 80,
+      "width": 145,
       "height": 18,
       "text": "Nextra",
       "fontSize": 12,
@@ -590,9 +590,9 @@
       "id": "convexT",
       "x": 80,
       "y": 393,
-      "width": 700,
+      "width": 900,
       "height": 20,
-      "text": "convex/  —  Mutav API backend  ·  operator key via KMS (mainnet)",
+      "text": "◐ convex/  —  Mutav API  ·  operator key in cloud KMS via OIDC bridge (mutav-app/apps/admin)  —  spec mutav-stellar#64",
       "fontSize": 15,
       "strokeColor": "#6b21a8",
       "fontFamily": 1
@@ -631,7 +631,7 @@
       "y": 443,
       "width": 120,
       "height": 22,
-      "text": "Agencies",
+      "text": "● Agencies",
       "fontSize": 16,
       "strokeColor": "#6b21a8",
       "fontFamily": 1
@@ -641,9 +641,9 @@
       "id": "mAgD",
       "x": 95,
       "y": 468,
-      "width": 300,
+      "width": 320,
       "height": 18,
-      "text": "KYB  ·  payment receipts  ·  sinistro flow",
+      "text": "agencies · contracts · payments · anchors · audit · waitlist",
       "fontSize": 13,
       "strokeColor": "#757575",
       "fontFamily": 1
@@ -670,7 +670,7 @@
       "y": 443,
       "width": 140,
       "height": 22,
-      "text": "Investments",
+      "text": "◐ fundState · nav",
       "fontSize": 16,
       "strokeColor": "#6b21a8",
       "fontFamily": 1
@@ -680,9 +680,9 @@
       "id": "mInvD",
       "x": 450,
       "y": 468,
-      "width": 300,
+      "width": 320,
       "height": 18,
-      "text": "deposit  ·  redeem  ·  NAV  ·  queue ops",
+      "text": "per-chain mirror  ·  proposals + safeguards  (#57 'investments')",
       "fontSize": 13,
       "strokeColor": "#757575",
       "fontFamily": 1
@@ -709,7 +709,7 @@
       "y": 443,
       "width": 200,
       "height": 22,
-      "text": "Fund Management",
+      "text": "◐ mutavStaff · delinquencies",
       "fontSize": 16,
       "strokeColor": "#6b21a8",
       "fontFamily": 1
@@ -721,7 +721,7 @@
       "y": 468,
       "width": 320,
       "height": 18,
-      "text": "params  ·  partners  ·  yield  ·  cover_default",
+      "text": "treasury sub-role  ·  default + liquidation  (#57 'fundMgmt')",
       "fontSize": 13,
       "strokeColor": "#757575",
       "fontFamily": 1
@@ -760,7 +760,7 @@
       "y": 531,
       "width": 500,
       "height": 20,
-      "text": "Payments    on-chain tx  ·  ramp (BRL ↔ USDC)  ·  in / out",
+      "text": "● Payments    on-chain tx  ·  ramp (BRL ↔ USDC)  ·  in / out",
       "fontSize": 13,
       "strokeColor": "#6b21a8",
       "fontFamily": 1
@@ -787,7 +787,7 @@
       "y": 531,
       "width": 480,
       "height": 20,
-      "text": "Compliance    KYC  ·  KYB  ·  AML  ·  identity gates",
+      "text": "◐ Compliance    account types  ·  levels  ·  AML  ·  capability matrix",
       "fontSize": 13,
       "strokeColor": "#6b21a8",
       "fontFamily": 1
@@ -825,9 +825,9 @@
       "id": "zProtoL",
       "x": 40,
       "y": 612,
-      "width": 420,
+      "width": 700,
       "height": 20,
-      "text": "PROTOCOL  ·  isolated repo  ·  audited surface",
+      "text": "PROTOCOL  ·  isolated repo  ·  audited surface  ·  ● scope-down complete (#60/#61/#62)",
       "fontSize": 14,
       "strokeColor": "#1d4ed8",
       "fontFamily": 1
@@ -885,9 +885,9 @@
       "id": "contractL",
       "x": 140,
       "y": 697,
-      "width": 380,
+      "width": 540,
       "height": 22,
-      "text": "Fund contract  (Rust / Soroban)",
+      "text": "● Fund contract  (Rust / Soroban)  — replay guard landed (#60); operator surface stable",
       "fontSize": 17,
       "strokeColor": "#1e1e1e",
       "fontFamily": 1,
@@ -921,9 +921,9 @@
       "id": "sdkL",
       "x": 830,
       "y": 697,
-      "width": 100,
+      "width": 460,
       "height": 22,
-      "text": "TS SDK",
+      "text": "● TS SDK  — XDR-builders only; no signing layer (#61, #62)",
       "fontSize": 17,
       "strokeColor": "#1e1e1e",
       "fontFamily": 1,
@@ -1246,6 +1246,310 @@
         "text": "KYC + ramp",
         "fontSize": 13
       }
+    },
+    {
+      "type": "rectangle",
+      "id": "appPay",
+      "x": 416,
+      "y": 275,
+      "width": 170,
+      "height": 95,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#15803d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "appPayT",
+      "x": 428,
+      "y": 283,
+      "width": 145,
+      "height": 20,
+      "text": "○ apps/pay",
+      "fontSize": 15,
+      "strokeColor": "#15803d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appPayD",
+      "x": 428,
+      "y": 305,
+      "width": 145,
+      "height": 18,
+      "text": "pay.mutav.finance",
+      "fontSize": 13,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appPayA",
+      "x": 428,
+      "y": 326,
+      "width": 145,
+      "height": 18,
+      "text": "tenants",
+      "fontSize": 13,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "appPayS",
+      "x": 428,
+      "y": 347,
+      "width": 145,
+      "height": 18,
+      "text": "publicId bearer",
+      "fontSize": 13,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "zKmsL",
+      "x": 40,
+      "y": 870,
+      "width": 600,
+      "height": 18,
+      "text": "OPERATOR-KEY TRUST CHAIN  ·  spec mutav-stellar#64  ·  ◐ designed",
+      "fontSize": 13,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "zKms",
+      "x": 20,
+      "y": 890,
+      "width": 1160,
+      "height": 110,
+      "backgroundColor": "#fff0f6",
+      "fillStyle": "solid",
+      "strokeColor": "#be185d",
+      "strokeWidth": 2,
+      "strokeStyle": "dashed",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "rectangle",
+      "id": "hwWallet",
+      "x": 60,
+      "y": 910,
+      "width": 220,
+      "height": 70,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#be185d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "hwWalletT",
+      "x": 72,
+      "y": 917,
+      "width": 200,
+      "height": 22,
+      "text": "○ HW wallet (admin)",
+      "fontSize": 14,
+      "strokeColor": "#be185d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "hwWalletD",
+      "x": 72,
+      "y": 943,
+      "width": 200,
+      "height": 18,
+      "text": "lives in apps/admin (PR 7)",
+      "fontSize": 12,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "oidcBridge",
+      "x": 320,
+      "y": 910,
+      "width": 280,
+      "height": 70,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#be185d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "oidcBridgeT",
+      "x": 332,
+      "y": 917,
+      "width": 260,
+      "height": 22,
+      "text": "○ OIDC bridge (Vercel route)",
+      "fontSize": 14,
+      "strokeColor": "#be185d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "oidcBridgeD",
+      "x": 332,
+      "y": 943,
+      "width": 260,
+      "height": 18,
+      "text": "Convex Action → Vercel OIDC → KMS token",
+      "fontSize": 12,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "rectangle",
+      "id": "kms",
+      "x": 640,
+      "y": 910,
+      "width": 280,
+      "height": 70,
+      "backgroundColor": "#ffffff",
+      "fillStyle": "solid",
+      "strokeColor": "#be185d",
+      "strokeWidth": 2,
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "type": "text",
+      "id": "kmsT",
+      "x": 652,
+      "y": 917,
+      "width": 260,
+      "height": 22,
+      "text": "○ cloud KMS (provider TBD)",
+      "fontSize": 14,
+      "strokeColor": "#be185d",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "kmsD",
+      "x": 652,
+      "y": 943,
+      "width": 260,
+      "height": 18,
+      "text": "Ed25519 native · per-key IAM · OIDC trust",
+      "fontSize": 12,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "kmsOpNote",
+      "x": 950,
+      "y": 917,
+      "width": 220,
+      "height": 22,
+      "text": "→ operator G-account",
+      "fontSize": 14,
+      "strokeColor": "#1e1e1e",
+      "fontFamily": 1
+    },
+    {
+      "type": "text",
+      "id": "kmsOpNote2",
+      "x": 950,
+      "y": 943,
+      "width": 220,
+      "height": 18,
+      "text": "(one Stellar key; contract surface)",
+      "fontSize": 11,
+      "strokeColor": "#757575",
+      "fontFamily": 1
+    },
+    {
+      "type": "arrow",
+      "id": "aHwToBridge",
+      "x": 280,
+      "y": 945,
+      "width": 40,
+      "height": 0,
+      "strokeColor": "#be185d",
+      "strokeWidth": 1,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          40,
+          0
+        ]
+      ]
+    },
+    {
+      "type": "arrow",
+      "id": "aBridgeToKms",
+      "x": 600,
+      "y": 945,
+      "width": 40,
+      "height": 0,
+      "strokeColor": "#be185d",
+      "strokeWidth": 1,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          40,
+          0
+        ]
+      ]
+    },
+    {
+      "type": "arrow",
+      "id": "aKmsToOp",
+      "x": 920,
+      "y": 945,
+      "width": 30,
+      "height": 0,
+      "strokeColor": "#be185d",
+      "strokeWidth": 1,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          30,
+          0
+        ]
+      ]
+    },
+    {
+      "type": "text",
+      "id": "footerNote",
+      "x": 40,
+      "y": 1030,
+      "width": 1120,
+      "height": 36,
+      "text": "Detail: mutav-app#148 (planning) + #149 (workspace PR 1/8) merged · architecture docs updated · mutav-stellar contract replay-guard + SDK scope-down landed (#60/61/62) · operator-key runbook design merged (mutav-stellar#64). Pending: monorepo PRs 2-8, 6 Convex Actions (mutav-app#141-146), KMS provider, apps/admin A1-A6, HW-wallet flow, wallet-kit spec, mutav-fund archive.",
+      "fontSize": 11,
+      "strokeColor": "#757575",
+      "fontFamily": 1
     }
   ],
   "appState": {
