@@ -1,136 +1,83 @@
-import {
-  Contract,
-  TransactionBuilder,
-  BASE_FEE,
-  nativeToScVal,
-  Address,
-  xdr,
-  type Keypair,
-  rpc,
-} from "@stellar/stellar-sdk";
-import type { NetworkConfig } from "../../core/network.ts";
-import { sorobanClient } from "./client.ts";
+// XDR operation builders for the MUTAV `Fund` Soroban contract.
+//
+// These are pure functions of (contractId, args) — no network access, no signing.
+// Consumers (typically a Convex Action with KMS-backed signing on `mutav-app`)
+// assemble the returned `xdr.Operation` into a TransactionBuilder, prepare
+// against an RPC server, sign with their KMS-sourced key, and submit.
+//
+// Scope per `mutav-stellar#57`: the SDK composes chain reads + transaction
+// XDRs; it does not hold keys and does not submit. The operator-runtime
+// signing pathway lives on mutav-app.
 
-async function invoke(
-  net: NetworkConfig,
-  operator: Keypair,
-  contractId: string,
-  method: string,
-  args: xdr.ScVal[]
-): Promise<rpc.Api.GetTransactionResponse> {
-  const server = sorobanClient(net);
-  const account = await server.getAccount(operator.publicKey());
-  const contract = new Contract(contractId);
+import { Address, Contract, nativeToScVal, xdr } from "@stellar/stellar-sdk";
 
-  const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase: net.passphrase,
-  })
-    .addOperation(contract.call(method, ...args))
-    .setTimeout(30)
-    .build();
-
-  const prepared = await server.prepareTransaction(tx);
-  prepared.sign(operator);
-
-  const sent = await server.sendTransaction(prepared);
-  if (sent.status === "ERROR") {
-    throw new Error(`Transação rejeitada: ${JSON.stringify(sent.errorResult)}`);
-  }
-
-  // polling até confirmar
-  let result = await server.getTransaction(sent.hash);
-  while (result.status === "NOT_FOUND") {
-    await Bun.sleep(2000);
-    result = await server.getTransaction(sent.hash);
-  }
-
-  if (result.status === "FAILED") {
-    throw new Error(`Transação falhou: ${sent.hash}`);
-  }
-
-  return result;
+function fund(contractId: string): Contract {
+  return new Contract(contractId);
 }
 
-export async function receivePayment(
-  net: NetworkConfig,
-  operator: Keypair,
+function i128(amount: bigint): xdr.ScVal {
+  return nativeToScVal(amount, { type: "i128" });
+}
+
+function bytes32(value: Uint8Array): xdr.ScVal {
+  if (value.length !== 32) {
+    throw new Error(`bytes32 expected 32 bytes, got ${value.length}`);
+  }
+  return xdr.ScVal.scvBytes(Buffer.from(value));
+}
+
+export function buildReceivePaymentOp(
   contractId: string,
   imobiliaria: string,
-  amountUsdc: bigint
-): Promise<void> {
-  await invoke(net, operator, contractId, "receive_payment", [
+  amountUsdc: bigint,
+  txHash: Uint8Array,
+): xdr.Operation {
+  return fund(contractId).call(
+    "receive_payment",
     new Address(imobiliaria).toScVal(),
-    nativeToScVal(amountUsdc, { type: "i128" }),
-  ]);
+    i128(amountUsdc),
+    bytes32(txHash),
+  );
 }
 
-export async function addYield(
-  net: NetworkConfig,
-  operator: Keypair,
+export function buildAddYieldOp(contractId: string, amountUsdc: bigint): xdr.Operation {
+  return fund(contractId).call("add_yield", i128(amountUsdc));
+}
+
+export function buildChargeMgmtFeeOp(contractId: string): xdr.Operation {
+  return fund(contractId).call("charge_mgmt_fee");
+}
+
+export function buildProcessRedemptionsOp(contractId: string): xdr.Operation {
+  return fund(contractId).call("process_redemptions");
+}
+
+export function buildFulfillRedemptionOp(
   contractId: string,
-  amountUsdc: bigint
-): Promise<void> {
-  await invoke(net, operator, contractId, "add_yield", [
-    nativeToScVal(amountUsdc, { type: "i128" }),
-  ]);
+  investor: string,
+): xdr.Operation {
+  return fund(contractId).call("fulfill_redemption", new Address(investor).toScVal());
 }
 
-export async function chargeMgmtFee(
-  net: NetworkConfig,
-  operator: Keypair,
-  contractId: string
-): Promise<void> {
-  await invoke(net, operator, contractId, "charge_mgmt_fee", []);
-}
-
-export async function processRedemptions(
-  net: NetworkConfig,
-  operator: Keypair,
-  contractId: string
-): Promise<void> {
-  await invoke(net, operator, contractId, "process_redemptions", []);
-}
-
-export async function fulfillRedemption(
-  net: NetworkConfig,
-  operator: Keypair,
-  contractId: string,
-  investor: string
-): Promise<void> {
-  await invoke(net, operator, contractId, "fulfill_redemption", [
-    new Address(investor).toScVal(),
-  ]);
-}
-
-export async function recordOffchainPayout(
-  net: NetworkConfig,
-  operator: Keypair,
+export function buildRecordOffchainPayoutOp(
   contractId: string,
   amountUsdc: bigint,
-  destination: string
-): Promise<void> {
-  await invoke(net, operator, contractId, "record_offchain_payout", [
-    nativeToScVal(amountUsdc, { type: "i128" }),
+  destination: string,
+): xdr.Operation {
+  return fund(contractId).call(
+    "record_offchain_payout",
+    i128(amountUsdc),
     new Address(destination).toScVal(),
-  ]);
+  );
 }
 
-export async function extendTtl(
-  net: NetworkConfig,
-  operator: Keypair,
-  contractId: string
-): Promise<void> {
-  await invoke(net, operator, contractId, "extend_ttl", []);
+export function buildExtendTtlOp(contractId: string): xdr.Operation {
+  return fund(contractId).call("extend_ttl");
 }
 
-export async function extendBalanceTtl(
-  net: NetworkConfig,
-  operator: Keypair,
+export function buildExtendBalanceTtlOp(
   contractId: string,
-  investor: string
-): Promise<void> {
-  await invoke(net, operator, contractId, "extend_balance_ttl", [
-    new Address(investor).toScVal(),
-  ]);
+  investor: string,
+): xdr.Operation {
+  return fund(contractId).call("extend_balance_ttl", new Address(investor).toScVal());
 }
