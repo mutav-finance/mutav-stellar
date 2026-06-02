@@ -7,6 +7,10 @@ MUTAV — onchain rental guarantee infrastructure.
 
 This is the **Stellar protocol layer** for MUTAV: the `Fund` Soroban contract plus the published TypeScript SDK. The audited surface. No daemons, no operator-key custody, no UI — those live on [`mutav-app`](https://github.com/mutav-finance/mutav-app).
 
+## Research knowledge base (lives in `mutav`)
+
+Protocol-wide continuous research lives in the sibling [`mutav`](https://github.com/mutav-finance/mutav) repo as an Obsidian vault at `mutav/research/` — five watch-streams (internal protocol changes, RWA/tokenization, Stellar/Soroban, Brazil market & regulation, security) with a daily auto-update. **Don't scatter research notes in this repo.** To add a source/reference (papers, audits, exploit write-ups, peer protocols), drop it in `../mutav/research/99-Inbox/intake.md` for triage — procedure in the `triage-source` skill at `../mutav/.claude/skills/`.
+
 Scope of this repo:
 - **Rust contract** (`contracts/`) — Soroban `Fund`. Audit-gated, slow cadence; the smallest changeable thing.
 - **TS SDK** (`src/`) — published as `@mutav-finance/mutav-stellar`. Consumed by `mutav-app` for chain reads + transaction composition.

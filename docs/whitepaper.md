@@ -276,50 +276,59 @@ Each subsection presents the question, the options, the trade-offs, and a **Deci
 
 ## 14. References
 
-External sources are kept as one file per reference under [`docs/references/`](./references/). Each file contains: canonical URL, 1-line summary, relevance to MGV, annotated takeaways, key quotations, and cross-references to the MGV section that cites the source. The pattern keeps citations portable (other docs can link to the same notes) and review-friendly (auditors can read a single source without scrolling through prose).
+External sources for this whitepaper are maintained as annotated source notes in the **Mutav research vault** at [`mutav-finance/mutav/research/06-Sources/`](https://github.com/mutav-finance/mutav/tree/main/research/06-Sources). The vault is an Obsidian knowledge base for protocol-wide research (five watch-streams: protocol changes, RWA / tokenization, Stellar / Soroban, Brazil market & regulation, security). Using it as the single source of truth avoids scattering reference notes across repos.
 
-**Standards and specifications:**
-- [`references/erc-4626.md`](./references/erc-4626.md) — ERC4626 Tokenized Vault Standard
-- [`references/sep-41.md`](./references/sep-41.md) — Stellar Token Interface
-- [`references/soroban-storage-tiers.md`](./references/soroban-storage-tiers.md) — Soroban storage tier semantics
-- [`references/soroban-auth.md`](./references/soroban-auth.md) — Soroban authorization model
+When the body of this whitepaper cites a specific source, the citation links cross-repo to that source's vault note. To add a new source, drop the URL into [`mutav/research/99-Inbox/intake.md`](https://github.com/mutav-finance/mutav/blob/main/research/99-Inbox/intake.md) for triage; the procedure is in the [`triage-source` skill](https://github.com/mutav-finance/mutav/blob/main/.claude/skills/triage-source/SKILL.md).
 
-**Audited / production vault designs for comparison:**
-- [`references/enzyme-finance.md`](./references/enzyme-finance.md) — Enzyme Finance protocol (asset-management fund accounting, fee policies, share-token semantics)
-- [`references/yearn-v2.md`](./references/yearn-v2.md) — Yearn V2 vault architecture
-- [`references/morpho-blue.md`](./references/morpho-blue.md) — Morpho Blue minimal-vault primitive
-- [`references/lido-withdrawal-queue.md`](./references/lido-withdrawal-queue.md) — Lido async redemption queue
-- [`references/compound-ctoken.md`](./references/compound-ctoken.md) — Compound cToken exchange-rate model
-- [`references/openzeppelin-stellar-contracts-vault.md`](./references/openzeppelin-stellar-contracts-vault.md) — OpenZeppelin Stellar Contracts vault primitive (when available)
+### Indexed external sources
 
-**Tokenized RWA fund precedents:**
-- [`references/blackrock-buidl.md`](./references/blackrock-buidl.md) — BlackRock USD Institutional Digital Liquidity Fund (first tier-1 tokenized fund)
-- [`references/ondo-finance.md`](./references/ondo-finance.md) — Ondo OUSG + USDY (NAV-appreciating tokenized treasuries)
-- [`references/franklin-onchain-fobxx.md`](./references/franklin-onchain-fobxx.md) — Franklin OnChain US Government Money Fund (Stellar-native, SEC-registered)
-- [`references/maple-finance.md`](./references/maple-finance.md) — Maple Finance on-chain credit pools (capital absorbs credit losses)
-- [`references/centrifuge.md`](./references/centrifuge.md) — Centrifuge tranched RWA pools
-- [`references/onre-finance.md`](./references/onre-finance.md) — Onre Finance (Solana-native RWA tokenization)
+This list is the bibliography *intent* for the whitepaper. Annotated takeaways, quotations, and cross-source relationships live in each source's vault note (filed once triage promotes it to `06-Sources/`).
 
-**On-chain insurance / reinsurance:**
-- [`references/nexus-mutual.md`](./references/nexus-mutual.md) — Nexus Mutual (discretionary on-chain mutual insurance)
-- [`references/etherisc.md`](./references/etherisc.md) — Etherisc (parametric insurance protocol)
-- [`references/ensuro.md`](./references/ensuro.md) — Ensuro (DeFi capital backing off-chain regulated insurance — closest structural precedent)
+**Standards and specifications**
+- [ERC-4626 — Tokenized Vault Standard](https://eips.ethereum.org/EIPS/eip-4626)
+- [SEP-41 — Stellar Token Interface](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0041.md)
+- [Soroban storage tiers](https://developers.stellar.org/docs/build/guides/storage)
+- [Soroban authorization model](https://developers.stellar.org/docs/learn/encyclopedia/security/authorization)
 
-**TradFi async-redemption + gating precedents:**
-- [`references/blackstone-breit-gating.md`](./references/blackstone-breit-gating.md) — Blackstone BREIT gating events (2022–2024)
-- [`references/uk-property-fund-suspensions.md`](./references/uk-property-fund-suspensions.md) — UK open-ended property fund suspensions (2016 / 2019 / 2020)
-- [`references/reserve-primary-fund-breaking-the-buck.md`](./references/reserve-primary-fund-breaking-the-buck.md) — Reserve Primary Fund "breaking the buck" (2008)
+**Audited / production vault designs**
+- [Enzyme Finance](https://docs.enzyme.finance/) — asset-management fund accounting, fee policies, share-token semantics
+- [Yearn V2](https://docs.yearn.fi/developers/v2/specification) — vault architecture, harvest semantics
+- [Morpho Blue](https://docs.morpho.org/morpho/concepts) — minimal-vault primitive
+- [Lido withdrawal queue](https://docs.lido.fi/contracts/withdrawal-queue-erc721) — async redemption queue
+- [Compound cToken](https://docs.compound.finance/v2/ctokens/) — exchange-rate model
+- [OpenZeppelin Stellar Contracts](https://github.com/OpenZeppelin/stellar-contracts) — Soroban-native reference implementations
 
-**NAV accounting conventions (TradFi):**
-- [`references/cfa-alt-investments-reading.md`](./references/cfa-alt-investments-reading.md) — CFA Program Alternative Investments curriculum (NAV / fee mechanics)
-- [`references/aima-hedge-fund-accounting.md`](./references/aima-hedge-fund-accounting.md) — AIMA hedge-fund accounting + fund-administration standards
-- [`references/money-market-constant-nav-history.md`](./references/money-market-constant-nav-history.md) — Money-market constant-NAV vs variable-NAV regulatory history
+**Tokenized RWA fund precedents**
+- [BlackRock BUIDL](https://securitize.io/learn/press/blackrock-launches-first-tokenized-fund-buidl-on-the-ethereum-network) — first tier-1 tokenized fund
+- [Ondo Finance (OUSG / USDY)](https://docs.ondo.finance/) — NAV-appreciating tokenized treasuries
+- [Franklin OnChain US Government Money Fund (FOBXX)](https://www.franklintempleton.com/investments/options/money-market-funds/products/29861/SINGLCLASS/franklin-on-chain-u-s-government-money-fund/FOBXX) — SEC-registered tokenized MMF, runs on Stellar
+- [Maple Finance](https://maplefinance.gitbook.io/maple/) — on-chain credit pools (incl. Orthogonal Trading default 2022)
+- [Centrifuge](https://docs.centrifuge.io/) — tranched RWA pools
+- [Onre Finance](https://onre.io/) — Solana-native RWA tokenization
 
-**Known vault vulnerability literature:**
-- [`references/cream-finance-inflation-incident.md`](./references/cream-finance-inflation-incident.md) — Cream Finance share-inflation incident (Oct 2021)
-- [`references/openzeppelin-virtual-shares.md`](./references/openzeppelin-virtual-shares.md) — OpenZeppelin virtual-shares mitigation analysis
+**On-chain insurance / reinsurance**
+- [Nexus Mutual](https://docs.nexusmutual.io/) — discretionary on-chain mutual insurance
+- [Etherisc](https://docs.etherisc.com/) — parametric insurance protocol
+- [Ensuro](https://ensuro.co/) — DeFi capital backing off-chain regulated insurance (closest structural precedent to MGV)
 
-**Mutav internal references:**
+**TradFi async-redemption + gating precedents**
+- Blackstone BREIT — exit-cap gating events 2022–2024
+- UK open-ended property fund suspensions — 2016 / 2019 / 2020
+- Reserve Primary Fund — "breaking the buck", Sep 2008
+
+**NAV accounting conventions (TradFi)**
+- CFA Program — Alternative Investments curriculum (NAV / fee mechanics)
+- AIMA — hedge-fund accounting + fund-administration standards
+- Money-market constant-NAV vs variable-NAV history — SEC Rule 2a-7 reforms
+
+**Vault vulnerability literature**
+- Cream Finance share-inflation incident (Oct 2021)
+- OpenZeppelin ERC-4626 virtual-shares mitigation analysis
+
+### Internal references (this repo)
+
+These are not migrated to the research vault — they're the implementation-level documentation of the audited surface.
+
 - [`docs/architecture/01-protocol-overview.md`](./architecture/01-protocol-overview.md)
 - [`docs/architecture/02-actors-and-trust.md`](./architecture/02-actors-and-trust.md)
 - [`docs/architecture/03-contract.md`](./architecture/03-contract.md)
