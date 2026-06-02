@@ -15,10 +15,10 @@
     "./soroban/fund": "./src/providers/soroban/fund.ts"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^13.1.0"
+    "@stellar/stellar-sdk": "^15.1.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "typescript": "^5.4.5"
+    "typescript": "^6.0.3"
   }
 }
