@@ -292,6 +292,29 @@ External sources are kept as one file per reference under [`docs/references/`](.
 - [`references/compound-ctoken.md`](./references/compound-ctoken.md) — Compound cToken exchange-rate model
 - [`references/openzeppelin-stellar-contracts-vault.md`](./references/openzeppelin-stellar-contracts-vault.md) — OpenZeppelin Stellar Contracts vault primitive (when available)
 
+**Tokenized RWA fund precedents:**
+- [`references/blackrock-buidl.md`](./references/blackrock-buidl.md) — BlackRock USD Institutional Digital Liquidity Fund (first tier-1 tokenized fund)
+- [`references/ondo-finance.md`](./references/ondo-finance.md) — Ondo OUSG + USDY (NAV-appreciating tokenized treasuries)
+- [`references/franklin-onchain-fobxx.md`](./references/franklin-onchain-fobxx.md) — Franklin OnChain US Government Money Fund (Stellar-native, SEC-registered)
+- [`references/maple-finance.md`](./references/maple-finance.md) — Maple Finance on-chain credit pools (capital absorbs credit losses)
+- [`references/centrifuge.md`](./references/centrifuge.md) — Centrifuge tranched RWA pools
+- [`references/onre-finance.md`](./references/onre-finance.md) — Onre Finance (Solana-native RWA tokenization)
+
+**On-chain insurance / reinsurance:**
+- [`references/nexus-mutual.md`](./references/nexus-mutual.md) — Nexus Mutual (discretionary on-chain mutual insurance)
+- [`references/etherisc.md`](./references/etherisc.md) — Etherisc (parametric insurance protocol)
+- [`references/ensuro.md`](./references/ensuro.md) — Ensuro (DeFi capital backing off-chain regulated insurance — closest structural precedent)
+
+**TradFi async-redemption + gating precedents:**
+- [`references/blackstone-breit-gating.md`](./references/blackstone-breit-gating.md) — Blackstone BREIT gating events (2022–2024)
+- [`references/uk-property-fund-suspensions.md`](./references/uk-property-fund-suspensions.md) — UK open-ended property fund suspensions (2016 / 2019 / 2020)
+- [`references/reserve-primary-fund-breaking-the-buck.md`](./references/reserve-primary-fund-breaking-the-buck.md) — Reserve Primary Fund "breaking the buck" (2008)
+
+**NAV accounting conventions (TradFi):**
+- [`references/cfa-alt-investments-reading.md`](./references/cfa-alt-investments-reading.md) — CFA Program Alternative Investments curriculum (NAV / fee mechanics)
+- [`references/aima-hedge-fund-accounting.md`](./references/aima-hedge-fund-accounting.md) — AIMA hedge-fund accounting + fund-administration standards
+- [`references/money-market-constant-nav-history.md`](./references/money-market-constant-nav-history.md) — Money-market constant-NAV vs variable-NAV regulatory history
+
 **Known vault vulnerability literature:**
 - [`references/cream-finance-inflation-incident.md`](./references/cream-finance-inflation-incident.md) — Cream Finance share-inflation incident (Oct 2021)
 - [`references/openzeppelin-virtual-shares.md`](./references/openzeppelin-virtual-shares.md) — OpenZeppelin virtual-shares mitigation analysis
