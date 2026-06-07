@@ -5,7 +5,7 @@
 > **Audience:** Technical reviewers, security auditors, Soroban contributors. Reading-time target ≈ 60 minutes. Assumes Stellar / Soroban literacy; assumes ERC4626-style vault familiarity.
 >
 > **Companion documents:**
-> - Business / GTM / legal entity structure: [`mutav/docs/whitepaper.md`](https://github.com/mutav-finance/mutav/blob/main/docs/whitepaper.md)
+> - Business / GTM / legal entity structure: [`mutav/docs/mutav-whitepaper.en.md`](https://github.com/mutav-finance/mutav/blob/main/docs/mutav-whitepaper.en.md)
 > - Actors and trust model: [`docs/architecture/02-actors-and-trust.md`](./architecture/02-actors-and-trust.md)
 > - Canonical flows: [`docs/architecture/06-canonical-flows.md`](./architecture/06-canonical-flows.md)
 > - Money flow diagram: [`docs/architecture/diagrams/money-flow.md`](./architecture/diagrams/money-flow.md)
@@ -41,7 +41,7 @@ A one-paragraph formal definition of MGV: a single Soroban contract implementing
 - Anchor flows (USDC ↔ TESOURO via Etherfuse) → off-chain Stellar Classic transactions
 - Tranche composition / waterfall absorption between multiple vault instances → GTM layer
 - Multi-chain implementations (`mutav-solana`) → parallel design, not specified here
-- Legal entity structure (Mutav Soluções, Treasury Fund, Treasury Management) → [`mutav/docs/whitepaper.md`](https://github.com/mutav-finance/mutav/blob/main/docs/whitepaper.md)
+- Legal entity structure (Mutav Soluções, Treasury Fund, Treasury Management) → [`mutav/docs/mutav-whitepaper.en.md`](https://github.com/mutav-finance/mutav/blob/main/docs/mutav-whitepaper.en.md)
 - Operator-runtime key custody (KMS-backed Convex Actions) → [`docs/specs/2026-05-31-operator-key-runbook-design.md`](./specs/2026-05-31-operator-key-runbook-design.md)
 
 ---
