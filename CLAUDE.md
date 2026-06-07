@@ -9,7 +9,7 @@ This is the **Stellar protocol layer** for MUTAV: the `Fund` Soroban contract pl
 
 ## Research knowledge base (lives in `mutav`)
 
-Protocol-wide continuous research lives in the sibling [`mutav`](https://github.com/mutav-finance/mutav) repo as an Obsidian vault at `mutav/research/` — five watch-streams (internal protocol changes, RWA/tokenization, Stellar/Soroban, Brazil market & regulation, security) with a daily auto-update. **Don't scatter research notes in this repo.** To add a source/reference (papers, audits, exploit write-ups, peer protocols), drop it in `../mutav/research/99-Inbox/intake.md` for triage — procedure in the `triage-source` skill at `../mutav/.claude/skills/`.
+Protocol-wide continuous research lives in the sibling [`mutav`](https://github.com/mutav-finance/mutav) repo as an Obsidian vault at `mutav/research/` — six watch-streams (internal protocol changes, RWA/tokenization, Stellar/Soroban, Brazil market & regulation, security vulnerabilities, security governance / certifications) with a daily auto-update. **Don't scatter research notes in this repo.** To add a source/reference (papers, audits, exploit write-ups, peer protocols), drop it in `../mutav/research/99-Inbox/intake.md` for triage — procedure in the `triage-source` skill at `../mutav/.claude/skills/`.
 
 Scope of this repo:
 - **Rust contract** (`contracts/`) — Soroban `Fund`. Audit-gated, slow cadence; the smallest changeable thing.
@@ -40,8 +40,8 @@ git clone https://github.com/mutav-finance/mutav.git ../mutav
 ```
 
 Key files:
-- `../mutav/docs/whitepaper.md` — protocol design and architecture
-- `../mutav/docs/pitch-deck.md` — positioning and market context
+- `../mutav/docs/mutav-whitepaper.en.md` — protocol design and architecture (Portuguese mirror at `mutav-whitepaper.pt-br.md`; v1 fund whitepaper archived as `mutav-fund-whitepaper-archive.en.md`)
+- `../mutav/docs/pitch-narrative.md` — positioning and market narrative
 - `../mutav/JURY.md` — evaluation criteria
 
 If the sibling repo is not cloned locally, fetch files directly:
