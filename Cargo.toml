@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "contracts/fund",
+    "contracts/stage1/reserve_vault",
+    "contracts/stage2/fund",
 ]
 resolver = "2"
 

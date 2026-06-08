@@ -4,9 +4,9 @@
 
 Run `cargo fmt --all -- --check` and `cargo clippy --all-targets --all-features -- -D warnings` before pushing. CI runs both and will fail PRs that drift.
 
-Storage tiers in Soroban are tier-distinct: `instance`, `persistent`, `temporary`. TTL semantics differ — `temporary` entries vanish at expiry; `persistent` entries can be revived via `extend_ttl`. Check `contracts/fund/src/lib.rs:33` for the active storage key catalog before adding new ones.
+Storage tiers in Soroban are tier-distinct: `instance`, `persistent`, `temporary`. TTL semantics differ — `temporary` entries vanish at expiry; `persistent` entries can be revived via `extend_ttl`. Check `contracts/stage2/fund/src/lib.rs:33` for the active storage key catalog before adding new ones.
 
-The contract is the audited surface. Match its existing conventions; new patterns need a reason.
+Contracts are split by whitepaper stage. `contracts/stage1/` holds the pilot-stage surface (reserve vault + SAC-wrapped collateral token; see `contracts/stage1/README.md`). `contracts/stage2/` holds the outside-investor fund vault. The contracts are the audited surface. Match existing conventions; new patterns need a reason.
 
 <!-- END:soroban-agent-rules -->
 

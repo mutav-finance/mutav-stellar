@@ -1,6 +1,6 @@
 # 03 — The `Fund` smart contract
 
-`contracts/fund/src/lib.rs` (2,817 LOC). The Soroban (Rust) **smart contract** that is the on-chain heart of the protocol. Implements the SEP-0041 token interface plus fund-specific logic for partner payments, investor deposits, yield, fees, redemption queue, and default coverage.
+`contracts/stage2/fund/src/lib.rs` (2,817 LOC). The Soroban (Rust) **smart contract** that is the Stage-2 outside-investor fund vault per whitepaper §6/§7 (see also [`01-protocol-overview.md`](./01-protocol-overview.md)). Implements the SEP-0041 token interface plus fund-specific logic for partner payments, investor deposits, yield, fees, redemption queue, and default coverage. The Stage-1 pilot surface (reserve vault + SAC-wrapped collateral token per whitepaper §5) is scaffolded separately under [`contracts/stage1/`](../../contracts/stage1/).
 
 > **Note on naming**: in this repo "contract" means this smart contract. On `mutav-app` the same word refers to **rental contracts** (lease agreements between agencies and tenants) — see [`01-protocol-overview.md#terminology`](./01-protocol-overview.md#terminology). They are unrelated.
 

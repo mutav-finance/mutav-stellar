@@ -103,7 +103,7 @@ Three inflow paths that credit AUM and may or may not mint shares.
 
 Per-call cap (`max_aum_increase_bps`) protection model. What per-period rolling caps would add (open question for §13).
 
-> **Note:** `record_deposit` replaces the current `deposit_investor` after the payment-system split (open decision §13a). Until that ships, the operative entrypoint is `deposit_investor` with identical semantics modulo the inflow-side accounting; see [`contracts/fund/src/lib.rs:503`](../contracts/fund/src/lib.rs).
+> **Note:** `record_deposit` replaces the current `deposit_investor` after the payment-system split (open decision §13a). Until that ships, the operative entrypoint is `deposit_investor` with identical semantics modulo the inflow-side accounting; see [`contracts/stage2/fund/src/lib.rs:503`](../contracts/stage2/fund/src/lib.rs).
 
 ---
 
@@ -143,7 +143,7 @@ Formal model of the three-phase redemption cycle.
 - Restores shares to investor, credits AUM back
 - Removes `ReadyRedemption`
 
-**Resource-budget derivation for `MAX_QUEUE_BATCH = 40`.** Reproduce the inline analysis at [`contracts/fund/src/lib.rs:14–31`](../contracts/fund/src/lib.rs) — Soroban read footprint (100 entries: 14 overhead + 86 / 2 per examined = 43, rounded to 40); write footprint (50 entries: 3p + (40−p) + 7 ≤ 50 → p ≤ 1 with full queue).
+**Resource-budget derivation for `MAX_QUEUE_BATCH = 40`.** Reproduce the inline analysis at [`contracts/stage2/fund/src/lib.rs:14–31`](../contracts/stage2/fund/src/lib.rs) — Soroban read footprint (100 entries: 14 overhead + 86 / 2 per examined = 43, rounded to 40); write footprint (50 entries: 3p + (40−p) + 7 ≤ 50 → p ≤ 1 with full queue).
 
 ---
 
@@ -335,7 +335,7 @@ These are not migrated to the research vault — they're the implementation-leve
 - [`docs/architecture/06-canonical-flows.md`](./architecture/06-canonical-flows.md)
 - [`docs/architecture/diagrams/money-flow.md`](./architecture/diagrams/money-flow.md)
 - [`docs/specs/2026-05-31-operator-key-runbook-design.md`](./specs/2026-05-31-operator-key-runbook-design.md)
-- [`contracts/fund/src/lib.rs`](../contracts/fund/src/lib.rs) — the audited source
+- [`contracts/stage2/fund/src/lib.rs`](../contracts/stage2/fund/src/lib.rs) — the audited source
 
 ---
 
