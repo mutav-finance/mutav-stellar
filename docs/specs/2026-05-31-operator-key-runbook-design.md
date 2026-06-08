@@ -10,6 +10,10 @@
 
 [`#41`](https://github.com/mutav-finance/mutav-stellar/issues/41) is the open ask for a key-custody runbook. The full issue spans admin (cold) storage, operator (hot) custody, rotation, incident, and mainnet bootstrap ceremony. **This spec covers the operator-key surface only** — the foundational document the 6 Convex Action implementations refer to when they get built. Admin cold storage (HW wallet inside `mutav-app/apps/admin/`) and the mainnet bootstrap ceremony are deferred to their own specs.
 
+For the broader vulnerability-response loop that decides severity, containment,
+patch staging, disclosure timing, and cross-repo coordination, see
+[`docs/security/incident-response.md`](../security/incident-response.md).
+
 The [ADR's Q4](../architecture/decisions/2026-05-30-daemon-prs-orphan-verdict.md) locked a hybrid operator-key strategy: shared key for low-risk renewal crons (heartbeat, ttl-watchdog), per-Action scoped keys for AUM-touching Actions (on-ramp, off-ramp, yield-sync, mgmt-fee). This spec captures the principle and defers the concrete per-Action mechanism to each Action's implementation spec — that question intersects each Action's specific authority surface and is better answered when those Actions are designed.
 
 ## Goal
