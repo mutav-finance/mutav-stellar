@@ -1,6 +1,6 @@
 # Stage-1 reserve vault — design
 
-**Date:** 2026-06-08 (last revised: 2026-06-09)
+**Date:** 2026-06-08 (last revised: 2026-06-09 — refactored to per-asset caps; denomination + rate table dropped)
 **Branch:** `docs/stage1-reserve-vault-design`
 **Status:** Draft for brainstorm review. All locked decisions from the 2026-06-09 design session folded in.
 **Target crate:** [`contracts/stage1/reserve_vault/`](../../contracts/stage1/reserve_vault/) (stub already on `main` per [#95](https://github.com/mutav-finance/mutav-stellar/pull/95)).
@@ -15,10 +15,10 @@ This spec covers **only the on-chain vault and its management**. Out of scope: t
 
 What this contract is:
 
-- A **custodial holder** of a Mutav-admin-managed allowlist of SEP-41 token balances. Always at least USDC + TESOURO at pilot start; admin may add other BRL-yield assets later (BRS, BRLV) without contract upgrade.
+- A **custodial holder** of a Mutav-admin-managed allowlist of SEP-41 token balances. Always at least USDC + TESOURO at pilot start; admin may add other BRL-yield assets later (BRS, BRLV) without contract upgrade. Each approved asset carries its own per-item `pay_default` ceiling (set when added).
 - An **event ledger** for inbound capital arrivals, operator-driven swaps between approved assets, and admin-driven default-payouts to agencies — every state transition replay-guarded by a Stellar tx-hash key and emitted as a Soroban event for off-chain reconciliation against the Mutav-app Convex backend.
-- A **drain-defense surface** via `pay_default` — admin-only authority, 24h timelock, per-item max enforced at propose, batch DoS caps. No per-period rolling cap at the pilot (deliberately simplified — see §Simplifications).
-- A **public verifier surface** via raw per-asset balance + rate views, so the whitepaper §5.4.3 transparency recipe is executable from chain state alone. The denomination-equivalent sum is computed *off-chain* by the consumer using the contract's exposed inputs — the contract does no rate math in views.
+- A **drain-defense surface** via `pay_default` — admin-only authority, 24h timelock (with 1h minimum floor), per-asset per-item max enforced at propose, batch DoS caps. No per-period rolling cap (deliberately simplified — see §Simplifications).
+- A **public verifier surface** via raw per-asset balance views. Valuation math (cross-asset rates, denomination totals, K ratio) lives **entirely off-chain** in the Convex transparency portal. The contract claims no unit of account; it just exposes balances and pending-swap value per asset.
 
 What this contract is **not**:
 
@@ -34,8 +34,8 @@ This separation matches whitepaper §5.5's authority table: the audited surface 
 
 | Authority | Who | What they can do here |
 |---|---|---|
-| **Admin** (governance multisig) | OpenZeppelin Smart Account contract instance, 3-of-5 passkey threshold (Mutav admin team members each register a passkey); managed via `mutav-app/apps/admin/` dashboard with Smart Account Kit SDK | `initialize`, `set_*` (all knobs), allowlist `add` / `remove` (both assets and outbound destinations), `set_denomination_asset`, propose / execute / cancel `pay_default`, `propose_admin` / `accept_admin`, `set_paused`, `cancel_pending_swap` |
-| **Operator** (KMS-backed) | Stellar keypair held in Convex Action KMS on `mutav-app`; invoked with short-lived OIDC credentials per per-action policy. **Outbound destinations are constrained on-chain to an admin-managed allowlist** — operator cannot transfer value out of the vault to any other Address. | `record_capital_receipt`, `operator_outbound` (destination in allowlist only), `record_swap_in`, `set_asset_rate`, `publish_snapshot`, `extend_ttl` |
+| **Admin** (governance multisig) | OpenZeppelin Smart Account contract instance, 3-of-5 passkey threshold (Mutav admin team members each register a passkey); managed via `mutav-app/apps/admin/` dashboard with Smart Account Kit SDK | `initialize`, `set_*` (all knobs), allowlist `add` / `remove` (both assets-with-caps and outbound destinations), propose / execute / cancel `pay_default`, `propose_admin` / `accept_admin`, `set_paused`, `cancel_pending_swap` |
+| **Operator** (KMS-backed) | Stellar keypair held in Convex Action KMS on `mutav-app`; invoked with short-lived OIDC credentials per per-action policy. **Outbound destinations are constrained on-chain to an admin-managed allowlist** — operator cannot transfer value out of the vault to any other Address. | `record_capital_receipt`, `operator_outbound` (destination in allowlist only), `record_swap_in`, `publish_snapshot`, `extend_ttl` |
 | **Public verifier** | Anyone with a Stellar RPC | All views; permissionless TTL extension on audit-anchor entries |
 | **Pre-seed wallet / reserve-allocation wallet** | External Mutav-controlled accounts | Send USDC into the contract via plain SEP-41 transfer; the operator then calls `record_capital_receipt` to log the arrival with a tx-hash replay guard |
 
@@ -73,7 +73,7 @@ Each item below is an explicit reading of §5 + the research vault that the cont
 3. **Operator drives Etherfuse from outside** (founder decision 2026-06-08). The contract never calls `mintBond` / `redeemBonds`. It records before-state and after-state via paired operator entry points: a subscription is one `operator_outbound(YieldAssetSubscription, ...)` + one `record_swap_in(TESOURO, ...)`; a redemption is the inverse.
 4. **The 80/20 split is off-chain at the PSP** (whitepaper §5.3 architectural preference; *not* a regulatory necessity since the guarantee fee is Mutav's own money per §5.3). The vault sees only the 80% reserve portion arriving — never the full charge. No on-chain splitting.
 5. **One contract instance = one reserve** (§5.4.1). Multiple parallel funds (per-tenant-class, per-region) are a Stage-2/3 concern. No multi-vault accounting here.
-6. **Per-asset rates are operator-attested, not on-chain-derived** (§5.4.3). Stage 1 has no on-chain oracle for Selic or for TESOURO. The contract stores the operator's last-attested rate per asset with a `set_at` timestamp and a `valid_until` window. Rate math happens *off-chain* in the transparency portal — the contract exposes raw per-asset balances + raw per-asset rate attestations and lets the consumer multiply. The denomination asset (USDC at pilot) has implicit rate 1:1 and no rate storage.
+6. **Per-asset rates and denomination math live entirely off-chain** (§5.4.3). The contract knows about balances, pending-swap value, and per-asset payment caps — nothing about rates or what assets are worth in terms of other assets. Mutav's transparency portal fetches rates from Etherfuse / oracles directly and computes the denominated reserve total + K ratio. This removes ~80 lines of contract surface and an operator-rate-staleness failure mode while keeping the §5.4.3 transparency story identical (portal does the math; chain provides truth).
 7. **Replay protection** uses a mix of temporary and persistent storage:
    - **Operator tx-hashes** (capital receipts, outbounds, swap-ins): `SeenTxHash(BytesN<32>)` in temporary storage with ~7-day TTL — bounded operator-runtime cursor lag protection.
    - **PendingSwap records**: persistent storage keyed by `op_tx_hash` — tracks in-flight value during operator-driven swap-out/swap-in cycles so transparency portal can show "in operation" alongside "custodied."
@@ -101,7 +101,7 @@ All other earlier gaps (G2 rate source, G7 snapshot signature, G8 cadence enforc
 
 ## Goals
 
-1. **The whitepaper §5.4.3 transparency recipe is executable from chain state alone.** A third party with a Stellar RPC + this contract's address + the Convex-side guarantee registry can compute reserve adequacy K with no off-chain trust assumption beyond the operator-attested per-asset rates (which they can sanity-check against independent oracles).
+1. **The whitepaper §5.4.3 transparency recipe is executable from chain state alone + external rate sources.** A third party with a Stellar RPC + this contract's address + the Convex-side guarantee registry + any rate oracle (Etherfuse, public DEX) can compute reserve adequacy K. The contract claims no unit of account; consumers pick whichever they want.
 2. **`pay_default` is admin-gated, batched, timelocked, per-item-bounded** so a compromised admin key cannot drain the reserve in a single tx and admin operators can settle ~30 monthly defaults across ~50-item batches with bounded HW-wallet bandwidth.
 3. **Every state transition is replay-guarded and event-emitting** so the on-chain log + off-chain accounting can be reconciled deterministically.
 4. **The audit surface is small.** No share-token / NAV / queue logic. The contract holds balances, gates writes, and emits events. No OpenZeppelin runtime dependency (their crate is explicitly experimental). Target: under 800 lines of Rust including tests setup, well under 500 in the contract itself.
@@ -112,8 +112,8 @@ All other earlier gaps (G2 rate source, G7 snapshot signature, G8 cadence enforc
 
 1. **No share token, no NAV math.** Stage 1 has no investors. The §7.2 wrapper-as-actor evolution path arrives later; this contract is not it.
 2. **No automated Etherfuse interaction.** Per the operator-managed-trading scoping. If we later want the contract to call `mintBond` directly, that's a separate spec.
-3. **No on-chain rate oracle.** Per-asset rates are operator-attested; Stage 1 doesn't have a price-feed dependency.
-4. **No on-chain `total_assets()` computed sum.** Raw per-asset views only; consumer does the rate math off-chain.
+3. **No on-chain rate table or denomination concept.** The vault knows balances and per-asset payment caps — nothing about cross-asset valuation. The transparency portal fetches rates from external sources and computes denominated totals + K ratio.
+4. **No on-chain `total_assets()` computed sum.** Raw per-asset views only; consumer applies valuation off-chain.
 5. **No on-chain 20/80 payment split.** Split happens at the licensed sub-adquirente, off-chain.
 6. **No per-period `pay_default` cap at the pilot.** Per-item max + per-batch item cap + queue cap + 24h timelock + admin pause are the drain-defense stack. Per-period rolling cap is a Phase 2 addition if needed.
 7. **No on-chain replay-guard at the per-(guarantee, month) granularity.** Mutav-app's pay_default UX + Convex reconciliation are the gates against accidental double-pay. Phase 2 may add this back if scale demands.
@@ -134,25 +134,24 @@ enum DataKey {
     PendingAdmin,                       // Address (two-step handover)
     Paused,                             // bool
 
-    // asset model
+    // asset allowlist
     ApprovedAssets,                     // Vec<Address>; size ≤ 8
-    DenominationAsset,                  // Address; must be in ApprovedAssets
+    PayDefaultMaxItemValue(Address),    // i128 per-asset, native stroops — set when asset added
 
-    // destination allowlist (operator_outbound destination must be in this set)
+    // destination allowlist
     AllowedOutboundDestinations,        // Vec<Address>; size ≤ 16
 
-    // pay_default config (all admin-settable)
-    PayDefaultMaxItemValue,             // i128, denomination stroops
-    PayDefaultTimelockSecs,             // u64
+    // pay_default config (admin-settable)
+    PayDefaultTimelockSecs,             // u64 (min 3600 / 1h enforced)
     MaxItemsPerBatch,                   // u32
     MaxPendingProposals,                // u32
-
-    // rate config
-    MaxRateStalenessSecs,               // u64
 
     // pending pay_default queue
     NextProposalId,                     // u64
     PendingProposalsCount,              // u32 (cheap counter for max_pending_proposals check)
+
+    // per-asset in-flight aggregate (maintained on outbound / swap-in / cancel-swap)
+    PendingOutboundTotal(Address),      // i128
 }
 ```
 
@@ -160,9 +159,8 @@ Persistent storage (per-key TTL-extended; audit anchors):
 
 ```rust
 enum DataKey {
-    AssetRate(Address),                 // RateRecord { rate, set_at, valid_until, source_proof_hash }
-    PendingSwap(BytesN<32>),            // PendingSwapRecord { asset_out, amount_out, initiated_at, kind } keyed by op_tx_hash
-    PendingPayDefault(u64),             // PayDefaultProposalRecord { items, propose_ts, executable_after_ts }
+    PendingSwap(BytesN<32>),            // PendingSwapRecord, keyed by op_tx_hash
+    PendingPayDefault(u64),             // PayDefaultProposalRecord, keyed by proposal_id
 }
 ```
 
@@ -170,7 +168,7 @@ Temporary storage (cheaper; non-restorable; bounded TTL):
 
 ```rust
 enum DataKey {
-    SeenTxHash(BytesN<32>),             // 7-day rolling replay guard for operator outbound hashes
+    SeenTxHash(BytesN<32>),             // 7-day rolling replay guard for operator tx-hashes
 }
 ```
 
@@ -184,14 +182,6 @@ struct PayDefaultItem {
     destination: Address,               // agency Stellar wallet
     guarantee_contract_hash: BytesN<32>,
     covered_month: u32,                 // YYYYMM
-}
-
-#[contracttype]
-struct RateRecord {
-    rate: i128,                         // stroop-precision per-denomination rate
-    set_at: u64,
-    valid_until: u64,
-    source_proof_hash: BytesN<32>,
 }
 
 #[contracttype]
@@ -216,7 +206,9 @@ enum OutboundKind {
 }
 ```
 
-Storage tier rationale follows the verified Stellar primitive guidance (see §Verified Stellar primitives): instance for governance + currently-rolling counters; persistent for long-lived audit anchors that must outlast quiet operator periods; temporary for hot 7-day-rolling replay guards.
+**No `RateRecord`, no `DenominationAsset` slot, no `MaxRateStalenessSecs`.** Each approved asset's cap is independent and admin-set; valuation across assets happens off-chain.
+
+Storage tier rationale follows the verified Stellar primitive guidance (see §Verified Stellar primitives): instance for governance + currently-rolling counters; persistent for long-lived audit anchors; temporary for hot 7-day-rolling replay guards.
 
 ## Entry points
 
@@ -225,40 +217,32 @@ Storage tier rationale follows the verified Stellar primitive guidance (see §Ve
 ```rust
 fn initialize(
     e: Env,
-    admin: Address,                                          // OZ Smart Account contract address (3-of-5 passkey multisig)
-    operator: Address,                                       // Stellar keypair backed by Convex Action KMS
-    initial_approved_assets: Vec<Address>,                   // must contain denomination_asset; size ≤ 8
-    denomination_asset: Address,
-    initial_allowed_outbound_destinations: Vec<Address>,     // Mutav operator wallet(s) + Etherfuse-routing addresses; size ≤ 16
-    pay_default_max_item_value: i128,
-    pay_default_timelock_secs: u64,
-    max_items_per_batch: u32,
-    max_pending_proposals: u32,
-    max_rate_staleness_secs: u64,
+    admin: Address,                                  // OZ Smart Account contract address (3-of-5 passkey multisig)
+    operator: Address,                               // Stellar keypair backed by Convex Action KMS
+    initial_allowed_destinations: Vec<Address>,      // Mutav operator wallet(s); size ≤ 16
+    pay_default_timelock_secs: u64,                  // ≥ MIN_TIMELOCK_SECS (3600 = 1h)
+    max_items_per_batch: u32,                        // 1..=200
+    max_pending_proposals: u32,                      // 1..=1000
 );
 
 fn set_operator(e: Env, new_operator: Address);
 fn set_paused(e: Env, paused: bool);
 fn propose_admin(e: Env, new_admin: Address);
-fn accept_admin(e: Env);                       // called by pending admin
+fn accept_admin(e: Env);                             // called by pending admin
 
-// asset allowlist
-fn add_approved_asset(e: Env, asset: Address);                              // ≤8 total
-fn remove_approved_asset(e: Env, asset: Address);                           // balance must be 0; cannot remove denomination
-fn set_denomination_asset(e: Env, new_denomination: Address);               // must be in allowlist; wipes rate table (depeg response)
+// asset allowlist (each asset carries its own pay_default per-item cap)
+fn add_approved_asset(e: Env, asset: Address, max_item_value: i128); // ≤8 total; max > 0
+fn remove_approved_asset(e: Env, asset: Address);                    // balance must be 0
+fn set_pay_default_max_item_value(e: Env, asset: Address, value: i128); // per-asset
 
 // outbound destination allowlist
-fn add_allowed_outbound_destination(e: Env, addr: Address);                 // ≤16 total
-fn remove_allowed_outbound_destination(e: Env, addr: Address);              // no balance check; just removes
+fn add_allowed_destination(e: Env, addr: Address);              // ≤16 total
+fn remove_allowed_destination(e: Env, addr: Address);
 
 // pay_default config
-fn set_pay_default_max_item_value(e: Env, value: i128);                     // > 0
-fn set_pay_default_timelock_secs(e: Env, secs: u64);                        // > 0
-fn set_max_items_per_batch(e: Env, value: u32);                             // 1..=200
-fn set_max_pending_proposals(e: Env, value: u32);                           // 1..=1000
-
-// rate config
-fn set_max_rate_staleness_secs(e: Env, secs: u64);                          // > 0
+fn set_pay_default_timelock_secs(e: Env, secs: u64);            // ≥ MIN_TIMELOCK_SECS
+fn set_max_items_per_batch(e: Env, value: u32);                 // 1..=200
+fn set_max_pending_proposals(e: Env, value: u32);               // 1..=1000
 
 // pay_default lifecycle
 fn propose_pay_default(e: Env, items: Vec<PayDefaultItem>) -> u64;
@@ -267,7 +251,7 @@ fn cancel_pay_default(e: Env, proposal_id: u64);
 
 // housekeeping
 fn cancel_pending_swap(e: Env, op_tx_hash: BytesN<32>, justification_hash: BytesN<32>);
-// sweep_unknown_token deferred to Phase 2 — Phase 1 vault doesn't need this surface; admin can add via contract upgrade if needed
+// sweep_unknown_token deferred to Phase 2.
 ```
 
 ### Operator capital + swap routing
@@ -312,31 +296,19 @@ fn record_swap_in(
 );
 ```
 
-### Operator rate + snapshot publication
+### Operator snapshot publication
 
 ```rust
-/// Operator updates the per-asset rate-to-denomination attestation. Denomination asset's rate
-/// is implicit 1:1 and not settable. Emits `rate_set(asset, rate, valid_until, source_proof_hash)`.
-fn set_asset_rate(
-    e: Env,
-    asset: Address,                     // must be in approved_assets and != denomination_asset
-    rate: i128,
-    source_proof_hash: BytesN<32>,
-    valid_until: u64,
-);
-
-/// Publish a snapshot. Reads each approved asset's balance + pending-swap-value + rate
-/// attestation, emits a structured event for the transparency portal. Operator-authenticated;
-/// no admin signature payload (Phase 1 simple version).
+/// Publish a snapshot. Reads each approved asset's balance + pending-swap-value,
+/// emits a structured event for the transparency portal. Operator-authenticated.
+/// Valuation (rate math, denomination total, K ratio) happens off-chain.
 fn publish_snapshot(e: Env);
 ```
 
-### TTL maintenance (permissionless where it serves audit longevity)
+### TTL maintenance
 
 ```rust
 fn extend_ttl(e: Env);                                      // operator: instance storage bump
-fn extend_pay_default_proposal_ttl(e: Env, proposal_id: u64);  // permissionless
-fn extend_pending_swap_ttl(e: Env, op_tx_hash: BytesN<32>);    // permissionless
 ```
 
 ### Views (all read-only; no auth)
@@ -348,33 +320,26 @@ fn pending_admin(e: Env) -> Option<Address>;
 fn paused(e: Env) -> bool;
 
 fn approved_assets(e: Env) -> Vec<Address>;
-fn denomination_asset(e: Env) -> Address;
 fn is_approved_asset(e: Env, asset: Address) -> bool;
+fn pay_default_max_item_value(e: Env, asset: Address) -> i128;       // per-asset cap
 
-fn allowed_outbound_destinations(e: Env) -> Vec<Address>;
-fn is_outbound_destination_allowed(e: Env, addr: Address) -> bool;
+fn allowed_destinations(e: Env) -> Vec<Address>;
+fn is_destination_allowed(e: Env, addr: Address) -> bool;
 
-// per-asset (raw chain truth; consumer does rate math)
+// per-asset chain truth
 fn balance(e: Env, asset: Address) -> i128;                          // reads SEP-41 token::balance(self)
 fn pending_swap_value(e: Env, asset: Address) -> i128;               // sum of PendingSwap entries with asset_out == asset
 fn total_balance(e: Env, asset: Address) -> i128;                    // balance + pending_swap_value
 
-fn asset_rate(e: Env, asset: Address) -> Option<RateRecord>;         // None for denomination asset
-fn asset_rate_is_stale(e: Env, asset: Address, now: u64) -> bool;    // helper
-
 // pay_default
-fn pay_default_max_item_value(e: Env) -> i128;
 fn pay_default_timelock_secs(e: Env) -> u64;
 fn max_items_per_batch(e: Env) -> u32;
 fn max_pending_proposals(e: Env) -> u32;
 fn pending_proposals_count(e: Env) -> u32;
 fn get_pay_default_proposal(e: Env, proposal_id: u64) -> Option<PayDefaultProposalRecord>;
-
-// rate
-fn max_rate_staleness_secs(e: Env) -> u64;
 ```
 
-The contract intentionally does **not** expose a `total_assets()` view that multiplies balances by rates. Consumers (transparency portal, SDK readers) compute denomination-equivalent totals off-chain from `balance + pending_swap_value + rate` per asset, applying whatever staleness/haircut policy they prefer.
+The contract intentionally does **not** expose a `total_assets()` view nor any rate-related machinery. Consumers (transparency portal, SDK readers) fetch rates from external sources (Etherfuse, oracles) and compute denominated totals + K ratio off-chain. The contract only claims what it can verify: balances and pending in-flight value.
 
 ## Events
 
@@ -382,17 +347,17 @@ Each state-changing entry point emits exactly one Soroban event. Topics use `sym
 
 | Symbol | Data tuple | Emitted by |
 |---|---|---|
-| `capital_in` | `(source, asset, amount, src_tx_hash)` | `record_capital_receipt` |
+| `cap_in` | `(source, asset, amount, src_tx_hash)` | `record_capital_receipt` |
 | `outbound` | `(kind, asset, amount, destination, op_tx_hash)` | `operator_outbound` |
-| `swap_in` | `(asset_in, amount_in, paired_outbound_ref, in_tx_hash)` | `record_swap_in` |
-| `rate_set` | `(asset, rate, valid_until, source_proof_hash)` | `set_asset_rate` |
-| `snapshot` | `(per_asset: Vec<(asset, balance, pending_outbound, rate, set_at)>, published_at)` | `publish_snapshot` |
+| `swap_in` | `(asset_in, amount_in, paired_outbound_ref, asset_out, amount_out)` | `record_swap_in` |
+| `snapshot` | `(per_asset: Vec<(asset, balance, pending_outbound)>, published_at)` | `publish_snapshot` |
 | `pay_prop` | `(id, item_count, executable_after_ts, items: Vec<(asset, amount, dest, guarantee_hash, covered_month)>)` | `propose_pay_default` |
 | `pay_exec` | `(id, item_count, items: Vec<(asset, amount, dest, guarantee_hash, covered_month)>)` | `execute_pay_default` |
 | `pay_cncl` | `(id,)` | `cancel_pay_default` |
-| `asset_add` / `asset_rm` | `(asset,)` | asset allowlist management |
-| `dest_add` / `dest_rm` | `(addr,)` | outbound destination allowlist management |
-| `denom_set` | `(old, new)` | `set_denomination_asset` |
+| `asset_add` | `(asset, max_item_value)` | `add_approved_asset` (cap included) |
+| `asset_rm` | `(asset,)` | `remove_approved_asset` |
+| `dest_add` / `dest_rm` | `(addr,)` | destination allowlist management |
+| `set_pmax` | `(asset, value)` | `set_pay_default_max_item_value` (per-asset) |
 | `swap_cncl` | `(op_tx_hash, justification_hash)` | `cancel_pending_swap` |
 | `set_paus` / `set_op` / `prop_adm` / `acc_adm` / `set_*` (config setters) | standard `(value,)` | each governance setter |
 
@@ -401,24 +366,22 @@ The `pay_prop` and `pay_exec` events carry **per-item detail** (asset, amount, d
 ## Invariants (must always hold)
 
 1. `balance(asset) >= 0` for any approved asset — trivially true since SEP-41 balances are non-negative.
-2. `denomination_asset ∈ approved_assets` — enforced at `initialize` and at every `add` / `remove` / `set_denomination_asset` mutation.
+2. `pay_default_max_item_value(asset)` is set whenever `asset ∈ approved_assets` and removed when the asset is removed.
 3. `pay_default` is the **only entry point that decrements the reserve to a non-Mutav-controlled address**. `operator_outbound` decrements but its `destination` must be in `AllowedOutboundDestinations` (typically Mutav-controlled operator wallet) and pairs with `record_swap_in` so reserve stays in vault custody via the swap result; `cancel_pending_swap` does not transfer.
-4. Every `PayDefaultItem` at propose time satisfies: `item.asset ∈ approved_assets` AND `item.amount * rate(item.asset) <= pay_default_max_item_value`. For denomination asset, rate is implicit 1:1.
+4. Every `PayDefaultItem` at propose time satisfies: `item.asset ∈ approved_assets` AND `item.amount <= pay_default_max_item_value(item.asset)`. Per-asset cap; no cross-asset conversion.
 5. `execute_pay_default` requires `now >= proposal.executable_after_ts`. No bypass.
-6. `paused == true` blocks: `record_capital_receipt`, `operator_outbound`, `record_swap_in`, `set_asset_rate`, `propose_pay_default`, `execute_pay_default`. Does **not** block: `cancel_pay_default`, `cancel_pending_swap`, `publish_snapshot`, views, TTL extensions. (Pause is "halt new motion," not "freeze observability or recovery.")
+6. `paused == true` blocks: `record_capital_receipt`, `operator_outbound`, `record_swap_in`, `propose_pay_default`, `execute_pay_default`. Does **not** block: `cancel_pay_default`, `cancel_pending_swap`, `publish_snapshot`, views. (Pause is "halt new motion," not "freeze observability or recovery.")
 7. Operator-tx-hash replay guards: every `op_tx_hash` / `src_tx_hash` / `in_tx_hash` parameter is checked against `SeenTxHash` before write, then written. Duplicate calls panic.
 8. `PendingSwap(op_tx_hash)` is written iff `operator_outbound.kind ∈ {YieldAssetSubscription, YieldAssetRedemption}`; cleared by paired `record_swap_in(paired_outbound_ref == op_tx_hash)` or by admin `cancel_pending_swap`.
 9. `PendingProposalsCount <= max_pending_proposals` at all times; checked at `propose_pay_default` and decremented at `execute_pay_default` / `cancel_pay_default`.
-10. Rate staleness: `asset_rate_is_stale(asset, now) ⇔ now - asset_rate.set_at > max_rate_staleness_secs`. Stale rates are flagged but not blocked from `pay_default` propose — the per-item rate check uses the last-known rate. (Trade-off: predictable propose behavior; admin discipline + 24h timelock catches anomalies.)
+10. `pay_default_timelock_secs >= MIN_TIMELOCK_SECS` (3600) at all times — enforced at `initialize` and at `set_pay_default_timelock_secs`. Bounds the adversarial-admin "drop timelock to seconds then drain" path.
 
 ## Tests we want to write (TDD anchor, in order)
 
 The spec is correct only if these tests pass. Failing test first, then code.
 
 **Initialization + invariants:**
-- `initialize_rejects_denomination_not_in_approved_assets`
-- `initialize_rejects_zero_pay_default_max_item_value`
-- `initialize_rejects_zero_timelock`
+- `initialize_rejects_timelock_below_min`
 - `initialize_rejects_zero_max_items_per_batch`
 - `initialize_rejects_zero_max_pending_proposals`
 - `initialize_sets_all_storage_correctly`
@@ -428,19 +391,19 @@ The spec is correct only if these tests pass. Failing test first, then code.
 - `record_capital_receipt_rejects_unapproved_asset`
 - `record_capital_receipt_blocked_when_paused`
 
-**Asset allowlist management:**
+**Asset allowlist management (per-asset caps):**
+- `add_approved_asset_with_cap`
+- `add_approved_asset_rejects_zero_cap`
 - `add_approved_asset_rejects_over_capacity` (>8)
 - `add_approved_asset_rejects_duplicate`
 - `remove_approved_asset_rejects_when_balance_nonzero`
-- `remove_approved_asset_rejects_denomination`
-- `set_denomination_asset_rejects_unapproved`
-- `set_denomination_asset_wipes_rate_table`
-- `set_denomination_asset_emits_denom_set_event`
+- `set_pay_default_max_item_value_per_asset`
+- `set_pay_default_max_for_unapproved_asset_panics`
 
 **Outbound destination allowlist management:**
-- `add_allowed_outbound_destination_rejects_over_capacity` (>16)
-- `add_allowed_outbound_destination_rejects_duplicate`
-- `remove_allowed_outbound_destination_removes_entry`
+- `add_allowed_destination_rejects_over_capacity` (>16)
+- `add_allowed_destination_rejects_duplicate`
+- `remove_allowed_destination_removes_entry`
 - `operator_outbound_rejects_non_whitelisted_destination`
 - `operator_outbound_accepts_whitelisted_destination`
 
@@ -451,20 +414,19 @@ The spec is correct only if these tests pass. Failing test first, then code.
 - `record_swap_in_panics_when_no_paired_outbound`
 - `cancel_pending_swap_admin_only_clears_entry`
 
-**Rate publishing:**
-- `set_asset_rate_records_validity_window`
-- `set_asset_rate_rejects_denomination_asset`
-- `asset_rate_is_stale_flips_after_max_staleness_secs`
-
 **Pay_default — propose:**
 - `propose_pay_default_rejects_empty_batch`
 - `propose_pay_default_rejects_over_max_items_per_batch`
 - `propose_pay_default_rejects_when_pending_count_at_max`
-- `propose_pay_default_rejects_item_amount_above_max_item_value` (denomination asset)
-- `propose_pay_default_rejects_non_denom_item_when_rate_stale`
+- `propose_pay_default_rejects_item_above_per_asset_max`
+- `pay_default_caps_are_independent_per_asset`
 - `propose_pay_default_rejects_item_with_unapproved_asset`
 - `propose_pay_default_returns_id_and_emits_event_with_items`
 - `propose_pay_default_non_admin_panics`
+
+**Timelock floor (MIN_TIMELOCK_SECS):**
+- `set_pay_default_timelock_rejects_below_min`
+- `set_pay_default_timelock_accepts_at_min`
 
 **Pay_default — execute:**
 - `execute_pay_default_rejects_before_timelock_expires`

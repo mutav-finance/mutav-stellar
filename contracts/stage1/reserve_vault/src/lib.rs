@@ -14,8 +14,13 @@
 //!   this is an OZ Smart Account contract address (3-of-5 passkey multisig).
 //!   For dev/testnet it can be any Stellar keypair.
 //! - operator: medium-risk financial ops (capital records, swap outbounds,
-//!   rate publishing, snapshots). Outbound destinations constrained on-chain
-//!   to an admin-managed allowlist.
+//!   snapshots). Outbound destinations constrained on-chain to an admin-
+//!   managed allowlist.
+//!
+//! Per-asset payment caps: each approved asset carries its own per-item
+//! `pay_default` ceiling, set by admin at allowlist add. Valuation math
+//! (rates between assets, denomination totals, K ratio) lives off-chain
+//! in the Convex transparency portal — the vault exposes raw chain truth.
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short,
@@ -48,17 +53,14 @@ pub enum Error {
     AlreadyInitialized = 1,
     NotInitialized = 2,
     Paused = 3,
-    DenominationNotInApprovedAssets = 4,
     BoundCheck = 5,
     AssetNotApproved = 6,
     AssetAlreadyApproved = 7,
     AssetBalanceNonzero = 8,
-    CannotRemoveDenomination = 9,
     DestinationNotAllowed = 10,
     DestinationAlreadyAllowed = 11,
     AmountMustBePositive = 12,
     ItemValueExceedsMax = 13,
-    RateStale = 14,
     BatchEmpty = 15,
     BatchTooLarge = 16,
     PendingQueueFull = 17,
@@ -67,10 +69,8 @@ pub enum Error {
     ReplayDetected = 20,
     SwapNotPending = 21,
     NoPendingAdmin = 22,
-    NotPendingAdmin = 23,
     InvalidValue = 24,
     AllowlistFull = 25,
-    PendingProposalsExist = 26,
     TimelockBelowMinimum = 27,
 }
 
@@ -84,28 +84,24 @@ enum DataKey {
     PendingAdmin,
     Paused,
 
-    // asset model
+    // asset allowlist
     ApprovedAssets,
-    DenominationAsset,
+    // per-asset pay_default per-item ceiling (in native asset stroops)
+    PayDefaultMaxItemValue(Address),
 
     // destination allowlist
     AllowedOutboundDestinations,
 
     // pay_default config
-    PayDefaultMaxItemValue,
     PayDefaultTimelockSecs,
     MaxItemsPerBatch,
     MaxPendingProposals,
-
-    // rate config
-    MaxRateStalenessSecs,
 
     // proposal queue
     NextProposalId,
     PendingProposalsCount,
 
     // persistent
-    AssetRate(Address),
     PendingSwap(BytesN<32>),
     PendingPayDefault(u64),
     PendingOutboundTotal(Address),
@@ -121,15 +117,6 @@ enum DataKey {
 pub enum OutboundKind {
     YieldAssetSubscription,
     YieldAssetRedemption,
-}
-
-#[contracttype]
-#[derive(Clone)]
-pub struct RateRecord {
-    pub rate: i128,
-    pub set_at: u64,
-    pub valid_until: u64,
-    pub source_proof_hash: BytesN<32>,
 }
 
 #[contracttype]
@@ -227,18 +214,11 @@ fn is_destination_allowed(e: &Env, addr: &Address) -> bool {
     false
 }
 
-fn get_denomination(e: &Env) -> Address {
+fn get_pay_default_max_for(e: &Env, asset: &Address) -> i128 {
     e.storage()
         .instance()
-        .get(&DataKey::DenominationAsset)
-        .unwrap_or_else(|| panic_with_error!(e, Error::NotInitialized))
-}
-
-fn get_pay_default_max_item(e: &Env) -> i128 {
-    e.storage()
-        .instance()
-        .get(&DataKey::PayDefaultMaxItemValue)
-        .unwrap_or_else(|| panic_with_error!(e, Error::NotInitialized))
+        .get(&DataKey::PayDefaultMaxItemValue(asset.clone()))
+        .unwrap_or_else(|| panic_with_error!(e, Error::AssetNotApproved))
 }
 
 fn get_pay_default_timelock(e: &Env) -> u64 {
@@ -262,13 +242,6 @@ fn get_max_pending_proposals(e: &Env) -> u32 {
         .unwrap_or_else(|| panic_with_error!(e, Error::NotInitialized))
 }
 
-fn get_max_rate_staleness(e: &Env) -> u64 {
-    e.storage()
-        .instance()
-        .get(&DataKey::MaxRateStalenessSecs)
-        .unwrap_or_else(|| panic_with_error!(e, Error::NotInitialized))
-}
-
 fn get_next_proposal_id(e: &Env) -> u64 {
     e.storage()
         .instance()
@@ -281,43 +254,6 @@ fn get_pending_proposals_count(e: &Env) -> u32 {
         .instance()
         .get(&DataKey::PendingProposalsCount)
         .unwrap_or(0)
-}
-
-fn rate_is_stale(e: &Env, asset: &Address) -> bool {
-    if asset == &get_denomination(e) {
-        return false;
-    }
-    match e
-        .storage()
-        .persistent()
-        .get::<_, RateRecord>(&DataKey::AssetRate(asset.clone()))
-    {
-        Some(r) => {
-            let now = e.ledger().timestamp();
-            now > r.set_at + get_max_rate_staleness(e)
-        }
-        None => true,
-    }
-}
-
-fn rate_value(e: &Env, asset: &Address) -> i128 {
-    if asset == &get_denomination(e) {
-        return 1; // unused — denomination items don't multiply
-    }
-    e.storage()
-        .persistent()
-        .get::<_, RateRecord>(&DataKey::AssetRate(asset.clone()))
-        .map(|r| r.rate)
-        .unwrap_or_else(|| panic_with_error!(e, Error::RateStale))
-}
-
-/// Item value in denomination stroops. For denomination asset, just amount.
-fn item_denom_value(e: &Env, asset: &Address, amount: i128) -> i128 {
-    if asset == &get_denomination(e) {
-        amount
-    } else {
-        amount * rate_value(e, asset)
-    }
 }
 
 fn check_replay(e: &Env, hash: &BytesN<32>) {
@@ -344,31 +280,25 @@ pub struct ReserveVault;
 
 #[contractimpl]
 impl ReserveVault {
-    /// One-shot init. Sets admin, operator, asset allowlist (must contain
-    /// denomination), destination allowlist, and pay_default config bounds.
+    /// One-shot init. Sets admin, operator, allowed destinations, and the
+    /// pay_default config bounds. Approved assets and their per-asset caps
+    /// are added separately via `add_approved_asset`.
     pub fn initialize(
         e: Env,
         admin: Address,
         operator: Address,
-        initial_approved_assets: Vec<Address>,
-        denomination_asset: Address,
         initial_allowed_destinations: Vec<Address>,
-        pay_default_max_item_value: i128,
         pay_default_timelock_secs: u64,
         max_items_per_batch: u32,
         max_pending_proposals: u32,
-        max_rate_staleness_secs: u64,
     ) {
         if e.storage().instance().has(&DataKey::Admin) {
             panic_with_error!(&e, Error::AlreadyInitialized);
         }
-        if pay_default_max_item_value <= 0
-            || max_items_per_batch == 0
+        if max_items_per_batch == 0
             || max_items_per_batch > MAX_ITEMS_PER_BATCH_CEILING
             || max_pending_proposals == 0
             || max_pending_proposals > MAX_PENDING_PROPOSALS_CEILING
-            || max_rate_staleness_secs == 0
-            || initial_approved_assets.len() > MAX_APPROVED_ASSETS
             || initial_allowed_destinations.len() > MAX_ALLOWED_DESTINATIONS
         {
             panic_with_error!(&e, Error::BoundCheck);
@@ -376,36 +306,19 @@ impl ReserveVault {
         if pay_default_timelock_secs < MIN_TIMELOCK_SECS {
             panic_with_error!(&e, Error::TimelockBelowMinimum);
         }
-        // Denomination must be in approved assets.
-        let mut denom_found = false;
-        for i in 0..initial_approved_assets.len() {
-            if initial_approved_assets.get_unchecked(i) == denomination_asset {
-                denom_found = true;
-                break;
-            }
-        }
-        if !denom_found {
-            panic_with_error!(&e, Error::DenominationNotInApprovedAssets);
-        }
 
         let s = e.storage().instance();
         s.set(&DataKey::Admin, &admin);
         s.set(&DataKey::Operator, &operator);
         s.set(&DataKey::Paused, &false);
-        s.set(&DataKey::ApprovedAssets, &initial_approved_assets);
-        s.set(&DataKey::DenominationAsset, &denomination_asset);
+        s.set(&DataKey::ApprovedAssets, &Vec::<Address>::new(&e));
         s.set(
             &DataKey::AllowedOutboundDestinations,
             &initial_allowed_destinations,
         );
-        s.set(
-            &DataKey::PayDefaultMaxItemValue,
-            &pay_default_max_item_value,
-        );
         s.set(&DataKey::PayDefaultTimelockSecs, &pay_default_timelock_secs);
         s.set(&DataKey::MaxItemsPerBatch, &max_items_per_batch);
         s.set(&DataKey::MaxPendingProposals, &max_pending_proposals);
-        s.set(&DataKey::MaxRateStalenessSecs, &max_rate_staleness_secs);
         s.set(&DataKey::NextProposalId, &0u64);
         s.set(&DataKey::PendingProposalsCount, &0u32);
     }
@@ -446,10 +359,16 @@ impl ReserveVault {
         e.events().publish((symbol_short!("acc_adm"),), pending);
     }
 
-    // ── admin: asset allowlist ──────────────────────────────────────────────
+    // ── admin: asset allowlist with per-asset caps ──────────────────────────
 
-    pub fn add_approved_asset(e: Env, asset: Address) {
+    /// Approve a new asset with its per-item pay_default ceiling (native
+    /// stroops). The cap is enforced at every pay_default item that targets
+    /// this asset.
+    pub fn add_approved_asset(e: Env, asset: Address, max_item_value: i128) {
         require_admin(&e);
+        if max_item_value <= 0 {
+            panic_with_error!(&e, Error::InvalidValue);
+        }
         let mut assets = get_approved_assets(&e);
         if assets.len() >= MAX_APPROVED_ASSETS {
             panic_with_error!(&e, Error::AllowlistFull);
@@ -461,14 +380,16 @@ impl ReserveVault {
         e.storage()
             .instance()
             .set(&DataKey::ApprovedAssets, &assets);
-        e.events().publish((symbol_short!("asset_add"),), asset);
+        e.storage().instance().set(
+            &DataKey::PayDefaultMaxItemValue(asset.clone()),
+            &max_item_value,
+        );
+        e.events()
+            .publish((symbol_short!("asset_add"),), (asset, max_item_value));
     }
 
     pub fn remove_approved_asset(e: Env, asset: Address) {
         require_admin(&e);
-        if asset == get_denomination(&e) {
-            panic_with_error!(&e, Error::CannotRemoveDenomination);
-        }
         let token = TokenClient::new(&e, &asset);
         if token.balance(&e.current_contract_address()) > 0 {
             panic_with_error!(&e, Error::AssetBalanceNonzero);
@@ -487,38 +408,29 @@ impl ReserveVault {
                 e.storage()
                     .instance()
                     .set(&DataKey::ApprovedAssets, &assets);
+                e.storage()
+                    .instance()
+                    .remove(&DataKey::PayDefaultMaxItemValue(asset.clone()));
                 e.events().publish((symbol_short!("asset_rm"),), asset);
             }
             None => panic_with_error!(&e, Error::AssetNotApproved),
         }
     }
 
-    pub fn set_denomination_asset(e: Env, new_denomination: Address) {
+    /// Update the per-asset pay_default per-item ceiling.
+    pub fn set_pay_default_max_item_value(e: Env, asset: Address, value: i128) {
         require_admin(&e);
-        if !is_asset_approved(&e, &new_denomination) {
+        if value <= 0 {
+            panic_with_error!(&e, Error::InvalidValue);
+        }
+        if !is_asset_approved(&e, &asset) {
             panic_with_error!(&e, Error::AssetNotApproved);
-        }
-        // Reject if any pay_default proposals are pending — they would carry
-        // stale denomination-equivalent values once rates are wiped and re-
-        // published against the new denomination. Admin must cancel pending
-        // proposals first (explicit acknowledgement of the policy change).
-        if get_pending_proposals_count(&e) > 0 {
-            panic_with_error!(&e, Error::PendingProposalsExist);
-        }
-        let old = get_denomination(&e);
-        // Wipe rate table (forces operator to re-publish rates against new denomination).
-        let assets = get_approved_assets(&e);
-        for i in 0..assets.len() {
-            let a = assets.get_unchecked(i);
-            e.storage()
-                .persistent()
-                .remove(&DataKey::AssetRate(a.clone()));
         }
         e.storage()
             .instance()
-            .set(&DataKey::DenominationAsset, &new_denomination);
+            .set(&DataKey::PayDefaultMaxItemValue(asset.clone()), &value);
         e.events()
-            .publish((symbol_short!("denom_set"),), (old, new_denomination));
+            .publish((symbol_short!("set_pmax"),), (asset, value));
     }
 
     // ── admin: destination allowlist ────────────────────────────────────────
@@ -563,17 +475,6 @@ impl ReserveVault {
 
     // ── admin: pay_default config ───────────────────────────────────────────
 
-    pub fn set_pay_default_max_item_value(e: Env, value: i128) {
-        require_admin(&e);
-        if value <= 0 {
-            panic_with_error!(&e, Error::InvalidValue);
-        }
-        e.storage()
-            .instance()
-            .set(&DataKey::PayDefaultMaxItemValue, &value);
-        e.events().publish((symbol_short!("set_pmax"),), value);
-    }
-
     pub fn set_pay_default_timelock_secs(e: Env, secs: u64) {
         require_admin(&e);
         if secs < MIN_TIMELOCK_SECS {
@@ -607,17 +508,6 @@ impl ReserveVault {
         e.events().publish((symbol_short!("set_mpp"),), value);
     }
 
-    pub fn set_max_rate_staleness_secs(e: Env, secs: u64) {
-        require_admin(&e);
-        if secs == 0 {
-            panic_with_error!(&e, Error::InvalidValue);
-        }
-        e.storage()
-            .instance()
-            .set(&DataKey::MaxRateStalenessSecs, &secs);
-        e.events().publish((symbol_short!("set_rstl"),), secs);
-    }
-
     // ── admin: pay_default lifecycle ────────────────────────────────────────
 
     pub fn propose_pay_default(e: Env, items: Vec<PayDefaultItem>) -> u64 {
@@ -634,8 +524,6 @@ impl ReserveVault {
             panic_with_error!(&e, Error::PendingQueueFull);
         }
 
-        let max_item = get_pay_default_max_item(&e);
-
         for i in 0..item_count {
             let it = items.get_unchecked(i);
             if it.amount <= 0 {
@@ -644,11 +532,8 @@ impl ReserveVault {
             if !is_asset_approved(&e, &it.asset) {
                 panic_with_error!(&e, Error::AssetNotApproved);
             }
-            if rate_is_stale(&e, &it.asset) {
-                panic_with_error!(&e, Error::RateStale);
-            }
-            let denom_value = item_denom_value(&e, &it.asset, it.amount);
-            if denom_value > max_item {
+            let asset_max = get_pay_default_max_for(&e, &it.asset);
+            if it.amount > asset_max {
                 panic_with_error!(&e, Error::ItemValueExceedsMax);
             }
         }
@@ -739,7 +624,6 @@ impl ReserveVault {
             .persistent()
             .get(&key)
             .unwrap_or_else(|| panic_with_error!(&e, Error::SwapNotPending));
-        // Update per-asset pending total.
         let pending_total = e
             .storage()
             .instance()
@@ -800,11 +684,9 @@ impl ReserveVault {
         }
         check_replay(&e, &op_tx_hash);
 
-        // Transfer asset to destination.
         let token = TokenClient::new(&e, &asset);
         token.transfer(&e.current_contract_address(), &destination, &amount);
 
-        // Write PendingSwap entry.
         let record = PendingSwapRecord {
             asset_out: asset.clone(),
             amount_out: amount,
@@ -815,7 +697,6 @@ impl ReserveVault {
         e.storage().persistent().set(&key, &record);
         extend_persistent_ttl(&e, &key);
 
-        // Update per-asset pending total.
         let pending_total = e
             .storage()
             .instance()
@@ -856,7 +737,6 @@ impl ReserveVault {
             .get(&key)
             .unwrap_or_else(|| panic_with_error!(&e, Error::SwapNotPending));
 
-        // Decrement pending total for the OUT asset.
         let pending_total = e
             .storage()
             .instance()
@@ -881,41 +761,8 @@ impl ReserveVault {
         );
     }
 
-    // ── operator: rate + snapshot ───────────────────────────────────────────
-
-    pub fn set_asset_rate(
-        e: Env,
-        asset: Address,
-        rate: i128,
-        source_proof_hash: BytesN<32>,
-        valid_until: u64,
-    ) {
-        require_operator(&e);
-        require_not_paused(&e);
-        if !is_asset_approved(&e, &asset) {
-            panic_with_error!(&e, Error::AssetNotApproved);
-        }
-        if asset == get_denomination(&e) {
-            panic_with_error!(&e, Error::InvalidValue);
-        }
-        if rate <= 0 {
-            panic_with_error!(&e, Error::InvalidValue);
-        }
-        let record = RateRecord {
-            rate,
-            set_at: e.ledger().timestamp(),
-            valid_until,
-            source_proof_hash: source_proof_hash.clone(),
-        };
-        let key = DataKey::AssetRate(asset.clone());
-        e.storage().persistent().set(&key, &record);
-        extend_persistent_ttl(&e, &key);
-        e.events().publish(
-            (symbol_short!("rate_set"), asset),
-            (rate, valid_until, source_proof_hash),
-        );
-    }
-
+    /// Publish a snapshot. Emits raw per-asset (balance, pending_outbound).
+    /// The transparency portal applies valuation off-chain.
     pub fn publish_snapshot(e: Env) {
         require_operator(&e);
         let assets = get_approved_assets(&e);
@@ -970,12 +817,12 @@ impl ReserveVault {
         get_approved_assets(&e)
     }
 
-    pub fn denomination_asset(e: Env) -> Address {
-        get_denomination(&e)
-    }
-
     pub fn is_approved_asset(e: Env, asset: Address) -> bool {
         is_asset_approved(&e, &asset)
+    }
+
+    pub fn pay_default_max_item_value(e: Env, asset: Address) -> i128 {
+        get_pay_default_max_for(&e, &asset)
     }
 
     pub fn allowed_destinations(e: Env) -> Vec<Address> {
@@ -1009,14 +856,6 @@ impl ReserveVault {
         bal + pending
     }
 
-    pub fn asset_rate(e: Env, asset: Address) -> Option<RateRecord> {
-        e.storage().persistent().get(&DataKey::AssetRate(asset))
-    }
-
-    pub fn pay_default_max_item_value(e: Env) -> i128 {
-        get_pay_default_max_item(&e)
-    }
-
     pub fn pay_default_timelock_secs(e: Env) -> u64 {
         get_pay_default_timelock(&e)
     }
@@ -1037,10 +876,6 @@ impl ReserveVault {
         e.storage()
             .persistent()
             .get(&DataKey::PendingPayDefault(proposal_id))
-    }
-
-    pub fn max_rate_staleness_secs(e: Env) -> u64 {
-        get_max_rate_staleness(&e)
     }
 }
 

@@ -3,6 +3,8 @@
 **Date:** 2026-06-09
 **Branch:** `docs/stage1-reserve-vault-design`
 **Network:** Stellar testnet
+
+> **2026-06-09 refactor note:** the contract on `main` after this PR is **simpler** than the version originally deployed. Per-asset payment caps replace the global cap + on-chain rate table. No more `denomination_asset`, no more `set_asset_rate`, no more rate staleness. Each approved asset carries its own per-item ceiling. The format demonstrated below (events, balances, allowlist enforcement, timelock) is **unchanged** by this refactor — but the live testnet deployment at `CAJTKYO...XWAJR` is at a pre-refactor revision. The walkthrough is preserved as a historical reference; a post-refactor redeploy is optional.
 **Vault contract:** [`CAJTKYOPDRWCQJGPUQNKD6KJ6LK6XMSHY2QLIKVR44L4KUFXXZ46WAJR`](https://stellar.expert/explorer/testnet/contract/CAJTKYOPDRWCQJGPUQNKD6KJ6LK6XMSHY2QLIKVR44L4KUFXXZ46WAJR)
 **Design spec:** [`../specs/2026-06-08-stage1-reserve-vault-design.md`](../specs/2026-06-08-stage1-reserve-vault-design.md) · [draft PR #97](https://github.com/mutav-finance/mutav-stellar/pull/97)
 **Implementation:** [`contracts/stage1/reserve_vault/`](../../contracts/stage1/reserve_vault/)
