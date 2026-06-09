@@ -2,6 +2,10 @@
 
 Three roles act *inside* the contract; four parties act *outside* it. The auth matrix below is the contract's primary security boundary.
 
+For vulnerability triage and containment procedures that consume this trust
+model, see the
+[vulnerability disclosure incident response runbook](../security/incident-response.md).
+
 ## On-chain actors
 
 ### Admin (cold wallet)
