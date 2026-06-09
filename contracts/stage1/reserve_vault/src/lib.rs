@@ -328,6 +328,13 @@ impl ReserveVault {
         let token = TokenClient::new(&e, &asset);
         token.balance(&e.current_contract_address())
     }
+
+    /// Permissionless TTL bump for instance storage. Anyone can call to keep
+    /// the vault's instance entries (admin, allowlists, paused flag) from
+    /// archival if the vault sits idle. ~30 days at 5s ledgers.
+    pub fn extend_ttl(e: Env) {
+        e.storage().instance().extend_ttl(518_400, 518_400);
+    }
 }
 
 #[cfg(test)]

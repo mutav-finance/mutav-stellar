@@ -1,7 +1,10 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Events as _},
+    Env, IntoVal,
+};
 
 struct Setup {
     env: Env,
@@ -234,6 +237,89 @@ fn accept_admin_without_pending_panics() {
     let s = setup();
     let client = ReserveVaultClient::new(&s.env, &s.vault_id);
     client.accept_admin();
+}
+
+// ── allowlist capacity ──────────────────────────────────────────────────────
+
+#[test]
+#[should_panic]
+fn add_approved_asset_at_capacity_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    // setup already added 2; add 6 more to hit MAX_APPROVED_ASSETS = 8, then 1 more must panic.
+    for _ in 0..6 {
+        let issuer = Address::generate(&s.env);
+        let asset = s.env.register_stellar_asset_contract_v2(issuer).address();
+        client.add_approved_asset(&asset);
+    }
+    let overflow_issuer = Address::generate(&s.env);
+    let overflow_asset = s
+        .env
+        .register_stellar_asset_contract_v2(overflow_issuer)
+        .address();
+    client.add_approved_asset(&overflow_asset);
+}
+
+#[test]
+#[should_panic]
+fn add_allowed_destination_at_capacity_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    // setup already added 1; add 63 more to hit MAX_ALLOWED_DESTINATIONS = 64, then 1 more must panic.
+    for _ in 0..63 {
+        let dest = Address::generate(&s.env);
+        client.add_allowed_destination(&dest);
+    }
+    let overflow = Address::generate(&s.env);
+    client.add_allowed_destination(&overflow);
+}
+
+#[test]
+#[should_panic]
+fn remove_unknown_asset_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let issuer = Address::generate(&s.env);
+    let unknown = s.env.register_stellar_asset_contract_v2(issuer).address();
+    client.remove_approved_asset(&unknown);
+}
+
+#[test]
+#[should_panic]
+fn remove_unknown_destination_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let unknown = Address::generate(&s.env);
+    client.remove_allowed_destination(&unknown);
+}
+
+// ── events ──────────────────────────────────────────────────────────────────
+
+#[test]
+fn withdraw_emits_event_with_correct_topics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let usdc_token = soroban_sdk::token::StellarAssetClient::new(&s.env, &s.usdc);
+    usdc_token.mint(&s.vault_id, &1_000_000_000_000);
+
+    let amount = 50_000_000_000i128;
+    let ref_hash = BytesN::from_array(&s.env, &[9u8; 32]);
+    client.withdraw(&s.usdc, &amount, &s.op_dest, &ref_hash);
+
+    let events = s.env.events().all().filter_by_contract(&s.vault_id);
+    let expected_topics: soroban_sdk::Vec<soroban_sdk::Val> = soroban_sdk::vec![
+        &s.env,
+        symbol_short!("withdraw").into_val(&s.env),
+        ref_hash.clone().into_val(&s.env),
+    ];
+    let expected_data: soroban_sdk::Val =
+        (s.usdc.clone(), amount, s.op_dest.clone()).into_val(&s.env);
+    let expected: soroban_sdk::Vec<(
+        Address,
+        soroban_sdk::Vec<soroban_sdk::Val>,
+        soroban_sdk::Val,
+    )> = soroban_sdk::vec![&s.env, (s.vault_id.clone(), expected_topics, expected_data)];
+    assert_eq!(events, expected);
 }
 
 // ── balance view ────────────────────────────────────────────────────────────
