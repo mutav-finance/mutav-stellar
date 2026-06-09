@@ -362,3 +362,110 @@ fn two_step_admin_handover() {
     assert_eq!(client.admin(), new_admin);
     assert_eq!(client.pending_admin(), None);
 }
+
+// ── finding #1: timelock floor (MIN_TIMELOCK_SECS = 3600) ───────────────────
+
+#[test]
+#[should_panic]
+fn initialize_rejects_timelock_below_min() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let operator = Address::generate(&env);
+    let other_admin = Address::generate(&env);
+    let usdc = env
+        .register_stellar_asset_contract_v2(other_admin)
+        .address();
+    let vault_id = env.register(ReserveVault, ());
+
+    let mut approved = Vec::new(&env);
+    approved.push_back(usdc.clone());
+
+    // Try 60 seconds — below the 1-hour MIN_TIMELOCK_SECS floor.
+    ReserveVaultClient::new(&env, &vault_id).initialize(
+        &admin,
+        &operator,
+        &approved,
+        &usdc,
+        &Vec::new(&env),
+        &PAY_DEFAULT_MAX_ITEM_VALUE,
+        &60u64, // ← below MIN_TIMELOCK_SECS
+        &MAX_ITEMS_PER_BATCH,
+        &MAX_PENDING_PROPOSALS,
+        &MAX_RATE_STALENESS_SECS,
+    );
+}
+
+#[test]
+#[should_panic]
+fn set_pay_default_timelock_rejects_below_min() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    // Compromised-admin attack vector: try dropping to 60s.
+    client.set_pay_default_timelock_secs(&60u64);
+}
+
+#[test]
+fn set_pay_default_timelock_accepts_at_min() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    client.set_pay_default_timelock_secs(&3600u64); // exactly at min
+    assert_eq!(client.pay_default_timelock_secs(), 3600);
+}
+
+// ── finding #4: set_denomination_asset rejects with pending proposals ──────
+
+#[test]
+#[should_panic]
+fn set_denomination_rejects_when_proposals_pending() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+
+    // Fund vault and queue a proposal.
+    let usdc_token = soroban_sdk::token::StellarAssetClient::new(&s.env, &s.usdc);
+    usdc_token.mint(&s.vault_id, &1_000_000_000_000);
+    let agency = Address::generate(&s.env);
+    let guarantee_hash = BytesN::from_array(&s.env, &[42u8; 32]);
+    let item = PayDefaultItem {
+        asset: s.usdc.clone(),
+        amount: 50_000_000_000,
+        destination: agency,
+        guarantee_contract_hash: guarantee_hash,
+        covered_month: 202609,
+    };
+    let mut items = Vec::new(&s.env);
+    items.push_back(item);
+    client.propose_pay_default(&items);
+    assert_eq!(client.pending_proposals_count(), 1);
+
+    // Try to switch denomination while a proposal is pending — should panic.
+    client.set_denomination_asset(&s.tesouro);
+}
+
+#[test]
+fn set_denomination_succeeds_after_cancelling_pending() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+
+    let usdc_token = soroban_sdk::token::StellarAssetClient::new(&s.env, &s.usdc);
+    usdc_token.mint(&s.vault_id, &1_000_000_000_000);
+    let agency = Address::generate(&s.env);
+    let guarantee_hash = BytesN::from_array(&s.env, &[43u8; 32]);
+    let item = PayDefaultItem {
+        asset: s.usdc.clone(),
+        amount: 50_000_000_000,
+        destination: agency,
+        guarantee_contract_hash: guarantee_hash,
+        covered_month: 202609,
+    };
+    let mut items = Vec::new(&s.env);
+    items.push_back(item);
+    let id = client.propose_pay_default(&items);
+
+    // Cancel, then denomination change must succeed.
+    client.cancel_pay_default(&id);
+    assert_eq!(client.pending_proposals_count(), 0);
+    client.set_denomination_asset(&s.tesouro);
+    assert_eq!(client.denomination_asset(), s.tesouro);
+}

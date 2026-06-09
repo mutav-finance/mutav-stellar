@@ -34,6 +34,11 @@ const MAX_ALLOWED_DESTINATIONS: u32 = 16;
 const MAX_ITEMS_PER_BATCH_CEILING: u32 = 200;
 const MAX_PENDING_PROPOSALS_CEILING: u32 = 1000;
 
+// Minimum pay_default timelock — defense against compromised admin lowering
+// the timelock to seconds before draining. 1h gives ops a detection window
+// while still allowing legitimate downward tuning during normal operations.
+const MIN_TIMELOCK_SECS: u64 = 3600;
+
 // ── error codes ──────────────────────────────────────────────────────────────
 
 #[contracterror]
@@ -65,6 +70,8 @@ pub enum Error {
     NotPendingAdmin = 23,
     InvalidValue = 24,
     AllowlistFull = 25,
+    PendingProposalsExist = 26,
+    TimelockBelowMinimum = 27,
 }
 
 // ── storage keys ─────────────────────────────────────────────────────────────
@@ -356,7 +363,6 @@ impl ReserveVault {
             panic_with_error!(&e, Error::AlreadyInitialized);
         }
         if pay_default_max_item_value <= 0
-            || pay_default_timelock_secs == 0
             || max_items_per_batch == 0
             || max_items_per_batch > MAX_ITEMS_PER_BATCH_CEILING
             || max_pending_proposals == 0
@@ -366,6 +372,9 @@ impl ReserveVault {
             || initial_allowed_destinations.len() > MAX_ALLOWED_DESTINATIONS
         {
             panic_with_error!(&e, Error::BoundCheck);
+        }
+        if pay_default_timelock_secs < MIN_TIMELOCK_SECS {
+            panic_with_error!(&e, Error::TimelockBelowMinimum);
         }
         // Denomination must be in approved assets.
         let mut denom_found = false;
@@ -489,6 +498,13 @@ impl ReserveVault {
         if !is_asset_approved(&e, &new_denomination) {
             panic_with_error!(&e, Error::AssetNotApproved);
         }
+        // Reject if any pay_default proposals are pending — they would carry
+        // stale denomination-equivalent values once rates are wiped and re-
+        // published against the new denomination. Admin must cancel pending
+        // proposals first (explicit acknowledgement of the policy change).
+        if get_pending_proposals_count(&e) > 0 {
+            panic_with_error!(&e, Error::PendingProposalsExist);
+        }
         let old = get_denomination(&e);
         // Wipe rate table (forces operator to re-publish rates against new denomination).
         let assets = get_approved_assets(&e);
@@ -560,8 +576,8 @@ impl ReserveVault {
 
     pub fn set_pay_default_timelock_secs(e: Env, secs: u64) {
         require_admin(&e);
-        if secs == 0 {
-            panic_with_error!(&e, Error::InvalidValue);
+        if secs < MIN_TIMELOCK_SECS {
+            panic_with_error!(&e, Error::TimelockBelowMinimum);
         }
         e.storage()
             .instance()

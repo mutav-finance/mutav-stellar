@@ -226,17 +226,17 @@ Even if the operator's KMS key is compromised, the attacker can only move value 
 
 The simulation surfaced five real issues worth flagging to the audit and the operations runbook. None block continuing development; all should be closed before the production deploy.
 
-### 1. The timelock-shortening adversarial-admin path (security)
+### 1. The timelock-shortening adversarial-admin path (security) — **FIXED**
 
-Admin can call `set_pay_default_timelock_secs(1)` — and the change applies immediately, with no timelock on the setter itself. A compromised admin key can in three sequential txs:
+Original finding: admin can call `set_pay_default_timelock_secs(1)` — and the change applies immediately, with no timelock on the setter itself. A compromised admin key can in three sequential txs:
 
 1. Drop the timelock to seconds
 2. Raise the per-item max
 3. Queue and execute a draining batch
 
-**Defenses that exist:** Mutav admin team multisig (OZ Smart Account, 3-of-5) means attacker must compromise 3 of 5 keys. KMS-side policy could throttle these setters. Off-chain monitoring of `set_ptlk` / `set_pmax` events can alert.
+**Fix applied:** added `MIN_TIMELOCK_SECS: u64 = 3600` constant. Both `initialize` and `set_pay_default_timelock_secs` now reject values below 1 hour with `Error::TimelockBelowMinimum` (#27). Doesn't prevent legitimate downward tuning during operations (admin can still go from 24h → 1h); does prevent the adversarial drain path (can no longer go to seconds). Test coverage: `initialize_rejects_timelock_below_min`, `set_pay_default_timelock_rejects_below_min`, `set_pay_default_timelock_accepts_at_min`.
 
-**Recommended fix (small):** add a `MIN_TIMELOCK_SECS` constant (e.g., 1 hour) that `set_pay_default_timelock_secs` cannot go below. Doesn't prevent legitimate downward tuning during operations; does prevent the adversarial drain path.
+**Defenses that also exist:** Mutav admin team multisig (OZ Smart Account, 3-of-5) means attacker must compromise 3 of 5 keys. KMS-side policy could throttle these setters. Off-chain monitoring of `set_ptlk` events can alert.
 
 ### 2. Etherfuse testnet absence
 
@@ -252,11 +252,11 @@ Classic SAC-wrapped assets require receiver accounts (G... addresses) to set up 
 
 **Recommended fix:** Mutav admin dashboard must pre-flight the destination account's trustline via Horizon before allowing the `propose_pay_default` button. Not a contract change — a dashboard requirement and an agency onboarding step.
 
-### 4. `set_denomination_asset` doesn't cancel pending proposals (footgun)
+### 4. `set_denomination_asset` doesn't cancel pending proposals — **FIXED**
 
-When admin changes the denomination, the rate table is wiped (forces operator to re-publish). But existing pending pay_default proposals stay. If a pending proposal targets a non-denomination asset, executing it after the denomination change uses a freshly-published rate against the new denomination — potentially a very different ratio than at propose time.
+Original finding: when admin changes the denomination, the rate table is wiped (forces operator to re-publish). But existing pending pay_default proposals stay. If a pending proposal targets a non-denomination asset, executing it after the denomination change uses a freshly-published rate against the new denomination — potentially a very different ratio than at propose time.
 
-**Recommended fix (small):** auto-cancel pending proposals when `set_denomination_asset` is called. A few lines; removes a footgun.
+**Fix applied:** `set_denomination_asset` now panics with `Error::PendingProposalsExist` (#26) if any proposals are pending. Admin must explicitly cancel them first — forcing acknowledgement of the policy change rather than silently leaving stale-priced proposals in the queue. Test coverage: `set_denomination_rejects_when_proposals_pending`, `set_denomination_succeeds_after_cancelling_pending`.
 
 ### 5. Operator-attested amounts in `record_capital_receipt` and `record_swap_in` (design intent, worth restating)
 
@@ -266,10 +266,12 @@ The vault records the operator's supplied `amount` as the inbound value. It does
 
 ## What's next
 
-1. **Address findings 1, 4** with focused contract changes before final audit — small code; real security value.
+1. ✓ **Findings 1, 4 applied** (commit on the same PR branch) — `MIN_TIMELOCK_SECS = 3600` floor + `set_denomination_asset` rejection when proposals pending.
 2. **Run a mainnet shadow** against real Etherfuse with minimal capital (e.g., $1k–$10k subscribe + redeem cycle) to characterize the real interaction before launching the full pilot.
 3. **PR-E** — SDK additions in `src/providers/soroban/reserve_vault.ts` mirroring the contract surface. Handles the structured event payloads (per-item maps for `pay_prop` / `pay_exec`).
 4. **PR-F** (out of this repo) — Mutav admin dashboard surface: pay_default proposal UX with trustline preflight + agency onboarding flow.
+
+**Note on the live testnet artifact:** the deployed vault at `CAJTKYO...XWAJR` is at the pre-fix revision (commit `51bf2bc`). With the fixes (commit on this branch after `d07ce6b`), `MIN_TIMELOCK_SECS = 3600` would make our demo's 60-second timelock incompatible — a fresh deploy would need timelock ≥ 1 hour. The existing deployment stays as a historical reference for the pre-hardened format. A post-hardening redeploy is optional — the format demonstrated here is unchanged by these security improvements.
 
 ## Reproducing the simulation
 
