@@ -4,7 +4,11 @@
 **Branch:** `docs/stage1-reserve-vault-design`
 **Network:** Stellar testnet
 
-> **2026-06-09 refactor note:** the contract on `main` after this PR is **simpler** than the version originally deployed. Per-asset payment caps replace the global cap + on-chain rate table. No more `denomination_asset`, no more `set_asset_rate`, no more rate staleness. Each approved asset carries its own per-item ceiling. The format demonstrated below (events, balances, allowlist enforcement, timelock) is **unchanged** by this refactor — but the live testnet deployment at `CAJTKYO...XWAJR` is at a pre-refactor revision. The walkthrough is preserved as a historical reference; a post-refactor redeploy is optional.
+> **2026-06-09 architecture pivot — this walkthrough is now historical.** After this simulation ran, the contract was dramatically simplified. We pivoted to "safe with allowlists" — the vault is now ~250 LOC / 6.9 KB WASM (vs 19.5 KB at the time of this simulation), with a single value-flow path `withdraw(asset, amount, destination, ref_hash)` and admin-managed asset + destination allowlists. All policy (signer thresholds, spending limits, timelocks, per-operation differentiation) moved to the OZ Smart Account at the admin address.
+>
+> The deployed testnet vault at `CAJTKYO...XWAJR` is at a **pre-pivot** revision with the richer pre-simplification surface (`pay_default` lifecycle, operator role, `PendingSwap` tracking, multi-month coverage tracking). The simulation walkthrough below is preserved as a historical reference for what the more complex version did. Most of the security properties demonstrated below are now properties of the **OZ Smart Account configuration**, not the vault contract.
+>
+> See [`docs/specs/2026-06-08-stage1-reserve-vault-design.md`](../specs/2026-06-08-stage1-reserve-vault-design.md) for the current architecture. A fresh simulation against the simplified contract is optional — the architecture validation is in the test suite (16 tests, all passing).
 **Vault contract:** [`CAJTKYOPDRWCQJGPUQNKD6KJ6LK6XMSHY2QLIKVR44L4KUFXXZ46WAJR`](https://stellar.expert/explorer/testnet/contract/CAJTKYOPDRWCQJGPUQNKD6KJ6LK6XMSHY2QLIKVR44L4KUFXXZ46WAJR)
 **Design spec:** [`../specs/2026-06-08-stage1-reserve-vault-design.md`](../specs/2026-06-08-stage1-reserve-vault-design.md) · [draft PR #97](https://github.com/mutav-finance/mutav-stellar/pull/97)
 **Implementation:** [`contracts/stage1/reserve_vault/`](../../contracts/stage1/reserve_vault/)

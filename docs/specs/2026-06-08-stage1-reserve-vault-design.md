@@ -1,503 +1,264 @@
 # Stage-1 reserve vault — design
 
-**Date:** 2026-06-08 (last revised: 2026-06-09 — refactored to per-asset caps; denomination + rate table dropped)
+**Date:** 2026-06-08 (last revised: 2026-06-09 — simplified to safe-with-allowlists; all policy lives in the OZ Smart Account at the admin address)
 **Branch:** `docs/stage1-reserve-vault-design`
-**Status:** Draft for brainstorm review. All locked decisions from the 2026-06-09 design session folded in.
-**Target crate:** [`contracts/stage1/reserve_vault/`](../../contracts/stage1/reserve_vault/) (stub already on `main` per [#95](https://github.com/mutav-finance/mutav-stellar/pull/95)).
+**Status:** Draft for review.
+**Target crate:** [`contracts/stage1/reserve_vault/`](../../contracts/stage1/reserve_vault/)
 
-## Context
+## Headline
 
-Per the whitepaper Stage-1 architecture ([`mutav/docs/mutav-whitepaper.en.md` §5.4](https://github.com/mutav-finance/mutav/blob/main/docs/mutav-whitepaper.en.md)) and the research grounding in [`mutav/research/01-Protocol/reserve-asset-and-onchain-ramp.md`](https://github.com/mutav-finance/mutav/blob/main/research/01-Protocol/reserve-asset-and-onchain-ramp.md) + [`mutav/research/03-Stellar-Soroban/pilot-architecture-on-stellar.md`](https://github.com/mutav-finance/mutav/blob/main/research/03-Stellar-Soroban/pilot-architecture-on-stellar.md), Stage 1 puts the on-chain reserve that backs every live *fiança onerosa* guarantee inside a Soroban contract. The reserve is capitalised from two flows — (a) Mutav's pre-seed raise and (b) the 80% reserve allocation that the licensed sub-adquirente splits off at settlement from each agency guarantee fee — held in a multi-asset allowlist that includes Etherfuse TESOURO (BRL-yield, ~Selic) alongside a USDC liquidity sleeve, and is publicly verifiable from chain state so that "reserve adequacy" is something any third party can compute (the structural answer to the QuintoCred unfunded-garantidora failure mode).
+A custodial safe with two allowlists. Mutav's admin address is an OpenZeppelin Smart Account whose Context Rules carry the policy (signer thresholds, spending limits, timelocks, per-operation differentiation). The vault contract itself does **none** of that. It holds value, accepts admin-authorized withdrawals to whitelisted destinations of whitelisted assets, and emits events.
 
-This spec covers **only the on-chain vault and its management**. Out of scope: the SAC-wrapped `MUTAV-COL` collateral token leg ([`contracts/stage1/collateral_token/`](../../contracts/stage1/collateral_token/) — scripts, not a Soroban contract); Etherfuse `mintBond` / `redeemBonds` mechanics (operator-driven externally); Pix ramp via licensed Stellar anchor; the 20/80 PSP-level split (off-chain at the BaaS); pre-seed off-chain custody (treasury wallet). Per the founder decision recorded in the design session, **the operator manages Etherfuse trading off-chain** — the vault is a custodial reserve holder + event ledger + admin-gated default-payout, not an automated treasury manager.
+**This split is the safety story.** The vault is small enough to audit in a sitting. The Smart Account configuration is audited separately. Each evolves on its own cadence without touching the other.
 
-## Scope
+## Architecture
 
-What this contract is:
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ OZ Smart Account (lives at the vault's `admin` address)                │
+│                                                                         │
+│ Context Rules decide, for every call:                                  │
+│   • Signer threshold (M-of-N) — per function, per amount               │
+│   • Spending limits — cumulative per period, per asset                 │
+│   • Timelocks — optional delay for high-value or sensitive ops         │
+│   • Destination policies — agency vs. operator-wallet differentiation  │
+│                                                                         │
+│ Configured via Smart Account Kit SDK from `mutav-app/apps/admin/`      │
+└────────────────────────────┬───────────────────────────────────────────┘
+                              │ require_auth resolves here
+                              ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ Reserve Vault (this contract — minimal safe)                           │
+│                                                                         │
+│ • Holds SEP-41 token balances                                          │
+│ • Admin-managed asset allowlist (≤ 8)                                  │
+│ • Admin-managed destination allowlist (≤ 64)                           │
+│ • Single value-flow path:                                              │
+│     withdraw(asset, amount, destination, ref_hash)                     │
+│       — admin auth                                                      │
+│       — asset must be in allowlist                                      │
+│       — destination must be in allowlist                                │
+│       — amount > 0                                                      │
+│       — not paused                                                      │
+│                                                                         │
+│ • Governance: add/remove approved asset, add/remove destination,       │
+│   set_paused, two-step admin handover                                  │
+│                                                                         │
+│ • Off-chain: deposits arrive via plain SEP-41 transfers; portal scans  │
+│   Stellar ledger for inbound, no contract function needed              │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
-- A **custodial holder** of a Mutav-admin-managed allowlist of SEP-41 token balances. Always at least USDC + TESOURO at pilot start; admin may add other BRL-yield assets later (BRS, BRLV) without contract upgrade. Each approved asset carries its own per-item `pay_default` ceiling (set when added).
-- An **event ledger** for inbound capital arrivals, operator-driven swaps between approved assets, and admin-driven default-payouts to agencies — every state transition replay-guarded by a Stellar tx-hash key and emitted as a Soroban event for off-chain reconciliation against the Mutav-app Convex backend.
-- A **drain-defense surface** via `pay_default` — admin-only authority, 24h timelock (with 1h minimum floor), per-asset per-item max enforced at propose, batch DoS caps. No per-period rolling cap (deliberately simplified — see §Simplifications).
-- A **public verifier surface** via raw per-asset balance views. Valuation math (cross-asset rates, denomination totals, K ratio) lives **entirely off-chain** in the Convex transparency portal. The contract claims no unit of account; it just exposes balances and pending-swap value per asset.
+## What's in the contract — complete surface
 
-What this contract is **not**:
-
-- Not a SEP-56 / SEP-41 share-issuing vault. Stage-1 capitalisation is the pre-seed + per-payment 80% reserve allocation; there is no Stage-1 investor-deposit path. Share mechanics arrive at Stage 2 (§6 / §7) under a separate contract or refactor.
-- Not an automated Etherfuse caller. The operator drives `mintBond` / `redeemBonds` from outside; the contract observes balance arrivals and logs operator-supplied references.
-- Not a payment splitter. The 20/80 (operational / reserve) split happens at the licensed sub-adquirente, off-chain. The vault sees only the 80% reserve portion arriving as USDC after the operator's BRL→USDC ramp.
-- Not a custom-account contract. Admin is a regular Stellar keypair (Mutav HW wallet). Per the Stellar contract-accounts guide, "stay with a classic account when you want the simplest path" — Phase 1 wants the simplest path. The vault's `set_admin` mechanism leaves the door open to swap in a `DefaultManager` contract address later without changing the vault contract.
-- Not a payments router. Inbound USDC arrives via plain SEP-41 transfers (operator initiates externally); the vault logs the arrival via `record_capital_receipt`.
-
-This separation matches whitepaper §5.5's authority table: the audited surface holds no keys; operator authority is custodied off-repo per [`docs/specs/2026-05-31-operator-key-runbook-design.md`](./2026-05-31-operator-key-runbook-design.md); admin authority lives in a hardware-wallet flow on `mutav-app/apps/admin/`.
-
-## Trust model
-
-| Authority | Who | What they can do here |
-|---|---|---|
-| **Admin** (governance multisig) | OpenZeppelin Smart Account contract instance, 3-of-5 passkey threshold (Mutav admin team members each register a passkey); managed via `mutav-app/apps/admin/` dashboard with Smart Account Kit SDK | `initialize`, `set_*` (all knobs), allowlist `add` / `remove` (both assets-with-caps and outbound destinations), propose / execute / cancel `pay_default`, `propose_admin` / `accept_admin`, `set_paused`, `cancel_pending_swap` |
-| **Operator** (KMS-backed) | Stellar keypair held in Convex Action KMS on `mutav-app`; invoked with short-lived OIDC credentials per per-action policy. **Outbound destinations are constrained on-chain to an admin-managed allowlist** — operator cannot transfer value out of the vault to any other Address. | `record_capital_receipt`, `operator_outbound` (destination in allowlist only), `record_swap_in`, `publish_snapshot`, `extend_ttl` |
-| **Public verifier** | Anyone with a Stellar RPC | All views; permissionless TTL extension on audit-anchor entries |
-| **Pre-seed wallet / reserve-allocation wallet** | External Mutav-controlled accounts | Send USDC into the contract via plain SEP-41 transfer; the operator then calls `record_capital_receipt` to log the arrival with a tx-hash replay guard |
-
-Threat model assumptions worth naming:
-
-- **Operator compromise** is bounded by the **on-chain destination allowlist** — operator can only outbound to addresses admin has previously whitelisted (typically: a Mutav-controlled operator wallet for ramping into Etherfuse, possibly an emergency reseed wallet). Operator cannot transfer to an attacker-controlled wallet because that address would not be in the allowlist. Defense layering: (i) on-chain destination allowlist (primary), (ii) snapshot publication makes any whitelisted movement visible in seconds, (iii) admin `set_paused(true)` halts outbound entirely, (iv) KMS-side per-action policy on the operator key, (v) operator cannot call `pay_default` — that path is admin-only.
-- **Admin compromise** can drain via `pay_default` up to `max_items_per_batch × pay_default_max_item_value` per 24h timelock window — bounded by per-batch and per-item ceilings but not by a rolling-period cap at the pilot. The 24h timelock is the live-detection window; `set_paused(true)` is the kill-switch. See §Simplifications for the explicit tradeoff.
-- **Joint compromise** is not defended against on-chain. The off-chain key-custody separation is the protection.
-
-## Verified Stellar primitives (2026-06-09 verification pass)
-
-Cross-checked against developers.stellar.org and primary spec sources before locking the design:
-
-- **Storage tiers** ([state-archival docs](https://developers.stellar.org/docs/learn/fundamentals/contract-development/storage/state-archival)) — three tiers with confirmed semantics:
-  - **Temporary**: permanently deleted at TTL=0; cannot be restored. Right for short-lived replay guards (operator-tx-hash dedup).
-  - **Persistent**: archived at TTL=0; restorable via `InvokeHostFunction` (current ledger + 4095 ledgers of life upon restore). Right for audit-trail anchors (pending swap records, pending pay_default proposals, per-asset rate attestations).
-  - **Instance**: archived at TTL=0; restorable. Right for config + governance state (admin, operator, allowlist, denomination, all `set_*` knobs).
-  - TTL is in *ledgers*, not seconds. `extend_ttl(threshold, extend_to)` is the Soroban SDK API (two-argument form per the SDK, even though docs simplify to single-parameter).
-- **SAC (CAP-46-6)** ([SAC docs](https://developers.stellar.org/docs/tokens/stellar-asset-contract)) — classic Stellar assets wrapped by the SAC expose the SEP-41 token interface. `token::Client::balance(&env, &asset_addr).balance(self)` returns the SEP-41 balance. AUTH_REQUIRED / AUTH_REVOCABLE / AUTH_CLAWBACK_ENABLED flags transfer from the classic-asset side. The vault reads SAC-wrapped assets identically to native Soroban SEP-41 tokens — no special handling needed.
-- **Contract authorization** ([auth docs](https://developers.stellar.org/docs/build/guides/auth/contract-authorization)) — `require_auth` on the admin Address dispatches correctly whether the admin is a regular keypair or a contract account implementing `CustomAccountInterface`. Phase 1 uses the latter for admin (OZ Smart Account, see below) and a regular Stellar keypair for operator.
-- **CustomAccountInterface signature** ([check-auth tutorials](https://developers.stellar.org/docs/build/guides/auth/check-auth-tutorials)) — `pub fn __check_auth(env: Env, signature_payload: BytesN<32>, signature: BytesN<64>, _auth_context: Vec<Context>)`. Returns `()`, panics on failure. Implemented inside the OZ Smart Account that holds Mutav admin authority.
-- **SEP-56 tokenized vault standard** ([sep-0056.md](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0056.md)) — Draft v0.1.2 (last updated 2025-11-06), OZ + Sentinel co-authored. 17-function interface (deposit/redeem/preview/conversion/maxes). **Not used by Phase 1** — the vault has no share token. Reference for Stage-2 rebuild.
-- **OpenZeppelin Stellar Contracts v0.7.2** ([repo](https://github.com/OpenZeppelin/stellar-contracts)) — explicitly labelled "experimental software" by OZ themselves. Has `audits/` directory but no audit reports cited in README.
-  - **Not used as runtime dependency in the vault contract itself** — we hand-roll the small primitive surface we need (admin/operator auth, paused, two-step rotation) from raw Soroban SDK. Their virtual-decimals-offset formula is referenced for the eventual Stage-2 share-vault refactor.
-  - **Used as the admin smart-wallet** — the vault's `admin: Address` at deploy is an OpenZeppelin Smart Account contract instance ([`stellar-accounts` crate](https://github.com/OpenZeppelin/stellar-contracts)), configured as 3-of-5 passkey multisig via the [Smart Account Kit SDK](https://github.com/kalepail/smart-account-kit). Mutav admin team members each register one passkey; any 3 must sign to authorize a vault tx. Authority resolution is handled entirely by Soroban's `require_auth` flow — the vault doesn't know or care that admin is a contract account vs. a keypair. Audit responsibility: a focused secondary audit on the pinned OZ Smart Account version is included in Mutav's Phase 1 audit scope.
-
-These verified primitives are the audit baseline. Reviewer can read each section of this spec against the referenced canonical doc and confirm the design uses the primitive as intended.
-
-## Whitepaper assumptions this design depends on
-
-Each item below is an explicit reading of §5 + the research vault that the contract surface bakes in. If any of these later turns out to be wrong, the contract surface needs to change.
-
-1. **Reserve composition** (§5.4.1, [`reserve-asset-and-onchain-ramp.md`](https://github.com/mutav-finance/mutav/blob/main/research/01-Protocol/reserve-asset-and-onchain-ramp.md)) — **Etherfuse TESOURO** as the yield asset + **USDC-on-Stellar** as the liquidity sleeve, at pilot. Both are SEP-41-compliant tokens with a known contract address per environment. The admin-managed allowlist accommodates additional assets (BRS, BRLV) once they ship on Stellar — no redeploy needed.
-2. **TESOURO is held as an SEP-41 balance** ([`etherfuse-stablebonds.md`](https://github.com/mutav-finance/mutav/blob/main/research/06-Sources/etherfuse-stablebonds.md)). Yield accrues *in the token price*, not via rebase. So a fixed TESOURO balance grows in BRL-denominated value over time; the USDC-denominated value depends on the TESOURO↔USDC reference rate. Yield disposition is "compounds in reserve" — no distribution.
-3. **Operator drives Etherfuse from outside** (founder decision 2026-06-08). The contract never calls `mintBond` / `redeemBonds`. It records before-state and after-state via paired operator entry points: a subscription is one `operator_outbound(YieldAssetSubscription, ...)` + one `record_swap_in(TESOURO, ...)`; a redemption is the inverse.
-4. **The 80/20 split is off-chain at the PSP** (whitepaper §5.3 architectural preference; *not* a regulatory necessity since the guarantee fee is Mutav's own money per §5.3). The vault sees only the 80% reserve portion arriving — never the full charge. No on-chain splitting.
-5. **One contract instance = one reserve** (§5.4.1). Multiple parallel funds (per-tenant-class, per-region) are a Stage-2/3 concern. No multi-vault accounting here.
-6. **Per-asset rates and denomination math live entirely off-chain** (§5.4.3). The contract knows about balances, pending-swap value, and per-asset payment caps — nothing about rates or what assets are worth in terms of other assets. Mutav's transparency portal fetches rates from Etherfuse / oracles directly and computes the denominated reserve total + K ratio. This removes ~80 lines of contract surface and an operator-rate-staleness failure mode while keeping the §5.4.3 transparency story identical (portal does the math; chain provides truth).
-7. **Replay protection** uses a mix of temporary and persistent storage:
-   - **Operator tx-hashes** (capital receipts, outbounds, swap-ins): `SeenTxHash(BytesN<32>)` in temporary storage with ~7-day TTL — bounded operator-runtime cursor lag protection.
-   - **PendingSwap records**: persistent storage keyed by `op_tx_hash` — tracks in-flight value during operator-driven swap-out/swap-in cycles so transparency portal can show "in operation" alongside "custodied."
-   - **PendingPayDefaultProposal records**: persistent storage keyed by monotonic `proposal_id` — the multi-pending queue.
-8. **`pay_default` is the only on-chain debit path** for reserve outflow to agencies. All other outbound flows are operator-driven swap pairs with an expected `record_swap_in` companion. Yield never distributes; reserve never reverse-withdraws to ops.
-9. **The whitepaper's published over-collateralisation ratio K** (§11c, §5.4.3) is *not enforced on-chain*. The contract does not know live book exposure — that is read off-chain from the Convex-side guarantee registry and from the `MUTAV-COL` issuer account supply (§5.4.3 step (c)). The vault publishes its side (per-asset balances + per-asset rates + per-asset pending-swap values); the verifier divides. Stage 1 chooses transparency over enforcement.
-10. **The Mutav-side architecture has two accounts**: an **operational account** receiving the 20% PSP-split portion as company cashflow (off-vault, opaque, no transparency obligation), and **this reserve vault** receiving the 80% — the verifiable single-purpose collateral backing the guarantees. Vault never outflows to the operational account.
-
-## Whitepaper gaps remaining (counsel / ops inputs needed)
-
-| Gap | What's open | Blocks |
-|---|---|---|
-| **G1 — TESOURO Stellar asset code/issuer** | [`reserve-asset-and-onchain-ramp.md`](https://github.com/mutav-finance/mutav/blob/main/research/01-Protocol/reserve-asset-and-onchain-ramp.md) flags this as "confirm with Etherfuse." | Mainnet `initialize` call (admin must supply the right addresses). Not a spec blocker. |
-| **G3 — initial `pay_default_max_item_value` calibration** | Working number is $15k USDC = R$82.5k at 5.5 BRL/USD = 1.65× the demo's R$50k highest. For mainnet, derive from actual pilot rent distribution + SEP-38 reference rate at deploy. | Init param at deploy. Admin can adjust via `set_pay_default_max_item_value` later. |
-| **G4 — `guarantee_contract_hash` justification provenance off-chain** | What does the off-chain artefact look like? Per Mutav admin process: signed agreement document (canonical PDF / JSON) hashed at content level. Convex stores `content_hash → doc → guarantee details` mapping. | Operations runbook, not contract code. |
-| **G5 — Pre-seed wallet custody and reserve-allocation wallet custody** | Both are Mutav-controlled external Stellar accounts. Exact custody location (HW wallet? Convex KMS? Treasury multisig?) is admin-team decision. | Operations runbook. |
-| **G6 — USDC-sleeve sizing** | §5.4.4 names "peak-week payout rate × safety factor" as open. Not a contract constraint. | Operator-side trading playbook. |
-
-All other earlier gaps (G2 rate source, G7 snapshot signature, G8 cadence enforcement, G9 outbound cap, G10 multi-asset evolution) are **closed**:
-- **G2**: per-asset operator-attested rate model accepted; rate math off-chain.
-- **G7**: operator-call simple version locked (admin-signed-payload deferred to Phase 2).
-- **G8**: observability-only (`max_snapshot_gap_secs = 0` semantically, the field exists for future Phase 2 enforcement).
-- **G9**: no on-chain operator-outbound cap at pilot; KMS-side policy is the gate.
-- **G10**: multi-asset evolution built-in via the admin-managed allowlist.
-
-## Goals
-
-1. **The whitepaper §5.4.3 transparency recipe is executable from chain state alone + external rate sources.** A third party with a Stellar RPC + this contract's address + the Convex-side guarantee registry + any rate oracle (Etherfuse, public DEX) can compute reserve adequacy K. The contract claims no unit of account; consumers pick whichever they want.
-2. **`pay_default` is admin-gated, batched, timelocked, per-item-bounded** so a compromised admin key cannot drain the reserve in a single tx and admin operators can settle ~30 monthly defaults across ~50-item batches with bounded HW-wallet bandwidth.
-3. **Every state transition is replay-guarded and event-emitting** so the on-chain log + off-chain accounting can be reconciled deterministically.
-4. **The audit surface is small.** No share-token / NAV / queue logic. The contract holds balances, gates writes, and emits events. No OpenZeppelin runtime dependency (their crate is explicitly experimental). Target: under 800 lines of Rust including tests setup, well under 500 in the contract itself.
-5. **Operator authority is bounded by an admin-managed on-chain destination allowlist** — even a fully compromised operator key cannot move value to an address admin hasn't pre-approved. This is the primary on-chain defense; KMS-side policy is defense-in-depth.
-6. **Multi-asset reserve evolution is admin-tunable**, no redeploy. The denomination asset is mutable (depeg response). The allowlist is mutable (new BRL-yield assets).
-
-## Non-goals
-
-1. **No share token, no NAV math.** Stage 1 has no investors. The §7.2 wrapper-as-actor evolution path arrives later; this contract is not it.
-2. **No automated Etherfuse interaction.** Per the operator-managed-trading scoping. If we later want the contract to call `mintBond` directly, that's a separate spec.
-3. **No on-chain rate table or denomination concept.** The vault knows balances and per-asset payment caps — nothing about cross-asset valuation. The transparency portal fetches rates from external sources and computes denominated totals + K ratio.
-4. **No on-chain `total_assets()` computed sum.** Raw per-asset views only; consumer applies valuation off-chain.
-5. **No on-chain 20/80 payment split.** Split happens at the licensed sub-adquirente, off-chain.
-6. **No per-period `pay_default` cap at the pilot.** Per-item max + per-batch item cap + queue cap + 24h timelock + admin pause are the drain-defense stack. Per-period rolling cap is a Phase 2 addition if needed.
-7. **No on-chain replay-guard at the per-(guarantee, month) granularity.** Mutav-app's pay_default UX + Convex reconciliation are the gates against accidental double-pay. Phase 2 may add this back if scale demands.
-8. **No reverse-withdrawal path from reserve to operational.** Single-purpose collateral; value enters or leaves via `pay_default` only.
-9. **No yield distribution.** Yield in TESOURO token price compounds in the vault.
-10. **No on-chain guarantee registry.** Book exposure stays in Convex.
-11. **No `CustomAccountInterface` inside the vault contract itself.** The vault calls `require_auth(admin)` agnostically. At Phase 1 deploy, admin is an OpenZeppelin Smart Account contract instance (3-of-5 passkey multisig) — passkey UX in the dashboard, multisig protection on dangerous actions, no vault contract complexity. See §Verified Stellar primitives for OZ dependency details.
-
-## Storage shape
-
-Instance storage (always loaded; cheap):
+**Storage (instance, 5 keys):**
 
 ```rust
 enum DataKey {
-    // governance
-    Admin,                              // Address
-    Operator,                           // Address
-    PendingAdmin,                       // Address (two-step handover)
-    Paused,                             // bool
-
-    // asset allowlist
-    ApprovedAssets,                     // Vec<Address>; size ≤ 8
-    PayDefaultMaxItemValue(Address),    // i128 per-asset, native stroops — set when asset added
-
-    // destination allowlist
-    AllowedOutboundDestinations,        // Vec<Address>; size ≤ 16
-
-    // pay_default config (admin-settable)
-    PayDefaultTimelockSecs,             // u64 (min 3600 / 1h enforced)
-    MaxItemsPerBatch,                   // u32
-    MaxPendingProposals,                // u32
-
-    // pending pay_default queue
-    NextProposalId,                     // u64
-    PendingProposalsCount,              // u32 (cheap counter for max_pending_proposals check)
-
-    // per-asset in-flight aggregate (maintained on outbound / swap-in / cancel-swap)
-    PendingOutboundTotal(Address),      // i128
+    Admin,                      // Address (OZ Smart Account in production)
+    PendingAdmin,               // Address (two-step handover)
+    Paused,                     // bool
+    ApprovedAssets,             // Vec<Address> (≤ 8)
+    AllowedDestinations,        // Vec<Address> (≤ 64)
 }
 ```
 
-Persistent storage (per-key TTL-extended; audit anchors):
+No persistent storage. No temporary storage. No per-asset structs. No PendingSwap. No PayDefault lifecycle. No rate table. No denomination concept.
+
+**Entry points (12 total):**
 
 ```rust
-enum DataKey {
-    PendingSwap(BytesN<32>),            // PendingSwapRecord, keyed by op_tx_hash
-    PendingPayDefault(u64),             // PayDefaultProposalRecord, keyed by proposal_id
-}
+// Init
+fn initialize(admin: Address);
+
+// Admin governance
+fn set_paused(paused: bool);
+fn propose_admin(new_admin: Address);
+fn accept_admin();                              // called by pending admin
+
+// Asset allowlist
+fn add_approved_asset(asset: Address);
+fn remove_approved_asset(asset: Address);       // requires balance == 0
+
+// Destination allowlist
+fn add_allowed_destination(addr: Address);
+fn remove_allowed_destination(addr: Address);
+
+// The one value-flow path
+fn withdraw(asset: Address, amount: i128, destination: Address, ref_hash: BytesN<32>);
+
+// Views (read-only)
+fn admin() -> Address;
+fn pending_admin() -> Option<Address>;
+fn paused() -> bool;
+fn approved_assets() -> Vec<Address>;
+fn is_approved_asset(asset: Address) -> bool;
+fn allowed_destinations() -> Vec<Address>;
+fn is_destination_allowed(addr: Address) -> bool;
+fn balance(asset: Address) -> i128;             // reads SEP-41 token::balance(self)
 ```
 
-Temporary storage (cheaper; non-restorable; bounded TTL):
-
-```rust
-enum DataKey {
-    SeenTxHash(BytesN<32>),             // 7-day rolling replay guard for operator tx-hashes
-}
-```
-
-Supporting types:
-
-```rust
-#[contracttype]
-struct PayDefaultItem {
-    asset: Address,
-    amount: i128,
-    destination: Address,               // agency Stellar wallet
-    guarantee_contract_hash: BytesN<32>,
-    covered_month: u32,                 // YYYYMM
-}
-
-#[contracttype]
-struct PendingSwapRecord {
-    asset_out: Address,
-    amount_out: i128,
-    initiated_at: u64,
-    kind: OutboundKind,                 // YieldAssetSubscription | YieldAssetRedemption
-}
-
-#[contracttype]
-struct PayDefaultProposalRecord {
-    items: Vec<PayDefaultItem>,
-    propose_ts: u64,
-    executable_after_ts: u64,
-}
-
-#[contracttype]
-enum OutboundKind {
-    YieldAssetSubscription,
-    YieldAssetRedemption,
-}
-```
-
-**No `RateRecord`, no `DenominationAsset` slot, no `MaxRateStalenessSecs`.** Each approved asset's cap is independent and admin-set; valuation across assets happens off-chain.
-
-Storage tier rationale follows the verified Stellar primitive guidance (see §Verified Stellar primitives): instance for governance + currently-rolling counters; persistent for long-lived audit anchors; temporary for hot 7-day-rolling replay guards.
-
-## Entry points
-
-### Admin governance
-
-```rust
-fn initialize(
-    e: Env,
-    admin: Address,                                  // OZ Smart Account contract address (3-of-5 passkey multisig)
-    operator: Address,                               // Stellar keypair backed by Convex Action KMS
-    initial_allowed_destinations: Vec<Address>,      // Mutav operator wallet(s); size ≤ 16
-    pay_default_timelock_secs: u64,                  // ≥ MIN_TIMELOCK_SECS (3600 = 1h)
-    max_items_per_batch: u32,                        // 1..=200
-    max_pending_proposals: u32,                      // 1..=1000
-);
-
-fn set_operator(e: Env, new_operator: Address);
-fn set_paused(e: Env, paused: bool);
-fn propose_admin(e: Env, new_admin: Address);
-fn accept_admin(e: Env);                             // called by pending admin
-
-// asset allowlist (each asset carries its own pay_default per-item cap)
-fn add_approved_asset(e: Env, asset: Address, max_item_value: i128); // ≤8 total; max > 0
-fn remove_approved_asset(e: Env, asset: Address);                    // balance must be 0
-fn set_pay_default_max_item_value(e: Env, asset: Address, value: i128); // per-asset
-
-// outbound destination allowlist
-fn add_allowed_destination(e: Env, addr: Address);              // ≤16 total
-fn remove_allowed_destination(e: Env, addr: Address);
-
-// pay_default config
-fn set_pay_default_timelock_secs(e: Env, secs: u64);            // ≥ MIN_TIMELOCK_SECS
-fn set_max_items_per_batch(e: Env, value: u32);                 // 1..=200
-fn set_max_pending_proposals(e: Env, value: u32);               // 1..=1000
-
-// pay_default lifecycle
-fn propose_pay_default(e: Env, items: Vec<PayDefaultItem>) -> u64;
-fn execute_pay_default(e: Env, proposal_id: u64);
-fn cancel_pay_default(e: Env, proposal_id: u64);
-
-// housekeeping
-fn cancel_pending_swap(e: Env, op_tx_hash: BytesN<32>, justification_hash: BytesN<32>);
-// sweep_unknown_token deferred to Phase 2.
-```
-
-### Operator capital + swap routing
-
-```rust
-/// Operator records that USDC (or other approved asset) arrived at the contract address via
-/// a plain SEP-41 transfer from a Mutav-controlled wallet (pre-seed wallet, reserve-allocation
-/// wallet, etc.). Replay-guarded by src_tx_hash. No balance change — the value already arrived.
-/// Emits `capital_in(source, asset, amount, src_tx_hash)`.
-fn record_capital_receipt(
-    e: Env,
-    source: Address,
-    asset: Address,
-    amount: i128,
-    src_tx_hash: BytesN<32>,
-);
-
-/// Operator transfers an approved asset out of the contract to fund an off-chain Etherfuse
-/// subscription or redemption. Replay-guarded. **Destination must be in the admin-managed
-/// outbound allowlist** (typically: Mutav operator wallet for Etherfuse routing). Writes a
-/// PendingSwap entry so the transparency portal can include in-flight value.
-/// Emits `outbound(kind, asset, amount, dest, op_tx_hash)`.
-fn operator_outbound(
-    e: Env,
-    kind: OutboundKind,                 // YieldAssetSubscription | YieldAssetRedemption
-    asset: Address,                     // must be in approved_assets
-    amount: i128,
-    destination: Address,               // must be in allowed_outbound_destinations
-    op_tx_hash: BytesN<32>,
-);
-
-/// Operator records that an approved asset arrived at the contract via an Etherfuse swap.
-/// Pairs with a prior `operator_outbound`; clears the PendingSwap entry. Slippage is auditable
-/// from the (paired_outbound.amount_out, this amount_in) tuple in the event.
-/// Emits `swap_in(asset_in, amount_in, paired_outbound_ref, in_tx_hash)`.
-fn record_swap_in(
-    e: Env,
-    asset_in: Address,
-    amount_in: i128,
-    paired_outbound_ref: BytesN<32>,
-    in_tx_hash: BytesN<32>,
-);
-```
-
-### Operator snapshot publication
-
-```rust
-/// Publish a snapshot. Reads each approved asset's balance + pending-swap-value,
-/// emits a structured event for the transparency portal. Operator-authenticated.
-/// Valuation (rate math, denomination total, K ratio) happens off-chain.
-fn publish_snapshot(e: Env);
-```
-
-### TTL maintenance
-
-```rust
-fn extend_ttl(e: Env);                                      // operator: instance storage bump
-```
-
-### Views (all read-only; no auth)
-
-```rust
-fn admin(e: Env) -> Address;
-fn operator(e: Env) -> Address;
-fn pending_admin(e: Env) -> Option<Address>;
-fn paused(e: Env) -> bool;
-
-fn approved_assets(e: Env) -> Vec<Address>;
-fn is_approved_asset(e: Env, asset: Address) -> bool;
-fn pay_default_max_item_value(e: Env, asset: Address) -> i128;       // per-asset cap
-
-fn allowed_destinations(e: Env) -> Vec<Address>;
-fn is_destination_allowed(e: Env, addr: Address) -> bool;
-
-// per-asset chain truth
-fn balance(e: Env, asset: Address) -> i128;                          // reads SEP-41 token::balance(self)
-fn pending_swap_value(e: Env, asset: Address) -> i128;               // sum of PendingSwap entries with asset_out == asset
-fn total_balance(e: Env, asset: Address) -> i128;                    // balance + pending_swap_value
-
-// pay_default
-fn pay_default_timelock_secs(e: Env) -> u64;
-fn max_items_per_batch(e: Env) -> u32;
-fn max_pending_proposals(e: Env) -> u32;
-fn pending_proposals_count(e: Env) -> u32;
-fn get_pay_default_proposal(e: Env, proposal_id: u64) -> Option<PayDefaultProposalRecord>;
-```
-
-The contract intentionally does **not** expose a `total_assets()` view nor any rate-related machinery. Consumers (transparency portal, SDK readers) fetch rates from external sources (Etherfuse, oracles) and compute denominated totals + K ratio off-chain. The contract only claims what it can verify: balances and pending in-flight value.
+That's the whole contract. ~250 LOC, **6.9 KB WASM** (vs. 19.5 KB before simplification).
 
 ## Events
 
-Each state-changing entry point emits exactly one Soroban event. Topics use `symbol_short!` consistent with `stage2/fund` conventions:
-
-| Symbol | Data tuple | Emitted by |
+| Event | Topic | Data |
 |---|---|---|
-| `cap_in` | `(source, asset, amount, src_tx_hash)` | `record_capital_receipt` |
-| `outbound` | `(kind, asset, amount, destination, op_tx_hash)` | `operator_outbound` |
-| `swap_in` | `(asset_in, amount_in, paired_outbound_ref, asset_out, amount_out)` | `record_swap_in` |
-| `snapshot` | `(per_asset: Vec<(asset, balance, pending_outbound)>, published_at)` | `publish_snapshot` |
-| `pay_prop` | `(id, item_count, executable_after_ts, items: Vec<(asset, amount, dest, guarantee_hash, covered_month)>)` | `propose_pay_default` |
-| `pay_exec` | `(id, item_count, items: Vec<(asset, amount, dest, guarantee_hash, covered_month)>)` | `execute_pay_default` |
-| `pay_cncl` | `(id,)` | `cancel_pay_default` |
-| `asset_add` | `(asset, max_item_value)` | `add_approved_asset` (cap included) |
-| `asset_rm` | `(asset,)` | `remove_approved_asset` |
-| `dest_add` / `dest_rm` | `(addr,)` | destination allowlist management |
-| `set_pmax` | `(asset, value)` | `set_pay_default_max_item_value` (per-asset) |
-| `swap_cncl` | `(op_tx_hash, justification_hash)` | `cancel_pending_swap` |
-| `set_paus` / `set_op` / `prop_adm` / `acc_adm` / `set_*` (config setters) | standard `(value,)` | each governance setter |
+| `withdraw` | `(symbol "withdraw", ref_hash)` | `(asset, amount, destination)` |
+| `set_paus` | `(symbol "set_paus",)` | `paused: bool` |
+| `prop_adm` | `(symbol "prop_adm",)` | `new_admin: Address` |
+| `acc_adm` | `(symbol "acc_adm",)` | `new_admin: Address` |
+| `asset_add` / `asset_rm` | `(symbol "asset_add",) / (symbol "asset_rm",)` | `asset: Address` |
+| `dest_add` / `dest_rm` | `(symbol "dest_add",) / (symbol "dest_rm",)` | `addr: Address` |
 
-The `pay_prop` and `pay_exec` events carry **per-item detail** (asset, amount, destination agency, guarantee hash, covered month) so the off-chain indexer can reconstruct per-guarantee, per-month payment history without calling any view. This is the audit-trail anchor for the §5.4.3 transparency story.
+`ref_hash` on `withdraw` is an opaque 32-byte off-chain reference (e.g., `(guarantee_contract_hash, covered_month)` hash, Etherfuse `mintBond` op id hash, Pix `EndToEndId` hash). The contract doesn't interpret it; the off-chain indexer correlates against Convex state to reconstruct per-guarantee, per-month payment history.
 
-## Invariants (must always hold)
+## What lives in the OZ Smart Account configuration (not in this contract)
 
-1. `balance(asset) >= 0` for any approved asset — trivially true since SEP-41 balances are non-negative.
-2. `pay_default_max_item_value(asset)` is set whenever `asset ∈ approved_assets` and removed when the asset is removed.
-3. `pay_default` is the **only entry point that decrements the reserve to a non-Mutav-controlled address**. `operator_outbound` decrements but its `destination` must be in `AllowedOutboundDestinations` (typically Mutav-controlled operator wallet) and pairs with `record_swap_in` so reserve stays in vault custody via the swap result; `cancel_pending_swap` does not transfer.
-4. Every `PayDefaultItem` at propose time satisfies: `item.asset ∈ approved_assets` AND `item.amount <= pay_default_max_item_value(item.asset)`. Per-asset cap; no cross-asset conversion.
-5. `execute_pay_default` requires `now >= proposal.executable_after_ts`. No bypass.
-6. `paused == true` blocks: `record_capital_receipt`, `operator_outbound`, `record_swap_in`, `propose_pay_default`, `execute_pay_default`. Does **not** block: `cancel_pay_default`, `cancel_pending_swap`, `publish_snapshot`, views. (Pause is "halt new motion," not "freeze observability or recovery.")
-7. Operator-tx-hash replay guards: every `op_tx_hash` / `src_tx_hash` / `in_tx_hash` parameter is checked against `SeenTxHash` before write, then written. Duplicate calls panic.
-8. `PendingSwap(op_tx_hash)` is written iff `operator_outbound.kind ∈ {YieldAssetSubscription, YieldAssetRedemption}`; cleared by paired `record_swap_in(paired_outbound_ref == op_tx_hash)` or by admin `cancel_pending_swap`.
-9. `PendingProposalsCount <= max_pending_proposals` at all times; checked at `propose_pay_default` and decremented at `execute_pay_default` / `cancel_pay_default`.
-10. `pay_default_timelock_secs >= MIN_TIMELOCK_SECS` (3600) at all times — enforced at `initialize` and at `set_pay_default_timelock_secs`. Bounds the adversarial-admin "drop timelock to seconds then drain" path.
+These are **Context Rules** set up via Smart Account Kit SDK in `mutav-app/apps/admin/`:
 
-## Tests we want to write (TDD anchor, in order)
+| Concern | Smart Account Context Rule |
+|---|---|
+| Pay-default to an agency | Rule on `withdraw` call where destination is an agency address: 3-of-5 admin multisig + optional 24h timelock |
+| Operator-managed Etherfuse subscribe | Rule on `withdraw` to operator-wallet destination: operator-class signer alone (no admin threshold) |
+| Per-asset spending limit per period | Spending-limit policy on `withdraw` per asset per 30 days |
+| Per-call value ceiling | Spending-limit policy on `withdraw` per call |
+| Emergency pause | Rule on `set_paused(true)`: 1-of-5 (any admin can pause) |
+| Unpause | Rule on `set_paused(false)`: 3-of-5 (consensus required to resume) |
+| Allowlist mutations | Rule on `add_*` / `remove_*`: 4-of-5 (changing trust set) |
+| Admin rotation | Rule on `propose_admin` / `accept_admin`: 5-of-5 (unanimous) |
 
-The spec is correct only if these tests pass. Failing test first, then code.
+The vault is **agnostic** to all of this. It calls `require_auth(admin)`. The Smart Account's `__check_auth` evaluates the call against the configured rules and authorizes or rejects.
 
-**Initialization + invariants:**
-- `initialize_rejects_timelock_below_min`
-- `initialize_rejects_zero_max_items_per_batch`
-- `initialize_rejects_zero_max_pending_proposals`
-- `initialize_sets_all_storage_correctly`
+## What's deliberately NOT in the vault contract
 
-**Capital receipt + replay guards:**
-- `record_capital_receipt_emits_event_and_is_idempotent_on_replay`
-- `record_capital_receipt_rejects_unapproved_asset`
-- `record_capital_receipt_blocked_when_paused`
+| Was considered, deliberately deferred to OZ Smart Account or off-chain |
+|---|
+| Pay-default propose/execute lifecycle with timelock |
+| Operator role (second auth path) |
+| Per-asset payment caps |
+| Per-period cumulative caps |
+| `PendingSwap` tracking for in-flight Etherfuse swaps |
+| `record_capital_receipt` / `record_swap_in` (deposit logging) |
+| `publish_snapshot` |
+| Multi-month coverage tracking with `covered_month` |
+| `guarantee_contract_hash` typing (folded into opaque `ref_hash`) |
+| Rate table / denomination asset / valuation math |
+| Multi-tier role split (admin / platform operator / fund operator) |
 
-**Asset allowlist management (per-asset caps):**
-- `add_approved_asset_with_cap`
-- `add_approved_asset_rejects_zero_cap`
-- `add_approved_asset_rejects_over_capacity` (>8)
-- `add_approved_asset_rejects_duplicate`
-- `remove_approved_asset_rejects_when_balance_nonzero`
-- `set_pay_default_max_item_value_per_asset`
-- `set_pay_default_max_for_unapproved_asset_panics`
+Each was reasonable on its own. Cumulatively they were a stack of policy logic that belongs in the Smart Account, not the vault. The vault stays a safe.
 
-**Outbound destination allowlist management:**
-- `add_allowed_destination_rejects_over_capacity` (>16)
-- `add_allowed_destination_rejects_duplicate`
-- `remove_allowed_destination_removes_entry`
-- `operator_outbound_rejects_non_whitelisted_destination`
-- `operator_outbound_accepts_whitelisted_destination`
+## Deposits
 
-**Operator outbound + swap-in pairing:**
-- `operator_outbound_transfers_token_and_writes_pending_swap`
-- `operator_outbound_blocked_when_paused`
-- `record_swap_in_clears_pending_swap`
-- `record_swap_in_panics_when_no_paired_outbound`
-- `cancel_pending_swap_admin_only_clears_entry`
+Value arrives at the vault via plain SEP-41 transfers from external wallets — PSP-routed reserve allocation, pre-seed wallet top-ups, operator-driven Etherfuse redemption results. The vault has **no `deposit` function**.
 
-**Pay_default — propose:**
-- `propose_pay_default_rejects_empty_batch`
-- `propose_pay_default_rejects_over_max_items_per_batch`
-- `propose_pay_default_rejects_when_pending_count_at_max`
-- `propose_pay_default_rejects_item_above_per_asset_max`
-- `pay_default_caps_are_independent_per_asset`
-- `propose_pay_default_rejects_item_with_unapproved_asset`
-- `propose_pay_default_returns_id_and_emits_event_with_items`
-- `propose_pay_default_non_admin_panics`
+The Convex transparency portal subscribes to SEP-41 `transfer` events targeting the vault address, correlates them against expected inflows in Convex (which knows which guarantee a tenant payment is for), and presents the audit trail. The chain-level truth is the SAC `transfer` event; the contract-level event would be redundant.
 
-**Timelock floor (MIN_TIMELOCK_SECS):**
-- `set_pay_default_timelock_rejects_below_min`
-- `set_pay_default_timelock_accepts_at_min`
+## Withdrawals
 
-**Pay_default — execute:**
-- `execute_pay_default_rejects_before_timelock_expires`
-- `execute_pay_default_transfers_each_item_to_destination`
-- `execute_pay_default_clears_pending_proposal`
-- `execute_pay_default_non_admin_panics`
+Every value-out from the vault is one call:
 
-**Pay_default — cancel:**
-- `cancel_pay_default_removes_pending_and_emits_event`
-- `cancel_pay_default_non_admin_panics`
+```rust
+withdraw(asset, amount, destination, ref_hash)
+```
 
-**Pay_default — batch behavior:**
-- `propose_then_execute_50_item_batch_pays_all_destinations`
-- `propose_pay_default_with_mixed_assets_checks_each_rate_freshness`
+Whatever the **reason** for the withdrawal — paying an agency for a guarantee default, routing USDC to an operator wallet for an Etherfuse subscription, executing a Phase-2 fund redemption — it's the same on-chain primitive. The Smart Account's Context Rules differentiate the cases:
 
-**Multi-month coverage:**
-- `same_guarantee_can_be_paid_for_multiple_months_in_separate_proposals`
-- `events_carry_per_item_guarantee_hash_and_covered_month`
+- Withdraw to agency address `G_ABC...` (in the destination allowlist) for amount X → applies the agency-payment policy (multisig + amount limit + maybe timelock)
+- Withdraw to operator wallet `G_OPS...` (in the destination allowlist) for amount Y → applies the operational-routing policy (single operator signer + tighter amount limit + no timelock)
 
-**Two-step admin transfer:**
-- `propose_admin_accept_admin_completes_handover`
-- `propose_admin_blocks_when_pending_already_set`
-- `accept_admin_panics_when_caller_is_not_pending`
+The vault doesn't know or care about the distinction. The Smart Account does.
 
-**Pause:**
-- `set_paused_blocks_inbound_outbound_and_pay_default`
-- `set_paused_does_not_block_cancel_paths_or_views`
+## Trust model
 
-**Views:**
-- `total_balance_equals_balance_plus_pending_swap_value`
-- `views_return_correct_values_after_full_lifecycle`
+| Authority | Identity | What they can do |
+|---|---|---|
+| **Admin** (the OZ Smart Account at the configured address) | OZ Smart Account contract, M-of-N passkey threshold, with Context Rules per operation | Everything that requires `require_auth(admin)`: every `withdraw`, every allowlist mutation, `set_paused`, `propose_admin`. Smart Account's rules govern who/when/how. |
+| **Public verifier** | Anyone with Stellar RPC | Read all views (admin, balances, allowlists, paused state). Subscribe to vault events for the audit trail. |
+| **Pre-seed / PSP / operator wallets** | External Mutav-controlled accounts | Send SEP-41 transfers to the vault address. No contract auth needed for inbound. |
 
-## Open questions (Phase 1 shippable as-is; these inform Phase 2)
+Compromise model:
 
-- **G3** initial `pay_default_max_item_value` calibration for mainnet (SEP-38 quote derivation).
-- **G4** `guarantee_contract_hash` canonical serialization (canonical PDF? canonical JSON? — for content-hash determinism).
-- **G5** pre-seed wallet + reserve-allocation wallet custody decisions (operations runbook).
-- **G6** USDC-sleeve sizing target (operator trading playbook).
+- **Vault contract bug** — small enough to audit completely. Per-tx limits don't exist at the vault layer, but the destination allowlist means even a faulty `withdraw` can only route to admin-approved destinations.
+- **Smart Account contract bug** — the load-bearing dependency. Mitigated by focused secondary audit on the pinned OZ Smart Account version. The Smart Account is replaceable via `propose_admin` → `accept_admin` if a critical issue surfaces.
+- **Smart Account misconfiguration** — admin team's responsibility. Periodic configuration review part of operations runbook.
+- **Multiple key compromise (3-of-5 simultaneously)** — outside the threat model; assumed adequately defended by passkey-per-device separation.
 
-Each is operational, not a contract design blocker. Spec ships.
+## Verified Stellar primitives
+
+Cross-checked against developers.stellar.org during the 2026-06-09 design session (full notes in earlier revisions of this spec):
+
+- **SAC (CAP-46-6)** for asset interaction; `TokenClient::balance` and `TokenClient::transfer` are the only primitives the vault uses
+- **Storage tiers** — only `instance` storage; no persistent or temporary needed at this size
+- **Contract authorization** — `require_auth(admin)` resolves correctly whether admin is a keypair or a contract account (the OZ Smart Account is the latter)
+- **`CustomAccountInterface` `__check_auth` signature** — what the OZ Smart Account implements to do its policy logic
+- **OZ Stellar Contracts v0.7.2** — labeled "experimental software" by OZ; admin-side OZ Smart Account is the load-bearing dependency, included in Mutav's audit scope
+
+## Goals
+
+1. **Auditable in hours, not weeks.** The contract is ~250 LOC with no complex state machines, no rate math, no lifecycle. An auditor reads the whole thing in one sitting.
+2. **Policy is configurable without contract changes.** The Smart Account's Context Rules can evolve (new spending limits, new destination policies, multi-tier signer classes) without ever touching this contract.
+3. **Honest separation: vault holds, Smart Account decides.** The contract claims no policy. Compromise modeling decomposes cleanly: vault bug vs. Smart Account bug vs. misconfiguration.
+4. **§5.4.3 transparency story preserved.** The portal sees `withdraw` events + ledger-level SEP-41 transfers + Smart Account audit log. The vault contract publishes raw balance views. K ratio computation is off-chain (always was).
+
+## Non-goals
+
+1. **No pay-default semantics in the vault.** All claim-payment policy lives in the Smart Account.
+2. **No operator role at the contract layer.** Operator-class authority is a Smart Account configuration (lower-threshold signer class with restricted Context Rules).
+3. **No on-chain rate, denomination, or valuation math.**
+4. **No PendingSwap tracking.** Operators manage Etherfuse subscribe/redeem cycles via Smart Account-authorized `withdraw` calls. Off-chain pairs the inbound TESOURO arrival to the outbound USDC.
+5. **No deposit function.** Inbound is SEP-41 transfers; portal scans the ledger.
+6. **No snapshot publication function.** Portal queries balance views directly.
+
+## Tests
+
+16 tests covering the entire surface:
+
+- `initialize_sets_admin_and_defaults`
+- `initialize_cannot_be_called_twice`
+- `add_remove_approved_asset`
+- `add_duplicate_asset_panics`
+- `remove_asset_with_balance_panics`
+- `add_remove_destination`
+- `add_duplicate_destination_panics`
+- `withdraw_to_whitelisted_destination_succeeds`
+- `withdraw_to_non_whitelisted_destination_panics`
+- `withdraw_of_unapproved_asset_panics`
+- `withdraw_zero_amount_panics`
+- `withdraw_blocked_when_paused`
+- `unpause_resumes_withdrawals`
+- `two_step_admin_handover`
+- `accept_admin_without_pending_panics`
+- `balance_view_reads_sep41`
+
+All pass. fmt + clippy -D warnings + wasm32v1-none build all clean.
+
+## Open items (operational, not contract)
+
+- **OZ Smart Account configuration** — lives in `mutav-app/apps/admin/`. Defining the Context Rules (which thresholds for which operations, spending limits, timelock policies, agency vs. operator destination differentiation). Out of this repo's scope; cross-references in the spec.
+- **Etherfuse mainnet shadow** — operator-direct subscribe/redeem cycle with small capital to characterize the real flow before vault-integrated mainnet.
+- **Focused audit on the pinned OZ Smart Account version** — bounded engagement, part of pre-mainnet checklist.
+- **Trustline preflight in admin dashboard** — required for any agency receiving a `withdraw`. Lives in `mutav-app`.
+- **Per-member out-of-band tx verification** — procedural control against dashboard-compromise blind-signing. Operations runbook.
+
+## What changed from the prior revisions (history of this branch)
+
+The branch went through five major revisions before landing here:
+
+1. Initial spec with on-chain denomination + per-asset rate table
+2. Refactor to per-asset caps (dropped denomination + rates)
+3. Added on-chain destination allowlist for operator_outbound
+4. Considered adding agency allowlist, per-period caps, operator daily caps for 50k scale
+5. **Pivoted to this simplification:** all policy in the OZ Smart Account; vault is a safe with two allowlists
+
+The earlier complexity was reasonable as an honest attempt to enforce policy on-chain. The simplification recognizes that OZ Smart Account's Context Rules are the right place for policy — they're configurable, replaceable, and explicitly designed for this. Putting the same logic in the vault contract was duplication that grew the audit surface without adding security beyond what the Smart Account provides.
 
 ## Phasing
 
-| PR | Work | Branch | Status |
-|---|---|---|---|
-| **PR-A** | This spec | `docs/stage1-reserve-vault-design` | this PR |
-| **PR-B** | Verified Stellar primitives — research vault updates | `mutav` repo, new branch | edits staged, not committed |
-| **PR-C** | Stage-2 `cover_default` → `pay_default` rename | separate `mutav-stellar` PR | queued |
-| **PR-D** | Stage-1 `reserve_vault` TDD implementation | follow-up after PR-A merges | queued |
-| **PR-E** | Stage-1 SDK additions (`src/providers/soroban/reserve_vault.ts`) | follow-up after PR-D | queued |
-| **PR-F** | Mutav admin UI surface for vault knobs (mutav-app side) | mutav-app repo | out of mutav-stellar scope |
-
-Audit gating: this contract joins the same audit cohort as `stage2/fund`. Defer mainnet deploy until audit closes; testnet deploy can land after PR-D.
-
-## Related
-
-- Whitepaper §5: [`mutav/docs/mutav-whitepaper.en.md` §5](https://github.com/mutav-finance/mutav/blob/main/docs/mutav-whitepaper.en.md)
-- Research:
-  - [`mutav/research/01-Protocol/reserve-asset-and-onchain-ramp.md`](https://github.com/mutav-finance/mutav/blob/main/research/01-Protocol/reserve-asset-and-onchain-ramp.md)
-  - [`mutav/research/03-Stellar-Soroban/pilot-architecture-on-stellar.md`](https://github.com/mutav-finance/mutav/blob/main/research/03-Stellar-Soroban/pilot-architecture-on-stellar.md)
-  - [`mutav/research/06-Sources/etherfuse-stablebonds.md`](https://github.com/mutav-finance/mutav/blob/main/research/06-Sources/etherfuse-stablebonds.md)
-  - [`mutav/research/06-Sources/sep-56.md`](https://github.com/mutav-finance/mutav/blob/main/research/06-Sources/sep-56.md)
-  - [`mutav/research/06-Sources/openzeppelin-stellar-contracts-vault.md`](https://github.com/mutav-finance/mutav/blob/main/research/06-Sources/openzeppelin-stellar-contracts-vault.md)
-  - [`mutav/research/99-Inbox/default-process-market-brief.md`](https://github.com/mutav-finance/mutav/blob/main/research/99-Inbox/default-process-market-brief.md) (informs Phase 2 DefaultManager design)
-  - [`mutav/research/99-Inbox/default-process-regulatory-brief.md`](https://github.com/mutav-finance/mutav/blob/main/research/99-Inbox/default-process-regulatory-brief.md) (regulatory positioning; Art. 37 IV freedom from SUSEP cadence)
-- Stellar primary sources verified:
-  - [State archival](https://developers.stellar.org/docs/learn/fundamentals/contract-development/storage/state-archival)
-  - [Stellar Asset Contract](https://developers.stellar.org/docs/tokens/stellar-asset-contract)
-  - [Contract authorization](https://developers.stellar.org/docs/build/guides/auth/contract-authorization)
-  - [Contract accounts guide](https://developers.stellar.org/docs/build/guides/contract-accounts)
-  - [SEP-56 Tokenized Vault Standard](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0056.md)
-- Adjacent contract: [`contracts/stage2/fund/src/lib.rs`](../../contracts/stage2/fund/src/lib.rs) — patterns this spec inherits (two-step admin, pause, replay guard, event shape)
-- Operator-key custody: [`docs/specs/2026-05-31-operator-key-runbook-design.md`](./2026-05-31-operator-key-runbook-design.md)
-- Stage-1 surface README: [`contracts/stage1/README.md`](../../contracts/stage1/README.md)
+| PR | Work | Branch |
+|---|---|---|
+| **PR-A** (this PR) | Spec + minimal vault contract + 16 tests + simulation doc update | `docs/stage1-reserve-vault-design` (PR #97) |
+| **PR-B** | Verified Stellar primitives research updates (in `mutav` repo) | new branch in sibling repo |
+| **PR-C** | Stage-2 `cover_default` → `pay_default` rename | separate mutav-stellar PR |
+| **PR-D** | SDK additions in `src/providers/soroban/reserve_vault.ts` — XDR builders for the 12 entry points | follow-up after PR-A merges |
+| **PR-E** (mutav-app side) | Admin dashboard with Smart Account Kit + Context Rules configuration | out of this repo |
