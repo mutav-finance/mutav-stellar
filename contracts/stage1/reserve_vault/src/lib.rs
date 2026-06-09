@@ -1,5 +1,4 @@
 #![no_std]
-#![allow(deprecated)] // events().publish() is deprecated in favour of #[contractevent]; migrate later
 
 //! Stage-1 reserve vault — `mutav-reserve-vault`.
 //!
@@ -27,13 +26,17 @@
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short,
-    token::TokenClient, Address, BytesN, Env, Vec,
+    token::TokenClient, Address, BytesN, Env, Symbol, Vec,
 };
 
 // ── constants ────────────────────────────────────────────────────────────────
 
+// Asset allowlist cap is small because every withdraw scans it linearly under
+// admin auth budget. Raising it inflates the withdraw worst-case CPU cost.
 const MAX_APPROVED_ASSETS: u32 = 8;
-const MAX_ALLOWED_DESTINATIONS: u32 = 64; // larger than operator-only because agencies also live here
+// Destination cap is larger because operator + treasury + Etherfuse + agency
+// payout legs all live here; 64 covers projected agency count for the pilot.
+const MAX_ALLOWED_DESTINATIONS: u32 = 64;
 
 // ── error codes ──────────────────────────────────────────────────────────────
 
@@ -88,38 +91,70 @@ fn require_not_paused(e: &Env) {
     }
 }
 
-fn get_approved_assets(e: &Env) -> Vec<Address> {
+// ── generic address-allowlist helpers ────────────────────────────────────────
+//
+// `ApprovedAssets` and `AllowedDestinations` are both `Vec<Address>` stored
+// under a single `DataKey`. Collapsing the CRUD into one set of helpers keeps
+// the two allowlists guaranteed-consistent (a fix applied to one cannot drift
+// from the other) and shrinks audit surface.
+
+fn allowlist_get(e: &Env, key: &DataKey) -> Vec<Address> {
     e.storage()
         .instance()
-        .get(&DataKey::ApprovedAssets)
+        .get(key)
         .unwrap_or_else(|| Vec::new(e))
 }
 
-fn is_asset_approved(e: &Env, asset: &Address) -> bool {
-    let assets = get_approved_assets(e);
-    for i in 0..assets.len() {
-        if &assets.get_unchecked(i) == asset {
+fn allowlist_contains(e: &Env, key: &DataKey, addr: &Address) -> bool {
+    let list = allowlist_get(e, key);
+    for i in 0..list.len() {
+        if &list.get_unchecked(i) == addr {
             return true;
         }
     }
     false
 }
 
-fn get_allowed_destinations(e: &Env) -> Vec<Address> {
-    e.storage()
-        .instance()
-        .get(&DataKey::AllowedDestinations)
-        .unwrap_or_else(|| Vec::new(e))
+fn allowlist_add(e: &Env, key: &DataKey, cap: u32, addr: &Address, dup_err: Error) {
+    let mut list = allowlist_get(e, key);
+    if list.len() >= cap {
+        panic_with_error!(e, Error::AllowlistFull);
+    }
+    if allowlist_contains(e, key, addr) {
+        panic_with_error!(e, dup_err);
+    }
+    list.push_back(addr.clone());
+    e.storage().instance().set(key, &list);
 }
 
-fn is_destination_allowed(e: &Env, addr: &Address) -> bool {
-    let dests = get_allowed_destinations(e);
-    for i in 0..dests.len() {
-        if &dests.get_unchecked(i) == addr {
-            return true;
+/// Swap-remove (O(1)): overwrite the target slot with the last element,
+/// then pop. The allowlist is unordered so observable behavior is unchanged.
+fn allowlist_remove(e: &Env, key: &DataKey, addr: &Address, missing_err: Error) {
+    let mut list = allowlist_get(e, key);
+    let mut found_at: Option<u32> = None;
+    for i in 0..list.len() {
+        if &list.get_unchecked(i) == addr {
+            found_at = Some(i);
+            break;
         }
     }
-    false
+    match found_at {
+        Some(idx) => {
+            let last_idx = list.len() - 1;
+            if idx != last_idx {
+                let last = list.get_unchecked(last_idx);
+                list.set(idx, last);
+            }
+            list.pop_back();
+            e.storage().instance().set(key, &list);
+        }
+        None => panic_with_error!(e, missing_err),
+    }
+}
+
+#[allow(deprecated)]
+fn publish_event(e: &Env, topic: Symbol, value: impl soroban_sdk::IntoVal<Env, soroban_sdk::Val>) {
+    e.events().publish((topic,), value);
 }
 
 // ── contract ─────────────────────────────────────────────────────────────────
@@ -130,25 +165,25 @@ pub struct ReserveVault;
 #[contractimpl]
 impl ReserveVault {
     /// One-shot init. Sets admin (the OZ Smart Account address). All other
-    /// state is empty at deploy; admin populates allowlists via the
-    /// `add_*` entry points before the vault is usable for withdrawals.
+    /// state defaults to empty/false via storage `unwrap_or` in the readers,
+    /// so no explicit writes are needed here.
     pub fn initialize(e: Env, admin: Address) {
         if e.storage().instance().has(&DataKey::Admin) {
             panic_with_error!(&e, Error::AlreadyInitialized);
         }
-        let s = e.storage().instance();
-        s.set(&DataKey::Admin, &admin);
-        s.set(&DataKey::Paused, &false);
-        s.set(&DataKey::ApprovedAssets, &Vec::<Address>::new(&e));
-        s.set(&DataKey::AllowedDestinations, &Vec::<Address>::new(&e));
+        e.storage().instance().set(&DataKey::Admin, &admin);
     }
 
     // ── admin: governance ───────────────────────────────────────────────────
+    //
+    // Note: `pause` is value-flow-only — it gates `withdraw`. Governance ops
+    // (allowlist mutations, admin handover) remain available so a paused
+    // vault can still be reconfigured during incident response.
 
     pub fn set_paused(e: Env, paused: bool) {
         require_admin(&e);
         e.storage().instance().set(&DataKey::Paused, &paused);
-        e.events().publish((symbol_short!("set_paus"),), paused);
+        publish_event(&e, symbol_short!("set_paus"), paused);
     }
 
     pub fn propose_admin(e: Env, new_admin: Address) {
@@ -156,7 +191,7 @@ impl ReserveVault {
         e.storage()
             .instance()
             .set(&DataKey::PendingAdmin, &new_admin);
-        e.events().publish((symbol_short!("prop_adm"),), new_admin);
+        publish_event(&e, symbol_short!("prop_adm"), new_admin);
     }
 
     pub fn accept_admin(e: Env) {
@@ -168,91 +203,66 @@ impl ReserveVault {
         pending.require_auth();
         e.storage().instance().set(&DataKey::Admin, &pending);
         e.storage().instance().remove(&DataKey::PendingAdmin);
-        e.events().publish((symbol_short!("acc_adm"),), pending);
+        publish_event(&e, symbol_short!("acc_adm"), pending);
     }
 
     // ── admin: asset allowlist ──────────────────────────────────────────────
 
     pub fn add_approved_asset(e: Env, asset: Address) {
         require_admin(&e);
-        let mut assets = get_approved_assets(&e);
-        if assets.len() >= MAX_APPROVED_ASSETS {
-            panic_with_error!(&e, Error::AllowlistFull);
-        }
-        if is_asset_approved(&e, &asset) {
-            panic_with_error!(&e, Error::AssetAlreadyApproved);
-        }
-        assets.push_back(asset.clone());
-        e.storage()
-            .instance()
-            .set(&DataKey::ApprovedAssets, &assets);
-        e.events().publish((symbol_short!("asset_add"),), asset);
+        allowlist_add(
+            &e,
+            &DataKey::ApprovedAssets,
+            MAX_APPROVED_ASSETS,
+            &asset,
+            Error::AssetAlreadyApproved,
+        );
+        publish_event(&e, symbol_short!("asset_add"), asset);
     }
 
     pub fn remove_approved_asset(e: Env, asset: Address) {
         require_admin(&e);
+        // Hit-test the allowlist first so an unknown asset short-circuits
+        // before the cross-contract balance() call (no wasted CPI on miss).
+        if !allowlist_contains(&e, &DataKey::ApprovedAssets, &asset) {
+            panic_with_error!(&e, Error::AssetNotApproved);
+        }
         let token = TokenClient::new(&e, &asset);
         if token.balance(&e.current_contract_address()) > 0 {
             panic_with_error!(&e, Error::AssetBalanceNonzero);
         }
-        let mut assets = get_approved_assets(&e);
-        let mut found_at: Option<u32> = None;
-        for i in 0..assets.len() {
-            if assets.get_unchecked(i) == asset {
-                found_at = Some(i);
-                break;
-            }
-        }
-        match found_at {
-            Some(idx) => {
-                assets.remove(idx);
-                e.storage()
-                    .instance()
-                    .set(&DataKey::ApprovedAssets, &assets);
-                e.events().publish((symbol_short!("asset_rm"),), asset);
-            }
-            None => panic_with_error!(&e, Error::AssetNotApproved),
-        }
+        allowlist_remove(
+            &e,
+            &DataKey::ApprovedAssets,
+            &asset,
+            Error::AssetNotApproved,
+        );
+        publish_event(&e, symbol_short!("asset_rm"), asset);
     }
 
     // ── admin: destination allowlist ────────────────────────────────────────
 
     pub fn add_allowed_destination(e: Env, addr: Address) {
         require_admin(&e);
-        let mut dests = get_allowed_destinations(&e);
-        if dests.len() >= MAX_ALLOWED_DESTINATIONS {
-            panic_with_error!(&e, Error::AllowlistFull);
-        }
-        if is_destination_allowed(&e, &addr) {
-            panic_with_error!(&e, Error::DestinationAlreadyAllowed);
-        }
-        dests.push_back(addr.clone());
-        e.storage()
-            .instance()
-            .set(&DataKey::AllowedDestinations, &dests);
-        e.events().publish((symbol_short!("dest_add"),), addr);
+        allowlist_add(
+            &e,
+            &DataKey::AllowedDestinations,
+            MAX_ALLOWED_DESTINATIONS,
+            &addr,
+            Error::DestinationAlreadyAllowed,
+        );
+        publish_event(&e, symbol_short!("dest_add"), addr);
     }
 
     pub fn remove_allowed_destination(e: Env, addr: Address) {
         require_admin(&e);
-        let mut dests = get_allowed_destinations(&e);
-        let mut found_at: Option<u32> = None;
-        for i in 0..dests.len() {
-            if dests.get_unchecked(i) == addr {
-                found_at = Some(i);
-                break;
-            }
-        }
-        match found_at {
-            Some(idx) => {
-                dests.remove(idx);
-                e.storage()
-                    .instance()
-                    .set(&DataKey::AllowedDestinations, &dests);
-                e.events().publish((symbol_short!("dest_rm"),), addr);
-            }
-            None => panic_with_error!(&e, Error::DestinationNotAllowed),
-        }
+        allowlist_remove(
+            &e,
+            &DataKey::AllowedDestinations,
+            &addr,
+            Error::DestinationNotAllowed,
+        );
+        publish_event(&e, symbol_short!("dest_rm"), addr);
     }
 
     // ── the one value-flow path ─────────────────────────────────────────────
@@ -277,14 +287,15 @@ impl ReserveVault {
         if amount <= 0 {
             panic_with_error!(&e, Error::AmountMustBePositive);
         }
-        if !is_asset_approved(&e, &asset) {
+        if !allowlist_contains(&e, &DataKey::ApprovedAssets, &asset) {
             panic_with_error!(&e, Error::AssetNotApproved);
         }
-        if !is_destination_allowed(&e, &destination) {
+        if !allowlist_contains(&e, &DataKey::AllowedDestinations, &destination) {
             panic_with_error!(&e, Error::DestinationNotAllowed);
         }
         let token = TokenClient::new(&e, &asset);
         token.transfer(&e.current_contract_address(), &destination, &amount);
+        #[allow(deprecated)]
         e.events().publish(
             (symbol_short!("withdraw"), ref_hash),
             (asset, amount, destination),
@@ -309,19 +320,19 @@ impl ReserveVault {
     }
 
     pub fn approved_assets(e: Env) -> Vec<Address> {
-        get_approved_assets(&e)
+        allowlist_get(&e, &DataKey::ApprovedAssets)
     }
 
     pub fn is_approved_asset(e: Env, asset: Address) -> bool {
-        is_asset_approved(&e, &asset)
+        allowlist_contains(&e, &DataKey::ApprovedAssets, &asset)
     }
 
     pub fn allowed_destinations(e: Env) -> Vec<Address> {
-        get_allowed_destinations(&e)
+        allowlist_get(&e, &DataKey::AllowedDestinations)
     }
 
     pub fn is_destination_allowed(e: Env, addr: Address) -> bool {
-        is_destination_allowed(&e, &addr)
+        allowlist_contains(&e, &DataKey::AllowedDestinations, &addr)
     }
 
     pub fn balance(e: Env, asset: Address) -> i128 {
