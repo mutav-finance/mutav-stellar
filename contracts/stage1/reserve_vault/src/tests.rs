@@ -2,7 +2,7 @@
 
 use super::*;
 use soroban_sdk::{
-    testutils::{Address as _, Events as _},
+    testutils::{Address as _, Events as _, Ledger as _},
     Env, IntoVal,
 };
 
@@ -29,10 +29,10 @@ fn setup() -> Setup {
         .register_stellar_asset_contract_v2(tesouro_admin)
         .address();
 
-    let vault_id = env.register(ReserveVault, ());
+    // Constructor pattern: admin is set atomically at deploy time.
+    let vault_id = env.register(ReserveVault, (admin.clone(),));
 
     let client = ReserveVaultClient::new(&env, &vault_id);
-    client.initialize(&admin);
 
     // Admin populates allowlists with two test assets + one destination.
     client.add_approved_asset(&usdc);
@@ -49,7 +49,7 @@ fn setup() -> Setup {
 }
 
 #[test]
-fn initialize_sets_admin_and_defaults() {
+fn constructor_sets_admin_and_defaults() {
     let s = setup();
     let client = ReserveVaultClient::new(&s.env, &s.vault_id);
     assert_eq!(client.admin(), s.admin);
@@ -58,15 +58,7 @@ fn initialize_sets_admin_and_defaults() {
     assert_eq!(client.allowed_destinations().len(), 1);
     assert!(client.is_destination_allowed(&s.op_dest));
     assert!(client.is_approved_asset(&s.usdc));
-}
-
-#[test]
-#[should_panic]
-fn initialize_cannot_be_called_twice() {
-    let s = setup();
-    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
-    let other = Address::generate(&s.env);
-    client.initialize(&other);
+    assert!(client.pending_admin().is_none());
 }
 
 // ── asset allowlist ─────────────────────────────────────────────────────────
@@ -104,6 +96,52 @@ fn remove_asset_with_balance_panics() {
     let usdc_token = soroban_sdk::token::StellarAssetClient::new(&s.env, &s.usdc);
     usdc_token.mint(&s.vault_id, &1);
     client.remove_approved_asset(&s.usdc);
+}
+
+// ── force_remove (escape hatch for sanctioned/frozen assets) ────────────────
+
+#[test]
+fn force_remove_approved_asset_succeeds_with_balance() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let usdc_token = soroban_sdk::token::StellarAssetClient::new(&s.env, &s.usdc);
+    usdc_token.mint(&s.vault_id, &42);
+
+    client.force_remove_approved_asset(&s.usdc);
+    assert!(!client.is_approved_asset(&s.usdc));
+    // Balance still on-chain — the dust is abandoned, not destroyed.
+    assert_eq!(client.balance(&s.usdc), 42);
+}
+
+#[test]
+fn force_remove_emits_event_with_stranded_balance() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let usdc_token = soroban_sdk::token::StellarAssetClient::new(&s.env, &s.usdc);
+    usdc_token.mint(&s.vault_id, &7);
+
+    client.force_remove_approved_asset(&s.usdc);
+
+    let events = s.env.events().all().filter_by_contract(&s.vault_id);
+    let expected_topics: soroban_sdk::Vec<soroban_sdk::Val> =
+        soroban_sdk::vec![&s.env, symbol_short!("asset_frm").into_val(&s.env)];
+    let expected_data: soroban_sdk::Val = (s.usdc.clone(), 7i128).into_val(&s.env);
+    let expected: soroban_sdk::Vec<(
+        Address,
+        soroban_sdk::Vec<soroban_sdk::Val>,
+        soroban_sdk::Val,
+    )> = soroban_sdk::vec![&s.env, (s.vault_id.clone(), expected_topics, expected_data)];
+    assert_eq!(events, expected);
+}
+
+#[test]
+#[should_panic]
+fn force_remove_unknown_asset_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let issuer = Address::generate(&s.env);
+    let unknown = s.env.register_stellar_asset_contract_v2(issuer).address();
+    client.force_remove_approved_asset(&unknown);
 }
 
 // ── destination allowlist ───────────────────────────────────────────────────
@@ -215,20 +253,70 @@ fn unpause_resumes_withdrawals() {
     assert_eq!(token.balance(&s.op_dest), 50_000_000_000);
 }
 
-// ── admin handover ──────────────────────────────────────────────────────────
+// ── admin handover with timelock ────────────────────────────────────────────
 
 #[test]
-fn two_step_admin_handover() {
+fn two_step_admin_handover_with_expiry() {
     let s = setup();
     let client = ReserveVaultClient::new(&s.env, &s.vault_id);
     let new_admin = Address::generate(&s.env);
+    let current = s.env.ledger().sequence();
+    let live_until = current + 1_000;
 
-    client.propose_admin(&new_admin);
-    assert_eq!(client.pending_admin(), Some(new_admin.clone()));
+    client.propose_admin(&new_admin, &live_until);
+    let pending = client.pending_admin().expect("pending admin set");
+    assert_eq!(pending.address, new_admin);
+    assert_eq!(pending.live_until_ledger, live_until);
 
     client.accept_admin();
     assert_eq!(client.admin(), new_admin);
-    assert_eq!(client.pending_admin(), None);
+    assert!(client.pending_admin().is_none());
+}
+
+#[test]
+fn propose_admin_with_zero_cancels_pending() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let new_admin = Address::generate(&s.env);
+    let live_until = s.env.ledger().sequence() + 1_000;
+
+    client.propose_admin(&new_admin, &live_until);
+    assert!(client.pending_admin().is_some());
+
+    client.propose_admin(&new_admin, &0);
+    assert!(client.pending_admin().is_none());
+}
+
+#[test]
+#[should_panic]
+fn propose_admin_with_past_ledger_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let new_admin = Address::generate(&s.env);
+    s.env.ledger().with_mut(|li| li.sequence_number = 500);
+    // live_until before current sequence → InvalidExpiry
+    client.propose_admin(&new_admin, &499);
+}
+
+#[test]
+fn accept_admin_after_expiry_panics() {
+    let s = setup();
+    let client = ReserveVaultClient::new(&s.env, &s.vault_id);
+    let new_admin = Address::generate(&s.env);
+    let live_until = s.env.ledger().sequence() + 100;
+
+    client.propose_admin(&new_admin, &live_until);
+
+    // Advance past the deadline; the temporary entry's TTL would also expire
+    // but the in-contract re-check is what we're asserting here.
+    s.env
+        .ledger()
+        .with_mut(|li| li.sequence_number = live_until + 1);
+
+    let result = client.try_accept_admin();
+    assert!(result.is_err());
+    // Original admin still in place.
+    assert_eq!(client.admin(), s.admin);
 }
 
 #[test]

@@ -13,12 +13,15 @@ The on-chain surface for the pilot stage described in [`mutav-whitepaper.en.md` 
 
 | Group | Function | Auth |
 | --- | --- | --- |
-| Init | `initialize(admin)` | One-shot, no auth check (see deploy notes). |
+| Init | `__constructor(admin)` — atomic at deploy time, no separate init tx | Deploy-time only |
 | Value flow | `withdraw(asset, amount, destination, ref_hash)` | `admin` |
 | Allowlists | `add_approved_asset` / `remove_approved_asset` / `add_allowed_destination` / `remove_allowed_destination` | `admin` |
-| Governance | `set_paused(paused)` (value-flow pause), `propose_admin(new)` / `accept_admin()` | `admin` / new admin |
+| Escape hatch | `force_remove_approved_asset(asset)` — skip balance check (frozen / sanctioned tokens); emits `asset_frm` with stranded balance | `admin` |
+| Governance | `set_paused(paused)` (value-flow pause), `propose_admin(new, live_until_ledger)` (pass `0` to cancel) / `accept_admin()` | `admin` / new admin |
 | Maintenance | `extend_ttl()` | Permissionless |
-| Views | `admin`, `pending_admin`, `paused`, `approved_assets`, `is_approved_asset`, `allowed_destinations`, `is_destination_allowed`, `balance(asset)` | Read-only |
+| Views | `admin`, `pending_admin` → `Option<PendingAdmin{address, live_until_ledger}>`, `paused`, `approved_assets`, `is_approved_asset`, `allowed_destinations`, `is_destination_allowed`, `balance(asset)` | Read-only |
+
+Two-step admin handover: `propose_admin` sets a pending record in `temporary()` storage with an explicit `live_until_ledger` deadline; `accept_admin` re-checks the deadline against current ledger sequence before rotating. Pattern follows OZ `stellar-access` v0.7.1 `role_transfer`.
 
 Caps: `MAX_APPROVED_ASSETS = 8`, `MAX_ALLOWED_DESTINATIONS = 64`. Full design: [`docs/specs/2026-06-08-stage1-reserve-vault-design.md`](../../docs/specs/2026-06-08-stage1-reserve-vault-design.md).
 

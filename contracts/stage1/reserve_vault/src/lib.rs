@@ -44,17 +44,18 @@ const MAX_ALLOWED_DESTINATIONS: u32 = 64;
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
 pub enum Error {
-    AlreadyInitialized = 1,
-    NotInitialized = 2,
-    Paused = 3,
-    AssetNotApproved = 4,
-    AssetAlreadyApproved = 5,
-    AssetBalanceNonzero = 6,
-    DestinationNotAllowed = 7,
-    DestinationAlreadyAllowed = 8,
-    AmountMustBePositive = 9,
-    AllowlistFull = 10,
-    NoPendingAdmin = 11,
+    NotInitialized = 1,
+    Paused = 2,
+    AssetNotApproved = 3,
+    AssetAlreadyApproved = 4,
+    AssetBalanceNonzero = 5,
+    DestinationNotAllowed = 6,
+    DestinationAlreadyAllowed = 7,
+    AmountMustBePositive = 8,
+    AllowlistFull = 9,
+    NoPendingAdmin = 10,
+    InvalidExpiry = 11,
+    PendingAdminExpired = 12,
 }
 
 // ── storage keys ─────────────────────────────────────────────────────────────
@@ -66,6 +67,17 @@ enum DataKey {
     Paused,
     ApprovedAssets,
     AllowedDestinations,
+}
+
+/// Pending admin record stored in `temporary()` storage. The entry's TTL
+/// matches `live_until_ledger` so it auto-GCs at the deadline; `accept_admin`
+/// also re-checks `live_until_ledger` against the current ledger sequence to
+/// defend against the entry being kept alive past its intended window.
+#[contracttype]
+#[derive(Clone)]
+pub struct PendingAdmin {
+    pub address: Address,
+    pub live_until_ledger: u32,
 }
 
 // ── storage helpers ──────────────────────────────────────────────────────────
@@ -164,13 +176,10 @@ pub struct ReserveVault;
 
 #[contractimpl]
 impl ReserveVault {
-    /// One-shot init. Sets admin (the OZ Smart Account address). All other
-    /// state defaults to empty/false via storage `unwrap_or` in the readers,
-    /// so no explicit writes are needed here.
-    pub fn initialize(e: Env, admin: Address) {
-        if e.storage().instance().has(&DataKey::Admin) {
-            panic_with_error!(&e, Error::AlreadyInitialized);
-        }
+    /// Atomic init at deploy time — the constructor runs exactly once when
+    /// the contract is created, removing the deploy → `initialize` race
+    /// window. Per the soroban-sdk `__constructor` pattern (Protocol 22+).
+    pub fn __constructor(e: Env, admin: Address) {
         e.storage().instance().set(&DataKey::Admin, &admin);
     }
 
@@ -186,24 +195,63 @@ impl ReserveVault {
         publish_event(&e, symbol_short!("set_paus"), paused);
     }
 
-    pub fn propose_admin(e: Env, new_admin: Address) {
+    /// Two-step admin handover, step 1 — propose a new admin with an explicit
+    /// ledger deadline. The pending entry is stored in `temporary()` storage
+    /// so it auto-GCs at `live_until_ledger`; even if the admin forgets to
+    /// cancel, the takeover surface evaporates on its own.
+    ///
+    /// Passing `live_until_ledger == 0` cancels any active proposal.
+    ///
+    /// Same-admin re-call overwrites the previous proposal (admin auth is
+    /// required, so this is a deliberate replacement, not a silent overwrite).
+    pub fn propose_admin(e: Env, new_admin: Address, live_until_ledger: u32) {
         require_admin(&e);
+        if live_until_ledger == 0 {
+            e.storage().temporary().remove(&DataKey::PendingAdmin);
+            publish_event(&e, symbol_short!("prop_can"), ());
+            return;
+        }
+        let current = e.ledger().sequence();
+        if live_until_ledger < current || live_until_ledger > e.ledger().max_live_until_ledger() {
+            panic_with_error!(&e, Error::InvalidExpiry);
+        }
+        let pending = PendingAdmin {
+            address: new_admin.clone(),
+            live_until_ledger,
+        };
         e.storage()
-            .instance()
-            .set(&DataKey::PendingAdmin, &new_admin);
-        publish_event(&e, symbol_short!("prop_adm"), new_admin);
+            .temporary()
+            .set(&DataKey::PendingAdmin, &pending);
+        let live_for = live_until_ledger - current;
+        e.storage()
+            .temporary()
+            .extend_ttl(&DataKey::PendingAdmin, live_for, live_for);
+        publish_event(
+            &e,
+            symbol_short!("prop_adm"),
+            (new_admin, live_until_ledger),
+        );
     }
 
+    /// Two-step admin handover, step 2 — pending admin signs to accept.
+    /// Explicitly re-checks `live_until_ledger` against current ledger
+    /// sequence, defending against a permissionless `extend_ttl` keeping the
+    /// entry alive past its intended window.
     pub fn accept_admin(e: Env) {
-        let pending: Address = e
+        let pending: PendingAdmin = e
             .storage()
-            .instance()
+            .temporary()
             .get(&DataKey::PendingAdmin)
             .unwrap_or_else(|| panic_with_error!(&e, Error::NoPendingAdmin));
-        pending.require_auth();
-        e.storage().instance().set(&DataKey::Admin, &pending);
-        e.storage().instance().remove(&DataKey::PendingAdmin);
-        publish_event(&e, symbol_short!("acc_adm"), pending);
+        if e.ledger().sequence() > pending.live_until_ledger {
+            panic_with_error!(&e, Error::PendingAdminExpired);
+        }
+        pending.address.require_auth();
+        e.storage()
+            .instance()
+            .set(&DataKey::Admin, &pending.address);
+        e.storage().temporary().remove(&DataKey::PendingAdmin);
+        publish_event(&e, symbol_short!("acc_adm"), pending.address);
     }
 
     // ── admin: asset allowlist ──────────────────────────────────────────────
@@ -238,6 +286,28 @@ impl ReserveVault {
             Error::AssetNotApproved,
         );
         publish_event(&e, symbol_short!("asset_rm"), asset);
+    }
+
+    /// Escape hatch for asset deprecation: forcibly drop an asset from the
+    /// allowlist even when balance > 0 (e.g., SEP-41 issuer was sanctioned,
+    /// token is frozen and can't be withdrawn). Emits a distinct event with
+    /// the balance-at-force as payload so the abandoned dust is explicit and
+    /// auditable. Admin-only.
+    pub fn force_remove_approved_asset(e: Env, asset: Address) {
+        require_admin(&e);
+        if !allowlist_contains(&e, &DataKey::ApprovedAssets, &asset) {
+            panic_with_error!(&e, Error::AssetNotApproved);
+        }
+        let stranded_balance = TokenClient::new(&e, &asset).balance(&e.current_contract_address());
+        allowlist_remove(
+            &e,
+            &DataKey::ApprovedAssets,
+            &asset,
+            Error::AssetNotApproved,
+        );
+        #[allow(deprecated)]
+        e.events()
+            .publish((symbol_short!("asset_frm"),), (asset, stranded_balance));
     }
 
     // ── admin: destination allowlist ────────────────────────────────────────
@@ -308,8 +378,8 @@ impl ReserveVault {
         get_admin(&e)
     }
 
-    pub fn pending_admin(e: Env) -> Option<Address> {
-        e.storage().instance().get(&DataKey::PendingAdmin)
+    pub fn pending_admin(e: Env) -> Option<PendingAdmin> {
+        e.storage().temporary().get(&DataKey::PendingAdmin)
     }
 
     pub fn paused(e: Env) -> bool {
