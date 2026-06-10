@@ -171,8 +171,13 @@ fn get_admin(e: &Env) -> Address {
         .unwrap_or_else(|| panic_with_error!(e, Error::NotInitialized))
 }
 
-fn require_admin(e: &Env) {
-    get_admin(e).require_auth();
+/// Reads the admin, requires its auth, and returns it. Returning the address
+/// lets callers reuse it (e.g., for event payloads) without a second storage
+/// read; callers that don't need it simply ignore the return value.
+fn require_admin(e: &Env) -> Address {
+    let admin = get_admin(e);
+    admin.require_auth();
+    admin
 }
 
 fn require_not_paused(e: &Env) {
@@ -199,8 +204,11 @@ fn allowlist_get(e: &Env, key: &DataKey) -> Vec<Address> {
         .unwrap_or_else(|| Vec::new(e))
 }
 
-fn allowlist_contains(e: &Env, key: &DataKey, addr: &Address) -> bool {
-    let list = allowlist_get(e, key);
+/// Linear membership check on an already-loaded list. Helper exists so
+/// `allowlist_add`/`allowlist_remove` can hit-test without re-reading
+/// storage and the storage-touching `allowlist_contains` wrapper stays a
+/// one-liner.
+fn list_contains(list: &Vec<Address>, addr: &Address) -> bool {
     for i in 0..list.len() {
         if &list.get_unchecked(i) == addr {
             return true;
@@ -209,12 +217,16 @@ fn allowlist_contains(e: &Env, key: &DataKey, addr: &Address) -> bool {
     false
 }
 
+fn allowlist_contains(e: &Env, key: &DataKey, addr: &Address) -> bool {
+    list_contains(&allowlist_get(e, key), addr)
+}
+
 fn allowlist_add(e: &Env, key: &DataKey, cap: u32, addr: &Address, dup_err: Error) {
     let mut list = allowlist_get(e, key);
     if list.len() >= cap {
         panic_with_error!(e, Error::AllowlistFull);
     }
-    if allowlist_contains(e, key, addr) {
+    if list_contains(&list, addr) {
         panic_with_error!(e, dup_err);
     }
     list.push_back(addr.clone());
@@ -282,9 +294,8 @@ impl ReserveVault {
     /// Same-admin re-call overwrites the previous proposal (admin auth is
     /// required, so this is a deliberate replacement, not a silent overwrite).
     pub fn propose_admin(e: Env, new_admin: Address, live_until_ledger: u32) {
-        require_admin(&e);
+        let by_admin = require_admin(&e);
         if live_until_ledger == 0 {
-            let by_admin = get_admin(&e);
             e.storage().temporary().remove(&DataKey::PendingAdmin);
             AdminProposalCancelled { by_admin }.publish(&e);
             return;

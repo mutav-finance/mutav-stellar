@@ -4,8 +4,15 @@ use super::*;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, Events as _, Ledger as _},
-    Env, IntoVal,
+    Env, IntoVal, Val,
 };
+
+/// Resolves the `IntoVal` ambiguity that `i128.into_val(&env)` triggers when
+/// the target type can't be inferred from context — used in event-equality
+/// assertions where we hand-build the expected `Val`.
+fn i128_val(env: &Env, n: i128) -> Val {
+    n.into_val(env)
+}
 
 struct Setup {
     env: Env,
@@ -127,12 +134,9 @@ fn force_remove_emits_event_with_stranded_balance() {
     let expected_topics: soroban_sdk::Vec<soroban_sdk::Val> =
         soroban_sdk::vec![&s.env, symbol_short!("asset_frm").into_val(&s.env)];
     // data_format = "vec" → fields emitted as a Vec<Val>
-    let expected_data: soroban_sdk::Val = soroban_sdk::vec![
-        &s.env,
-        s.usdc.clone().into_val(&s.env),
-        <i128 as IntoVal<Env, soroban_sdk::Val>>::into_val(&7i128, &s.env),
-    ]
-    .into_val(&s.env);
+    let expected_data: Val =
+        soroban_sdk::vec![&s.env, s.usdc.clone().into_val(&s.env), i128_val(&s.env, 7),]
+            .into_val(&s.env);
     let expected: soroban_sdk::Vec<(
         Address,
         soroban_sdk::Vec<soroban_sdk::Val>,
@@ -408,10 +412,10 @@ fn withdraw_emits_event_with_correct_topics() {
         ref_hash.clone().into_val(&s.env),
     ];
     // data_format = "vec" → asset, amount, destination emitted as Vec<Val>
-    let expected_data: soroban_sdk::Val = soroban_sdk::vec![
+    let expected_data: Val = soroban_sdk::vec![
         &s.env,
         s.usdc.clone().into_val(&s.env),
-        <i128 as IntoVal<Env, soroban_sdk::Val>>::into_val(&amount, &s.env),
+        i128_val(&s.env, amount),
         s.op_dest.clone().into_val(&s.env),
     ]
     .into_val(&s.env);
