@@ -2,6 +2,7 @@
 
 use super::*;
 use soroban_sdk::{
+    symbol_short,
     testutils::{Address as _, Events as _, Ledger as _},
     Env, IntoVal,
 };
@@ -125,7 +126,13 @@ fn force_remove_emits_event_with_stranded_balance() {
     let events = s.env.events().all().filter_by_contract(&s.vault_id);
     let expected_topics: soroban_sdk::Vec<soroban_sdk::Val> =
         soroban_sdk::vec![&s.env, symbol_short!("asset_frm").into_val(&s.env)];
-    let expected_data: soroban_sdk::Val = (s.usdc.clone(), 7i128).into_val(&s.env);
+    // data_format = "vec" → fields emitted as a Vec<Val>
+    let expected_data: soroban_sdk::Val = soroban_sdk::vec![
+        &s.env,
+        s.usdc.clone().into_val(&s.env),
+        <i128 as IntoVal<Env, soroban_sdk::Val>>::into_val(&7i128, &s.env),
+    ]
+    .into_val(&s.env);
     let expected: soroban_sdk::Vec<(
         Address,
         soroban_sdk::Vec<soroban_sdk::Val>,
@@ -400,8 +407,14 @@ fn withdraw_emits_event_with_correct_topics() {
         symbol_short!("withdraw").into_val(&s.env),
         ref_hash.clone().into_val(&s.env),
     ];
-    let expected_data: soroban_sdk::Val =
-        (s.usdc.clone(), amount, s.op_dest.clone()).into_val(&s.env);
+    // data_format = "vec" → asset, amount, destination emitted as Vec<Val>
+    let expected_data: soroban_sdk::Val = soroban_sdk::vec![
+        &s.env,
+        s.usdc.clone().into_val(&s.env),
+        <i128 as IntoVal<Env, soroban_sdk::Val>>::into_val(&amount, &s.env),
+        s.op_dest.clone().into_val(&s.env),
+    ]
+    .into_val(&s.env);
     let expected: soroban_sdk::Vec<(
         Address,
         soroban_sdk::Vec<soroban_sdk::Val>,

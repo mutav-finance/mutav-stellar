@@ -25,8 +25,8 @@
 //! `docs/specs/2026-06-08-stage1-reserve-vault-design.md` for the design.
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short,
-    token::TokenClient, Address, BytesN, Env, Symbol, Vec,
+    contract, contracterror, contractevent, contractimpl, contracttype, panic_with_error,
+    token::TokenClient, Address, BytesN, Env, Vec,
 };
 
 // ── constants ────────────────────────────────────────────────────────────────
@@ -38,10 +38,17 @@ const MAX_APPROVED_ASSETS: u32 = 8;
 // payout legs all live here; 64 covers projected agency count for the pilot.
 const MAX_ALLOWED_DESTINATIONS: u32 = 64;
 
+// TTL constants follow the canonical `soroban-examples/token/storage_types.rs`
+// pattern: threshold strictly below the bump amount, so `extend_ttl` is a
+// no-op when the entry is already comfortably alive.
+const DAY_IN_LEDGERS: u32 = 17_280;
+const INSTANCE_TTL_BUMP: u32 = 7 * DAY_IN_LEDGERS; // ~7 days at 5s ledgers
+const INSTANCE_TTL_THRESHOLD: u32 = INSTANCE_TTL_BUMP - DAY_IN_LEDGERS; // ~6 days
+
 // ── error codes ──────────────────────────────────────────────────────────────
 
 #[contracterror]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
     NotInitialized = 1,
@@ -78,6 +85,81 @@ enum DataKey {
 pub struct PendingAdmin {
     pub address: Address,
     pub live_until_ledger: u32,
+}
+
+// ── events ───────────────────────────────────────────────────────────────────
+//
+// Typed event structs via `#[contractevent]` replace the legacy
+// `events().publish()` tuple form (deprecated in soroban-sdk 26.x). Each event
+// declares its fixed topic prefix and data format; off-chain consumers parse
+// them via the macro-generated schema.
+
+#[contractevent(topics = ["set_paus"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PausedSet {
+    pub paused: bool,
+}
+
+#[contractevent(topics = ["prop_adm"], data_format = "vec")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AdminProposed {
+    pub new_admin: Address,
+    pub live_until_ledger: u32,
+}
+
+#[contractevent(topics = ["prop_can"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AdminProposalCancelled {
+    pub by_admin: Address,
+}
+
+#[contractevent(topics = ["acc_adm"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AdminAccepted {
+    pub new_admin: Address,
+}
+
+#[contractevent(topics = ["asset_add"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AssetApproved {
+    pub asset: Address,
+}
+
+#[contractevent(topics = ["asset_rm"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AssetRemoved {
+    pub asset: Address,
+}
+
+#[contractevent(topics = ["asset_frm"], data_format = "vec")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AssetForceRemoved {
+    pub asset: Address,
+    pub stranded_balance: i128,
+}
+
+#[contractevent(topics = ["dest_add"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DestinationAllowed {
+    pub destination: Address,
+}
+
+#[contractevent(topics = ["dest_rm"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DestinationRemoved {
+    pub destination: Address,
+}
+
+/// `ref_hash` is a `#[topic]` so indexers can subscribe by guarantee identity
+/// without filtering data payloads; the data carries the value-flow tuple.
+#[contractevent(topics = ["withdraw"], data_format = "vec")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Withdrawn {
+    #[topic]
+    pub ref_hash: BytesN<32>,
+    pub asset: Address,
+    pub amount: i128,
+    pub destination: Address,
 }
 
 // ── storage helpers ──────────────────────────────────────────────────────────
@@ -164,11 +246,6 @@ fn allowlist_remove(e: &Env, key: &DataKey, addr: &Address, missing_err: Error) 
     }
 }
 
-#[allow(deprecated)]
-fn publish_event(e: &Env, topic: Symbol, value: impl soroban_sdk::IntoVal<Env, soroban_sdk::Val>) {
-    e.events().publish((topic,), value);
-}
-
 // ── contract ─────────────────────────────────────────────────────────────────
 
 #[contract]
@@ -192,7 +269,7 @@ impl ReserveVault {
     pub fn set_paused(e: Env, paused: bool) {
         require_admin(&e);
         e.storage().instance().set(&DataKey::Paused, &paused);
-        publish_event(&e, symbol_short!("set_paus"), paused);
+        PausedSet { paused }.publish(&e);
     }
 
     /// Two-step admin handover, step 1 — propose a new admin with an explicit
@@ -207,8 +284,9 @@ impl ReserveVault {
     pub fn propose_admin(e: Env, new_admin: Address, live_until_ledger: u32) {
         require_admin(&e);
         if live_until_ledger == 0 {
+            let by_admin = get_admin(&e);
             e.storage().temporary().remove(&DataKey::PendingAdmin);
-            publish_event(&e, symbol_short!("prop_can"), ());
+            AdminProposalCancelled { by_admin }.publish(&e);
             return;
         }
         let current = e.ledger().sequence();
@@ -226,11 +304,11 @@ impl ReserveVault {
         e.storage()
             .temporary()
             .extend_ttl(&DataKey::PendingAdmin, live_for, live_for);
-        publish_event(
-            &e,
-            symbol_short!("prop_adm"),
-            (new_admin, live_until_ledger),
-        );
+        AdminProposed {
+            new_admin,
+            live_until_ledger,
+        }
+        .publish(&e);
     }
 
     /// Two-step admin handover, step 2 — pending admin signs to accept.
@@ -251,7 +329,10 @@ impl ReserveVault {
             .instance()
             .set(&DataKey::Admin, &pending.address);
         e.storage().temporary().remove(&DataKey::PendingAdmin);
-        publish_event(&e, symbol_short!("acc_adm"), pending.address);
+        AdminAccepted {
+            new_admin: pending.address,
+        }
+        .publish(&e);
     }
 
     // ── admin: asset allowlist ──────────────────────────────────────────────
@@ -265,7 +346,7 @@ impl ReserveVault {
             &asset,
             Error::AssetAlreadyApproved,
         );
-        publish_event(&e, symbol_short!("asset_add"), asset);
+        AssetApproved { asset }.publish(&e);
     }
 
     pub fn remove_approved_asset(e: Env, asset: Address) {
@@ -285,14 +366,17 @@ impl ReserveVault {
             &asset,
             Error::AssetNotApproved,
         );
-        publish_event(&e, symbol_short!("asset_rm"), asset);
+        AssetRemoved { asset }.publish(&e);
     }
 
     /// Escape hatch for asset deprecation: forcibly drop an asset from the
-    /// allowlist even when balance > 0 (e.g., SEP-41 issuer was sanctioned,
-    /// token is frozen and can't be withdrawn). Emits a distinct event with
-    /// the balance-at-force as payload so the abandoned dust is explicit and
-    /// auditable. Admin-only.
+    /// allowlist even when balance > 0. Required because CAP-46-6 has no
+    /// unfreeze mechanism — if a SEP-41 issuer sets `AUTH_REVOCABLE_FLAG` and
+    /// calls `set_authorized(vault, false)` on the SAC, our balance is
+    /// stranded and the normal `remove_approved_asset` path is permanently
+    /// blocked (balance > 0 and transfers revert). This path acknowledges the
+    /// stranded balance via the `AssetForceRemoved` event so the abandoned
+    /// dust is explicit and auditable. Admin-only.
     pub fn force_remove_approved_asset(e: Env, asset: Address) {
         require_admin(&e);
         if !allowlist_contains(&e, &DataKey::ApprovedAssets, &asset) {
@@ -305,34 +389,36 @@ impl ReserveVault {
             &asset,
             Error::AssetNotApproved,
         );
-        #[allow(deprecated)]
-        e.events()
-            .publish((symbol_short!("asset_frm"),), (asset, stranded_balance));
+        AssetForceRemoved {
+            asset,
+            stranded_balance,
+        }
+        .publish(&e);
     }
 
     // ── admin: destination allowlist ────────────────────────────────────────
 
-    pub fn add_allowed_destination(e: Env, addr: Address) {
+    pub fn add_allowed_destination(e: Env, destination: Address) {
         require_admin(&e);
         allowlist_add(
             &e,
             &DataKey::AllowedDestinations,
             MAX_ALLOWED_DESTINATIONS,
-            &addr,
+            &destination,
             Error::DestinationAlreadyAllowed,
         );
-        publish_event(&e, symbol_short!("dest_add"), addr);
+        DestinationAllowed { destination }.publish(&e);
     }
 
-    pub fn remove_allowed_destination(e: Env, addr: Address) {
+    pub fn remove_allowed_destination(e: Env, destination: Address) {
         require_admin(&e);
         allowlist_remove(
             &e,
             &DataKey::AllowedDestinations,
-            &addr,
+            &destination,
             Error::DestinationNotAllowed,
         );
-        publish_event(&e, symbol_short!("dest_rm"), addr);
+        DestinationRemoved { destination }.publish(&e);
     }
 
     // ── the one value-flow path ─────────────────────────────────────────────
@@ -341,6 +427,13 @@ impl ReserveVault {
     /// Requires admin auth — the OZ Smart Account's Context Rules decide
     /// whether the specific call (which signers, what amount, what
     /// destination, what timing) is authorized.
+    ///
+    /// **Auth model**: the SEP-41 `transfer(from=self, to=destination, amount)`
+    /// call is authorized implicitly by the vault's own invocation — Soroban
+    /// treats a contract calling another contract as auto-authorized for the
+    /// caller-as-`from` case, so no `self.require_auth()` is needed. The
+    /// admin's `require_auth` gates *who can ask the vault to move funds*;
+    /// the contract's identity authorizes the actual transfer.
     ///
     /// `ref_hash` is an opaque off-chain reference (e.g., guarantee + month,
     /// Etherfuse subscribe op ID, Pix endToEndId hash). The vault doesn't
@@ -365,11 +458,13 @@ impl ReserveVault {
         }
         let token = TokenClient::new(&e, &asset);
         token.transfer(&e.current_contract_address(), &destination, &amount);
-        #[allow(deprecated)]
-        e.events().publish(
-            (symbol_short!("withdraw"), ref_hash),
-            (asset, amount, destination),
-        );
+        Withdrawn {
+            ref_hash,
+            asset,
+            amount,
+            destination,
+        }
+        .publish(&e);
     }
 
     // ── views ───────────────────────────────────────────────────────────────
@@ -401,8 +496,8 @@ impl ReserveVault {
         allowlist_get(&e, &DataKey::AllowedDestinations)
     }
 
-    pub fn is_destination_allowed(e: Env, addr: Address) -> bool {
-        allowlist_contains(&e, &DataKey::AllowedDestinations, &addr)
+    pub fn is_destination_allowed(e: Env, destination: Address) -> bool {
+        allowlist_contains(&e, &DataKey::AllowedDestinations, &destination)
     }
 
     pub fn balance(e: Env, asset: Address) -> i128 {
@@ -410,11 +505,23 @@ impl ReserveVault {
         token.balance(&e.current_contract_address())
     }
 
-    /// Permissionless TTL bump for instance storage. Anyone can call to keep
-    /// the vault's instance entries (admin, allowlists, paused flag) from
-    /// archival if the vault sits idle. ~30 days at 5s ledgers.
+    /// Permissionless TTL bump for **instance** storage only (admin, paused
+    /// flag, allowlist Vecs). Anyone can call to keep the vault alive if it
+    /// sits idle. Safe to expose because:
+    /// - the instance bundle is fixed-size (one entry), so griefing cost is
+    ///   bounded
+    /// - `PendingAdmin` lives in `temporary()` storage and **cannot be revived
+    ///   by this call** — the entry stays bounded by its own `live_until_ledger`
+    /// - `accept_admin` re-checks the ledger deadline anyway, so even if an
+    ///   external party tried to extend the pending entry by other means,
+    ///   the in-contract check still rejects after expiry
+    ///
+    /// Bump is no-op past `INSTANCE_TTL_THRESHOLD`, so repeated calls within
+    /// the window do not pay storage rent.
     pub fn extend_ttl(e: Env) {
-        e.storage().instance().extend_ttl(518_400, 518_400);
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_BUMP);
     }
 }
 
