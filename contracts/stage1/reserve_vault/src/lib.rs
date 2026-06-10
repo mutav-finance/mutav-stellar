@@ -390,16 +390,16 @@ impl ReserveVault {
     /// dust is explicit and auditable. Admin-only.
     pub fn force_remove_approved_asset(e: Env, asset: Address) {
         require_admin(&e);
-        if !allowlist_contains(&e, &DataKey::ApprovedAssets, &asset) {
-            panic_with_error!(&e, Error::AssetNotApproved);
-        }
-        let stranded_balance = TokenClient::new(&e, &asset).balance(&e.current_contract_address());
+        // `allowlist_remove` panics with `AssetNotApproved` on miss, so no
+        // upfront contains-check is needed; the balance read happens after
+        // the remove succeeds, ensuring we never CPI on a typo.
         allowlist_remove(
             &e,
             &DataKey::ApprovedAssets,
             &asset,
             Error::AssetNotApproved,
         );
+        let stranded_balance = TokenClient::new(&e, &asset).balance(&e.current_contract_address());
         AssetForceRemoved {
             asset,
             stranded_balance,

@@ -14,6 +14,16 @@ fn i128_val(env: &Env, n: i128) -> Val {
     n.into_val(env)
 }
 
+/// Asserts that `contract_id` emitted exactly one event matching the given
+/// topics + data. Removes the 5-line filter_by_contract / expected-tuple
+/// boilerplate from every event-equality test.
+fn assert_only_event(env: &Env, contract_id: &Address, topics: soroban_sdk::Vec<Val>, data: Val) {
+    let events = env.events().all().filter_by_contract(contract_id);
+    let expected: soroban_sdk::Vec<(Address, soroban_sdk::Vec<Val>, Val)> =
+        soroban_sdk::vec![env, (contract_id.clone(), topics, data)];
+    assert_eq!(events, expected);
+}
+
 struct Setup {
     env: Env,
     admin: Address,
@@ -130,19 +140,14 @@ fn force_remove_emits_event_with_stranded_balance() {
 
     client.force_remove_approved_asset(&s.usdc);
 
-    let events = s.env.events().all().filter_by_contract(&s.vault_id);
-    let expected_topics: soroban_sdk::Vec<soroban_sdk::Val> =
-        soroban_sdk::vec![&s.env, symbol_short!("asset_frm").into_val(&s.env)];
-    // data_format = "vec" → fields emitted as a Vec<Val>
-    let expected_data: Val =
-        soroban_sdk::vec![&s.env, s.usdc.clone().into_val(&s.env), i128_val(&s.env, 7),]
-            .into_val(&s.env);
-    let expected: soroban_sdk::Vec<(
-        Address,
-        soroban_sdk::Vec<soroban_sdk::Val>,
-        soroban_sdk::Val,
-    )> = soroban_sdk::vec![&s.env, (s.vault_id.clone(), expected_topics, expected_data)];
-    assert_eq!(events, expected);
+    assert_only_event(
+        &s.env,
+        &s.vault_id,
+        soroban_sdk::vec![&s.env, symbol_short!("asset_frm").into_val(&s.env)],
+        // data_format = "vec" → fields emitted as a Vec<Val>
+        soroban_sdk::vec![&s.env, s.usdc.clone().into_val(&s.env), i128_val(&s.env, 7)]
+            .into_val(&s.env),
+    );
 }
 
 #[test]
@@ -405,26 +410,23 @@ fn withdraw_emits_event_with_correct_topics() {
     let ref_hash = BytesN::from_array(&s.env, &[9u8; 32]);
     client.withdraw(&s.usdc, &amount, &s.op_dest, &ref_hash);
 
-    let events = s.env.events().all().filter_by_contract(&s.vault_id);
-    let expected_topics: soroban_sdk::Vec<soroban_sdk::Val> = soroban_sdk::vec![
+    assert_only_event(
         &s.env,
-        symbol_short!("withdraw").into_val(&s.env),
-        ref_hash.clone().into_val(&s.env),
-    ];
-    // data_format = "vec" → asset, amount, destination emitted as Vec<Val>
-    let expected_data: Val = soroban_sdk::vec![
-        &s.env,
-        s.usdc.clone().into_val(&s.env),
-        i128_val(&s.env, amount),
-        s.op_dest.clone().into_val(&s.env),
-    ]
-    .into_val(&s.env);
-    let expected: soroban_sdk::Vec<(
-        Address,
-        soroban_sdk::Vec<soroban_sdk::Val>,
-        soroban_sdk::Val,
-    )> = soroban_sdk::vec![&s.env, (s.vault_id.clone(), expected_topics, expected_data)];
-    assert_eq!(events, expected);
+        &s.vault_id,
+        soroban_sdk::vec![
+            &s.env,
+            symbol_short!("withdraw").into_val(&s.env),
+            ref_hash.clone().into_val(&s.env),
+        ],
+        // data_format = "vec" → asset, amount, destination emitted as Vec<Val>
+        soroban_sdk::vec![
+            &s.env,
+            s.usdc.clone().into_val(&s.env),
+            i128_val(&s.env, amount),
+            s.op_dest.clone().into_val(&s.env),
+        ]
+        .into_val(&s.env),
+    );
 }
 
 // ── balance view ────────────────────────────────────────────────────────────
