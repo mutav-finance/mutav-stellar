@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Blocks commits that contain a Stellar secret strkey (S... 56-char base32).
+# Pre-launch hardening — see docs/pre-launch-checklist.md.
+#
+# Setup (run once after cloning):
+#   git config core.hooksPath .githooks
+#
+# Override (deliberate test fixture only):
+#   git commit --no-verify
+
+PATTERN='S[A-Z2-7]{55}'
+hits=""
+
+# Iterate added/modified files in the index.
+files=$(git diff --cached --name-only --diff-filter=AM)
+
+for f in $files; do
+  # Skip binaries: git show on a binary blob still works but grep'd output
+  # is meaningless; check the diff line for the "Binary files" marker.
+  if git diff --cached -- "$f" | head -1 | grep -q "^Binary"; then
+    continue
+  fi
+
+  # Match against the staged blob (the version that will be committed),
+  # not the working tree, in case a partial-stage hides the leak.
+  matches=$(git show ":$f" 2>/dev/null | grep -nE "$PATTERN" || true)
+  if [ -n "$matches" ]; then
+    # Redact the actual secret so the hook output itself doesn't leak it.
+    redacted=$(printf '%s\n' "$matches" | sed -E "s/S[A-Z2-7]{55}/S<REDACTED-STRKEY>/g")
+    hits="${hits}  ${f}:
+$(printf '%s\n' "$redacted" | sed 's/^/    /')
+"
+  fi
+done
+
+if [ -n "$hits" ]; then
+  printf '\n  BLOCKED: staged content contains a Stellar secret strkey.\n\n' >&2
+  printf '%s\n' "$hits" >&2
+  printf '  Pattern: S followed by 55 base32 chars (Stellar secret seed).\n' >&2
+  printf '  Override (deliberate test fixture only): git commit --no-verify\n\n' >&2
+  exit 1
+fi
+
+exit 0
