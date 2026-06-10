@@ -6,8 +6,24 @@ The on-chain surface for the pilot stage described in [`mutav-whitepaper.en.md` 
 
 | Path | Whitepaper § | Role | Code shape |
 | --- | --- | --- | --- |
-| `reserve_vault/` | §5.4 | Holds TESOURO + USDC sleeve; exposes `total_assets()` for publishable adequacy checks; admin-gated `cover_default`. | Soroban Rust crate (audited surface). |
+| `reserve_vault/` | §5.4 | Custodial safe holding TESOURO + USDC sleeve. Admin-gated `withdraw(asset, amount, destination, ref_hash)` is the single value-flow path; asset and destination allowlists are admin-managed. All policy (per-asset caps, timelocks, signer thresholds) lives in the OZ Smart Account that holds the `admin` authority. Per-asset `balance(asset)` view enables publishable adequacy checks off-chain. | Soroban Rust crate (audited surface). |
 | `collateral_token/` | §5.2, §11h | `MUTAV-COL` — per-lease representative collateral record. **Classic Stellar asset wrapped by SAC** with `AUTH_REQUIRED` / `AUTH_REVOCABLE` / `AUTH_CLAWBACK_ENABLED` + SEP-8 approval server. **Strictly representative — no yield, no rebase, no redemption to a varying amount.** | Issuance + control scripts (no contract code; SAC ships the controls). |
+
+### `reserve_vault/` entry points
+
+| Group | Function | Auth |
+| --- | --- | --- |
+| Init | `__constructor(admin)` — atomic at deploy time, no separate init tx | Deploy-time only |
+| Value flow | `withdraw(asset, amount, destination, ref_hash)` | `admin` |
+| Allowlists | `add_approved_asset` / `remove_approved_asset` / `add_allowed_destination` / `remove_allowed_destination` | `admin` |
+| Escape hatch | `force_remove_approved_asset(asset)` — skip balance check (frozen / sanctioned tokens); emits `asset_frm` with stranded balance | `admin` |
+| Governance | `set_paused(paused)` (value-flow pause), `propose_admin(new, live_until_ledger)` (pass `0` to cancel) / `accept_admin()` | `admin` / new admin |
+| Maintenance | `extend_ttl()` | Permissionless |
+| Views | `admin`, `pending_admin` → `Option<PendingAdmin{address, live_until_ledger}>`, `paused`, `approved_assets`, `is_approved_asset`, `allowed_destinations`, `is_destination_allowed`, `balance(asset)` | Read-only |
+
+Two-step admin handover: `propose_admin` sets a pending record in `temporary()` storage with an explicit `live_until_ledger` deadline; `accept_admin` re-checks the deadline against current ledger sequence before rotating. Pattern follows OZ `stellar-access` v0.7.1 `role_transfer`.
+
+Caps: `MAX_APPROVED_ASSETS = 8`, `MAX_ALLOWED_DESTINATIONS = 64`. Full design: [`docs/specs/2026-06-08-stage1-reserve-vault-design.md`](../../docs/specs/2026-06-08-stage1-reserve-vault-design.md).
 
 ## Out of scope for Stage 1
 
