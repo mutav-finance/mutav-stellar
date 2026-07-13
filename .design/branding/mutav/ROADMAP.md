@@ -38,5 +38,5 @@
 **Status:** pending
 **Command:** `/gsp-brand-guidelines`
 **Input:** Identity (enriched) + Strategy + BRIEF.md
-**Output:** `patterns/` (sgr.yml, STYLE.md, guidelines.html, components/)
+**Output:** `patterns/` (mutav.yml, STYLE.md, guidelines.html, components/)
 **Goal:** Operationalize brand identity for projects — assemble tokens, render STYLE.md, map components, generate guidelines.

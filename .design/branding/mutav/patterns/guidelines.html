@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TGA — Brand Guidelines</title>
+  <title>MUTAV — Brand Guidelines</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -42,11 +42,6 @@
       background-color: var(--canvas);
       color: var(--text);
       line-height: 1.5;
-      /* Architectural grid texture */
-      background-image:
-        linear-gradient(to right,  rgba(240,240,238,0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(240,240,238,0.03) 1px, transparent 1px);
-      background-size: 24px 24px;
       min-height: 100vh;
     }
 
@@ -111,10 +106,6 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background-image:
-        linear-gradient(to right,  rgba(240,240,238,0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(240,240,238,0.03) 1px, transparent 1px);
-      background-size: 24px 24px;
     }
 
     .nav-inner {
@@ -176,10 +167,10 @@
       height: 6px;
       background-color: var(--accent);
       border-radius: 0;
-      animation: tga-pulse 2s linear infinite;
+      animation: mutav-pulse 2s linear infinite;
     }
 
-    @keyframes tga-pulse {
+    @keyframes mutav-pulse {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.4; }
     }
@@ -1027,10 +1018,7 @@
     /* Photo placeholder — simulates B&W architecture photo */
     .photo-ph {
       background-color: #16171a;
-      background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,0,0,0.28) 11px, rgba(0,0,0,0.28) 13px),
-        repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(0,0,0,0.2) 15px, rgba(0,0,0,0.2) 17px),
-        linear-gradient(170deg, #2c2e32 0%, #1a1b1e 40%, #0e0f11 100%);
+      background-image: linear-gradient(170deg, #2c2e32 0%, #1a1b1e 40%, #0e0f11 100%);
       position: relative;
       overflow: hidden;
     }
@@ -1301,7 +1289,7 @@
 <!-- Navigation -->
 <nav>
   <div class="nav-inner">
-    <a href="#" class="nav-logo">tga</a>
+    <a href="#" class="nav-logo">mutav</a>
     <ul class="nav-items">
       <li><a href="#overview" class="active">Overview</a></li>
       <li><a href="#color">Color</a></li>
@@ -1325,7 +1313,7 @@
     <p class="hero-eyebrow">Token de Garantia de Aluguel · Brand Guidelines · 2026-04-14</p>
     <h1 class="hero-title">Precision before<br><span>decoration.</span></h1>
     <p class="hero-sub">
-      TGA operates across two fronts: Investor Dashboard and Real Estate Dashboard.
+      MUTAV operates across two fronts: Investor Dashboard and Real Estate Dashboard.
       Operations runs as a mode inside the Investor surface — same palette, same grammar, additional operator UX.
     </p>
     <p class="hero-meta">System strategy: generate · Tech: Next.js + Tailwind v4 + shadcn/ui · Preset overrides: 9</p>
@@ -1415,14 +1403,14 @@
       <!-- Direction 1 dark -->
       <div class="logo-block logo-block-dark">
         <div>
-          <span class="logo-wordmark" style="color:#E8A020;">tga</span>
+          <span class="logo-wordmark" style="color:#E8A020;">mutav</span>
         </div>
         <p class="logo-meta">Direction 1 · Wordmark · Dark</p>
       </div>
       <!-- Direction 1 light -->
       <div class="logo-block logo-block-light">
         <div>
-          <span class="logo-wordmark" style="color:#C47E10;">tga</span>
+          <span class="logo-wordmark" style="color:#C47E10;">mutav</span>
         </div>
         <p class="logo-meta" style="color:#9E9C98;">Direction 1 · Wordmark · Light</p>
       </div>
@@ -1430,14 +1418,14 @@
       <div class="logo-block logo-block-dark">
         <div class="logo-rule-block">
           <div class="logo-rule"></div>
-          <span class="logo-wordmark" style="color:#E8A020;">tga</span>
+          <span class="logo-wordmark" style="color:#E8A020;">mutav</span>
         </div>
         <p class="logo-meta">Direction 2 · Structural Mark · Formal</p>
       </div>
       <!-- Direction 3 -->
       <div class="logo-block logo-block-terminal">
         <div>
-          <span class="logo-monogram" style="color:#E8A020;">TGA</span>
+          <span class="logo-monogram" style="color:#E8A020;">MUTAV</span>
         </div>
         <p class="logo-meta">Direction 3 · Monogram · Investor/Operations</p>
       </div>
@@ -1662,7 +1650,7 @@
     <div style="background:var(--surface); border:1px solid var(--border); padding:32px; margin-bottom:56px;">
       <p class="font-mono text-xs color-accent mb-16" style="letter-spacing:0.06em; font-feature-settings:'tnum' 1;">MONO — JetBrains Mono 400/500 · tabular-nums required</p>
       <p style="font-family:var(--font-mono); font-size:0.8125rem; color:var(--text); font-feature-settings:'tnum' 1; font-variant-numeric:tabular-nums; line-height:1.75rem;">
-        R$ 2.847,00 · Hash: 0x4a2f...8e91 · 2026-04-14T18:22:37Z · ID: TGA-0042
+        R$ 2.847,00 · Hash: 0x4a2f...8e91 · 2026-04-14T18:22:37Z · ID: MUTAV-0042
       </p>
       <p class="font-mono text-sm color-text-3 mt-16" style="font-feature-settings:'tnum' 1;">font-feature-settings: "tnum" 1 — required on all numbers. No exceptions.</p>
     </div>
@@ -1747,7 +1735,7 @@
             Active Contracts
           </p>
           <p class="inv-card-value" style="font-size:1.75rem;">142</p>
-          <p class="inv-card-sub">TGA-0001 → TGA-0142 · 3 in default</p>
+          <p class="inv-card-sub">MUTAV-0001 → MUTAV-0142 · 3 in default</p>
         </div>
       </div>
 
@@ -1815,7 +1803,7 @@
         <p class="component-label">Operations — Investor mode</p>
         <div style="background:var(--surface); border:1px solid var(--border); padding:20px; display:flex; flex-direction:column; gap:16px;">
           <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:12px;">
-            <span style="font-family:var(--font-body); font-size:0.8125rem; font-weight:500; color:var(--text);">Contract TGA-0042</span>
+            <span style="font-family:var(--font-body); font-size:0.8125rem; font-weight:500; color:var(--text);">Contract MUTAV-0042</span>
             <div class="live-indicator">
               <div class="live-dot"></div>
               <span class="live-label">ACTIVE</span>
@@ -1895,7 +1883,7 @@
         <div style="display:flex; flex-direction:column; gap:16px;">
           <div class="input-group">
             <label class="input-label">Contract ID</label>
-            <input type="text" class="input-field" placeholder="TGA-0001" value="TGA-0042">
+            <input type="text" class="input-field" placeholder="MUTAV-0001" value="MUTAV-0042">
           </div>
           <div class="input-group">
             <label class="input-label">Value (BRL)</label>
@@ -1904,76 +1892,6 @@
         </div>
       </div>
     </div>
-
-
-    <!-- Iconografia — Phosphor Icons -->
-    <p class="font-mono text-xs color-accent mb-16" style="letter-spacing:0.06em; font-feature-settings:'tnum' 1; text-transform:uppercase;">Iconografia — @phosphor-icons/react · weight="light"</p>
-    <div style="margin-bottom:8px;">
-      <p class="font-mono text-xs color-text-3" style="font-feature-settings:'tnum' 1; margin-bottom:16px;">Traço 1.5px · sem preenchimento · sem âmbar · tamanho 16–24px</p>
-      <div class="icon-row" style="display:inline-flex; flex-wrap:wrap;">
-        <!-- House -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V10.5z"/><path d="M9 21V12h6v9"/></svg>
-          <span class="icon-cell-label">House</span>
-        </div>
-        <!-- Chart line -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 8 12 12 15 20 6"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
-          <span class="icon-cell-label">ChartLine</span>
-        </div>
-        <!-- ArrowRight -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
-          <span class="icon-cell-label">ArrowRight</span>
-        </div>
-        <!-- CheckCircle -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3DAB72" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></svg>
-          <span class="icon-cell-label">CheckCircle</span>
-        </div>
-        <!-- Warning -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C94040" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span class="icon-cell-label">Warning</span>
-        </div>
-        <!-- FileText -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-          <span class="icon-cell-label">FileText</span>
-        </div>
-        <!-- Bell -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-          <span class="icon-cell-label">Bell</span>
-        </div>
-        <!-- X -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A8F99" stroke-width="1.25" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          <span class="icon-cell-label">X</span>
-        </div>
-        <!-- ChevronDown -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A8F99" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="icon-cell-label">ChevronDown</span>
-        </div>
-        <!-- User -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span class="icon-cell-label">User</span>
-        </div>
-        <!-- Clock -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0F0EE" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-          <span class="icon-cell-label">Clock</span>
-        </div>
-        <!-- CopySimple -->
-        <div class="icon-cell">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A8F99" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12"/><path d="M16 8V4H4v12h4"/></svg>
-          <span class="icon-cell-label">Copy</span>
-        </div>
-      </div>
-    </div>
-    <p class="font-mono" style="font-size:0.625rem; color:var(--text-3); margin-top:8px; margin-bottom:48px; font-feature-settings:'tnum' 1;">Nunca: fill, cor âmbar, containers circulares/arredondados, weight diferente de light</p>
 
     <!-- Live animation demo -->
     <p class="font-mono text-xs color-accent mb-16" style="letter-spacing:0.06em; font-feature-settings:'tnum' 1; text-transform:uppercase;">Animação pulse — única animação ambiente do sistema</p>
@@ -1996,7 +1914,7 @@
     <!-- Principle -->
     <div class="photo-principle">
       <p>
-        In TGA, photography is not decoration — it is <strong>evidence</strong>. Every scene carries
+        In MUTAV, photography is not decoration — it is <strong>evidence</strong>. Every scene carries
         the same logic as the product: visible structure, honest material, no element without function.
         The photo is always black and white. <strong>Amber enters as a solid geometric shape</strong>,
         never as a filter or direct colorization. The subject is architecture: concrete, modular
@@ -2023,7 +1941,7 @@
       </div>
       <div class="photo-rule-item">
         <p class="photo-rule-label">Accent color</p>
-        <p class="photo-rule-value">TGA amber as a separate shape</p>
+        <p class="photo-rule-value">MUTAV amber as a separate shape</p>
         <p class="photo-rule-detail">Color enters over the photo as an independent graphic element: circle, rectangle, line, or outline. Never a filter.</p>
       </div>
       <div class="photo-rule-item">
@@ -2060,7 +1978,7 @@
           <div class="ac-rect" style="top:0;left:0;right:0;height:3px;opacity:0.7;"></div>
           <!-- Texto — topo esq -->
           <div class="comp-text" style="top:16px;left:20px;">
-            <p class="comp-mono" style="font-size:0.5625rem;letter-spacing:0.1em;">SGR · GUARANTEE</p>
+            <p class="comp-mono" style="font-size:0.5625rem;letter-spacing:0.1em;">MUTAV · GUARANTEE</p>
           </div>
           <!-- Texto — base -->
           <div class="comp-text" style="bottom:20px;left:20px;right:20px;">
@@ -2123,7 +2041,7 @@
           <!-- Texto base -->
           <div class="comp-text" style="bottom:20px;left:20px;right:20px;z-index:11;">
             <p class="comp-body" style="font-size:0.75rem;margin-bottom:8px;">No contract without registered coverage.</p>
-            <p class="comp-mono" style="font-size:0.5625rem;letter-spacing:0.08em;">TGA PROTOCOL · ON-CHAIN · 2026</p>
+            <p class="comp-mono" style="font-size:0.5625rem;letter-spacing:0.08em;">MUTAV PROTOCOL · ON-CHAIN · 2026</p>
           </div>
         </div>
         <div>
@@ -2162,11 +2080,7 @@
         <div class="verdict-top no">✗ Forbidden — colorized photo</div>
         <div class="verdict-preview" style="background:linear-gradient(140deg,#4a3520 0%,#2d2010 50%,#1a1208 100%);">
           <!-- Foto com warmth/colorização simulada -->
-          <div style="position:absolute;inset:0;background:linear-gradient(140deg,rgba(180,100,20,0.35) 0%,rgba(120,60,10,0.2) 100%);
-            background-image:
-              repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,0,0,0.15) 11px, rgba(0,0,0,0.15) 13px),
-              repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(0,0,0,0.1) 15px, rgba(0,0,0,0.1) 17px),
-              linear-gradient(140deg,rgba(180,100,20,0.35) 0%,rgba(120,60,10,0.2) 100%);"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(140deg,rgba(180,100,20,0.35) 0%,rgba(120,60,10,0.2) 100%);"></div>
           <div style="position:absolute;bottom:16px;left:16px;font-family:'Geist',sans-serif;font-size:1.25rem;font-weight:700;color:#F0F0EE;line-height:0.92;letter-spacing:-0.03em;">Concrete.<br>Verified.</div>
         </div>
         <div class="verdict-bottom">
@@ -2206,7 +2120,7 @@
           </div>
         </div>
         <div class="verdict-bottom">
-          <p class="verdict-rule"><strong>backdrop-filter: blur() and glassmorphism are forbidden</strong> across the entire TGA system. No element uses blur as a visual treatment.</p>
+          <p class="verdict-rule"><strong>backdrop-filter: blur() and glassmorphism are forbidden</strong> across the entire MUTAV system. No element uses blur as a visual treatment.</p>
         </div>
       </div>
     </div>
@@ -2217,11 +2131,7 @@
         <div class="verdict-top ok">✓ Correct — worm's eye angle, scale evident</div>
         <div class="verdict-preview">
           <!-- Simula perspectiva de baixo para cima com gradiente -->
-          <div style="position:absolute;inset:0;background:#18191c;
-            background-image:
-              repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(0,0,0,0.35) 8px, rgba(0,0,0,0.35) 9px),
-              repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(0,0,0,0.25) 12px, rgba(0,0,0,0.25) 13px),
-              linear-gradient(0deg, #0e0f11 0%, #252729 50%, #3a3c40 100%);"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(0deg, #0e0f11 0%, #252729 50%, #3a3c40 100%);"></div>
           <div class="comp-text" style="bottom:16px;left:16px;">
             <p class="comp-mono" style="font-size:0.5625rem;letter-spacing:0.08em;">ASCENDING ANGLE · FAÇADE</p>
           </div>
@@ -2235,10 +2145,7 @@
         <div class="verdict-top no">✗ Avoid — neutral angle, small subject</div>
         <div class="verdict-preview">
           <!-- Simula foto de nível, edifício ao fundo pequeno -->
-          <div style="position:absolute;inset:0;background:#18191c;
-            background-image:
-              repeating-linear-gradient(0deg, transparent, transparent 11px, rgba(0,0,0,0.2) 11px, rgba(0,0,0,0.2) 13px),
-              linear-gradient(180deg, #2a2c30 0%, #1a1b1e 50%, #0e0f11 100%);"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg, #2a2c30 0%, #1a1b1e 50%, #0e0f11 100%);"></div>
           <!-- Edifício "pequeno" ao centro -->
           <div style="position:absolute;bottom:25%;left:50%;transform:translateX(-50%);width:20%;height:30%;
             background:#2a2c30;border-top:1px solid #3a3c40;"></div>
@@ -2311,7 +2218,7 @@
 <!-- Footer -->
 <footer>
   <div class="footer-inner">
-    <span class="footer-logo">tga</span>
+    <span class="footer-logo">mutav</span>
     <p class="footer-meta">Token de Garantia de Aluguel · Brand Guidelines v1.0 · 2026-04-14 · Precision Brutalism</p>
   </div>
 </footer>
