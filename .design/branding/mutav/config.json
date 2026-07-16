@@ -2,7 +2,7 @@
   "version": "0.7.4",
   "project_type": "brand",
   "brand": {
-    "name": "tga",
+    "name": "mutav",
     "created": "2026-04-14"
   },
   "brand_mode": "new",
@@ -16,7 +16,7 @@
     "fronts": [
       { "id": "dashboard-imobiliarias", "label": "Dashboard Imobiliárias", "audience": "Imobiliárias, proprietários, inquilinos", "persona": "Lucas" },
       { "id": "dashboard-investidor", "label": "Dashboard Investidor", "audience": "Investidores cripto-nativos", "persona": "Ana" },
-      { "id": "terminal", "label": "Terminal", "audience": "Gestão e controle do protocolo", "persona": "Operadores TGA" }
+      { "id": "terminal", "label": "Terminal", "audience": "Gestão e controle do protocolo", "persona": "Operadores MUTAV" }
     ]
   },
   "system_config": {

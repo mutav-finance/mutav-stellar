@@ -22,7 +22,7 @@
 <!-- pending | in-progress | complete | needs-revision | skipped -->
 
 ## Decisions
-- Marca: MUTAV (Token de Garantia de Aluguel) — substitui MUTAV como nome do projeto
+- Marca: MUTAV (Token de Garantia de Aluguel) — projeto renomeado para MUTAV
 - Três produtos: Dashboard Imobiliárias / Dashboard Investidor / Terminal (gestão e controle)
 - Arquétipo: Governante (primary) + Cuidador (secondary)
 - Posicionamento afirmativo — sem alavancar erros de concorrentes
