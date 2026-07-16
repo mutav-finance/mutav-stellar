@@ -1,4 +1,4 @@
-name: tga
+name: mutav
 description: >
   Token de Garantia de Aluguel — three-front brand system operating across
   Dashboard Investidor (dark / Precision Brutalism), Dashboard Imobiliárias
@@ -26,7 +26,7 @@ intensity:
   # dark/precision, light/warmth, monospace/operator.
   motion: 2
   # Override minimal-dark preset motion:4 (glow shifts, scale transforms).
-  # TGA uses no glow and no scale transforms. Only functional animation:
+  # MUTAV uses no glow and no scale transforms. Only functional animation:
   # the live amber pulse dot (opacity 1→0.4→1, 2s linear, infinite). All hover
   # states are instant color/border changes with 150ms ease-out — no movement.
   density: 6
@@ -72,8 +72,8 @@ tokens:
       accent-dim:        { hex: "#9E6A10", oklch: "oklch(0.513 0.103 75.08)", usage: "Amber hover states" }
       success:           { hex: "#3DAB72", oklch: "oklch(0.664 0.132 156.97)", usage: "Pagamento confirmado" }
       # Override minimal-dark preset success:#22C55E (vibrant ANSI green).
-      # TGA uses #3DAB72 — muted, not vibrant. Reason: ANSI green carries
-      # hacker/exploit associations incompatible with TGA's precision instrument identity.
+      # MUTAV uses #3DAB72 — muted, not vibrant. Reason: ANSI green carries
+      # hacker/exploit associations incompatible with MUTAV's precision instrument identity.
       error:             { hex: "#C94040", oklch: "oklch(0.483 0.147 24.48)", usage: "Inadimplência, failed tx" }
 
     # System 2: Dashboard Imobiliárias (Light / Structured Warmth)
@@ -87,7 +87,7 @@ tokens:
       fg-secondary:      { hex: "#6B6860", oklch: "oklch(0.480 0.012 75)", usage: "Secondary text" }
       fg-tertiary:       { hex: "#9E9C98", oklch: "oklch(0.670 0.008 85)", usage: "Placeholders, disabled" }
       accent:            { hex: "#C47E10", oklch: "oklch(0.610 0.132 65)", usage: "CTAs, active badges" }
-      # Override professional preset primary:#1E40AF (blue). TGA light front
+      # Override professional preset primary:#1E40AF (blue). MUTAV light front
       # uses amber #C47E10 — same brand identity, light-adjusted value.
       accent-light:      { hex: "#FFF0D4", oklch: "oklch(0.965 0.040 82)", usage: "Confirmation state bg" }
       trust:             { hex: "#2E8B5A", oklch: "oklch(0.600 0.120 157)", usage: "Pagamento confirmado" }
@@ -103,9 +103,9 @@ tokens:
       fg-secondary:      { hex: "#7A7870", oklch: "oklch(0.545 0.010 78)", usage: "Secondary labels" }
       fg-dim:            { hex: "#4A4844", oklch: "oklch(0.360 0.008 78)", usage: "Commented lines, ghost" }
       accent:            { hex: "#E8A020", oklch: "oklch(0.758 0.152 74.86)", usage: "Active status, live" }
-      # Override terminal preset primary:#22C55E (ANSI green). TGA Terminal
+      # Override terminal preset primary:#22C55E (ANSI green). MUTAV Terminal
       # uses amber #E8A020 as primary. Reason: ANSI green carries hacker/exploit
-      # culture associations incompatible with TGA's operator-layer precision instrument.
+      # culture associations incompatible with MUTAV's operator-layer precision instrument.
       accent-warm:       { hex: "#B87010", oklch: "oklch(0.610 0.132 65)", usage: "Secondary indicators (copper)" }
       accent-sienna:     { hex: "#8B4A2A", oklch: "oklch(0.420 0.091 47)", usage: "Third-tier status" }
       confirmed:         { hex: "#3DAB72", oklch: "oklch(0.664 0.132 156.97)", usage: "Liquidation confirmed" }
@@ -279,8 +279,8 @@ tokens:
   # ── SHAPE ─────────────────────────────────────────────────────────────────
   shape:
     border-radius:
-      # Override minimal-dark preset: 8-16px → TGA uses 0px everywhere.
-      # Override professional preset: 6-12px → TGA uses 0px.
+      # Override minimal-dark preset: 8-16px → MUTAV uses 0px everywhere.
+      # Override professional preset: 6-12px → MUTAV uses 0px.
       # Reason: Precision Brutalism grammar — no softening, no atmospheric curves.
       default: 0px
       card: 0px
@@ -305,9 +305,9 @@ tokens:
     # Reason: depth through surface stacking only, not atmospheric effects.
     strategy: surface-stacking
     shadows: none
-    # Override minimal-dark preset: backdrop-blur glass cards → TGA uses solid surfaces.
+    # Override minimal-dark preset: backdrop-blur glass cards → MUTAV uses solid surfaces.
     glass-effects: none
-    # Override minimal-dark preset: backdrop-blur → TGA never uses it.
+    # Override minimal-dark preset: backdrop-blur → MUTAV never uses it.
     backdrop-blur: none
 
     levels:
@@ -340,7 +340,7 @@ tokens:
   # ── MOTION ────────────────────────────────────────────────────────────────
   motion:
     # Override minimal-dark preset motion:4 (glow shifts, scale transforms).
-    # TGA uses no glow, no scale, no transform animations.
+    # MUTAV uses no glow, no scale, no transform animations.
     # Override terminal preset phosphor-glow text-shadow → none.
     philosophy: "Functional only. Motion informs, never decorates."
 
@@ -485,7 +485,7 @@ patterns:
     investidor:
       background: "#0E0F11"
       height: 56px
-      logo: "Direction 1 wordmark — 'tga' Geist Bold lowercase amber left"
+      logo: "Direction 1 wordmark — 'mutav' Geist Bold lowercase amber left"
       nav-items: "Inter Medium 14px #8A8F99; active: #F0F0EE + 1px amber bottom border"
       live-dot: "6px #E8A020 circle, opacity pulse 2s linear infinite (1→0.4→1)"
       counter: "JetBrains Mono 12px"
@@ -511,7 +511,7 @@ logo:
     1-wordmark-pure:
       usage: "Primary for all fronts"
       type: "wordmark"
-      text: "tga"
+      text: "mutav"
       case: lowercase
       font: "Geist Bold 700"
       tracking: "-3% (-0.03em)"
@@ -528,7 +528,7 @@ logo:
 
     3-typographic-monogram:
       usage: "Dashboard Investidor and Terminal ONLY. Never on Imobiliárias."
-      text: "TGA"
+      text: "MUTAV"
       case: ALL-CAPS
       tracking: "-6% (-0.06em)"
       color: amber (per-front value)
@@ -554,7 +554,7 @@ iconography:
 # ─── TEXTURE RECIPES ─────────────────────────────────────────────────────────
 textures:
   investidor:
-    # Override minimal-dark preset: 0.02 opacity noise texture → TGA uses
+    # Override minimal-dark preset: 0.02 opacity noise texture → MUTAV uses
     # architectural grid. Reason: blueprint DNA from logo direction 2.
     type: architectural-grid
     css: |
@@ -585,7 +585,7 @@ textures:
 # ─── EFFECTS ─────────────────────────────────────────────────────────────────
 effects:
   # Override minimal-dark preset: ambient glow / orbs (amber glow effects).
-  # TGA uses NO glow effects anywhere. Reason: Precision Brutalism excludes decoration.
+  # MUTAV uses NO glow effects anywhere. Reason: Precision Brutalism excludes decoration.
   ambient-glow: none
   orbs: none
   glass: none
@@ -629,31 +629,31 @@ fronts:
     overrides:
       border-radius:
         preset-value: "8-16px"
-        tga-value: "0px"
+        mutav-value: "0px"
         reason: "Precision Brutalism grammar — no softening"
       glass-effects:
         preset-value: "backdrop-blur glass cards"
-        tga-value: "solid surfaces, no glass"
-        reason: "Glass is atmospheric decoration; TGA uses surface stacking for depth"
+        mutav-value: "solid surfaces, no glass"
+        reason: "Glass is atmospheric decoration; MUTAV uses surface stacking for depth"
       ambient-glow:
         preset-value: "amber glow effects / orbs"
-        tga-value: "none"
+        mutav-value: "none"
         reason: "Precision Brutalism excludes decorative effects"
       noise-texture:
         preset-value: "0.02 opacity noise"
-        tga-value: "architectural grid (24px repeating lines at 3% opacity)"
+        mutav-value: "architectural grid (24px repeating lines at 3% opacity)"
         reason: "Blueprint DNA from logo direction 2"
       success-color:
         preset-value: "#22C55E"
-        tga-value: "#3DAB72"
+        mutav-value: "#3DAB72"
         reason: "Muted, not vibrant. ANSI green excluded."
       motion:
         preset-value: "4 (glow shifts, scale transforms)"
-        tga-value: "2 (functional animation only)"
+        mutav-value: "2 (functional animation only)"
         reason: "No glow, no scale — amber pulse only"
       density:
         preset-value: "2 (extremely spacious)"
-        tga-value: "6 (data-dense)"
+        mutav-value: "6 (data-dense)"
         reason: "Data tables, live counters, timestamps fill the screen"
 
     css-vars:
@@ -682,15 +682,15 @@ fronts:
     overrides:
       primary-color:
         preset-value: "#1E40AF (blue)"
-        tga-value: "#C47E10 (amber)"
+        mutav-value: "#C47E10 (amber)"
         reason: "Same amber brand identity, light-adjusted value"
       border-radius:
         preset-value: "6-12px"
-        tga-value: "0px"
+        mutav-value: "0px"
         reason: "Precision Brutalism — 0px everywhere across all fronts"
       shadows:
         preset-value: "soft drop shadows"
-        tga-value: "none"
+        mutav-value: "none"
         reason: "Depth through surface stacking only"
 
     css-vars:
@@ -719,15 +719,15 @@ fronts:
     overrides:
       primary-color:
         preset-value: "#22C55E (terminal green)"
-        tga-value: "#E8A020 (amber) + #B87010 (copper) + #8B4A2A (sienna)"
-        reason: "ANSI green carries hacker/exploit culture associations incompatible with TGA's operator-layer precision instrument"
+        mutav-value: "#E8A020 (amber) + #B87010 (copper) + #8B4A2A (sienna)"
+        reason: "ANSI green carries hacker/exploit culture associations incompatible with MUTAV's operator-layer precision instrument"
       phosphor-glow:
         preset-value: "text-shadow glow on text"
-        tga-value: "none"
+        mutav-value: "none"
         reason: "Clean data, no atmospheric treatment"
       ascii-decorations:
         preset-value: "ASCII art decorations"
-        tga-value: "none"
+        mutav-value: "none"
         reason: "Clean monospace UI, not retro aesthetic"
 
     css-vars:

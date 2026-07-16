@@ -86,7 +86,7 @@ O MUTAV opera com três produtos com registros de voz distintos. Os atributos de
 | Faça | Não Faça |
 |------|----------|
 | "MUTAV Core registra cada contrato onchain. Cada liquidação é um evento público." | "A MUTAV tem o prazer de apresentar uma solução inovadora de registro onchain que transforma a forma como contratos de garantia locatícia são gerenciados no Brasil." |
-| "MUTAV — Token de Garantia Acumulada. Exposição ao spread de contratos ativos. NAV atualizado a cada bloco." | "O MUTAV é o nosso revolucionário token que oferece acesso único ao mercado imobiliário brasileiro de uma forma nunca antes vista." |
+| "MUTAV. Exposição ao spread de contratos ativos. NAV atualizado a cada bloco." | "O MUTAV é o nosso revolucionário token que oferece acesso único ao mercado imobiliário brasileiro de uma forma nunca antes vista." |
 
 **Chart Garantia:**
 
@@ -247,7 +247,7 @@ Exceção: linguagem técnica de protocolo onde a voz passiva é norma de especi
 ```
 MUTAV — Token de Garantia de Aluguel
 ├── Dashboard Investidor          (frente investidor — Ana)
-│   └── MUTAV             (Token de Garantia Acumulada — produto de investimento)
+│   └── MUTAV             (produto de investimento)
 │   └── MUTAV Core        (camada de registro de contratos)
 │   └── Programmable Settlement Layer  (camada de liquidação programática)
 └── Dashboard Imobiliárias        (Dashboard Imobiliárias — Lucas)
@@ -258,8 +258,7 @@ MUTAV — Token de Garantia de Aluguel
 
 | Termo | Uso Correto | Uso Incorreto |
 |---|---|---|
-| **MUTAV** | "MUTAV" (todas maiúsculas, sem ponto) | "Sgr," "S.G.R.," "a sgr" |
-| **MUTAV** | "MUTAV" (todas maiúsculas) + "Token de Garantia Acumulada" na primeira menção | "Tga," "o mutav" sem maiúsculas, "MUTAV token" (redundante) |
+| **MUTAV** | "MUTAV" (todas maiúsculas, sem ponto) | "Mutav," "o mutav" sem maiúsculas, "MUTAV token" (redundante) |
 | **MUTAV Core** | "MUTAV Core" (maiúsculas + capitalização de substantivo próprio) | "MUTAV core," "o Core" isolado sem MUTAV |
 | **Programmable Settlement Layer** | Por extenso na primeira menção; "PSL" aceitável depois apenas em contexto técnico | Nunca na Dashboard Imobiliárias |
 | **Dashboard Investidor / Dashboard Imobiliárias** | "Dashboard Investidor," "Dashboard Imobiliárias" (minúsculo em "frente") | "Dashboard Investidor" com F maiúsculo, "plataforma Ledger" |

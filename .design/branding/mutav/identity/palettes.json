@@ -1,6 +1,6 @@
 {
   "meta": {
-    "brand": "TGA — Token de Garantia de Aluguel",
+    "brand": "MUTAV — Token de Garantia de Aluguel",
     "generated": "2026-04-14",
     "source": "tints.dev OKLCH scales from brand hex values",
     "note": "All values in OKLCH. Use these scales for design tokens and CSS custom properties."
